@@ -1,134 +1,237 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Transaction, Employee, AttendanceRecord, Vale, MonthlyClosing, EmployeeClosing } from '@/types/finance';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+// Types matching Supabase schema
+export interface Transaction {
+  id: string;
+  description: string;
+  amount: number;
+  transaction_date: string;
+  category_id: string | null;
+  category_name?: string;
+  type: 'entrada' | 'saida';
+  payment_method: string;
+  user_id: string;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  salary: number;
+  hire_date: string;
+  status: 'ativo' | 'inativo';
+}
+
+export interface AttendanceRecord {
+  id: string;
+  employee_id: string;
+  presence_date: string;
+  status: 'presente' | 'falta' | 'meio-periodo';
+}
+
+export interface Vale {
+  id: string;
+  employee_id: string;
+  vale_date: string;
+  amount: number;
+  description?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
+export interface EmployeeClosing {
+  employeeId: string;
+  employeeName: string;
+  baseSalary: number;
+  absences: number;
+  halfDays: number;
+  absenceDiscount: number;
+  valesTotal: number;
+  finalSalary: number;
+}
+
+export interface MonthlyClosing {
+  month: number;
+  year: number;
+  totalRevenue: number;
+  totalExpenses: number;
+  totalSalaries: number;
+  totalVales: number;
+  netProfit: number;
+  margin: number;
+  employeeDetails: EmployeeClosing[];
+}
 
 interface FinanceContextType {
   transactions: Transaction[];
   employees: Employee[];
   attendance: AttendanceRecord[];
   vales: Vale[];
-  categories: string[];
-  addTransaction: (t: Omit<Transaction, 'id'>) => void;
-  removeTransaction: (id: string) => void;
-  addEmployee: (e: Omit<Employee, 'id'>) => void;
-  updateEmployee: (e: Employee) => void;
-  removeEmployee: (id: string) => void;
-  addAttendance: (a: Omit<AttendanceRecord, 'id'>) => void;
-  updateAttendance: (a: AttendanceRecord) => void;
-  addVale: (v: Omit<Vale, 'id'>) => void;
-  removeVale: (id: string) => void;
-  addCategory: (c: string) => void;
-  removeCategory: (c: string) => void;
+  categories: Category[];
+  loading: boolean;
+  addTransaction: (t: Omit<Transaction, 'id' | 'user_id' | 'category_name'>) => Promise<void>;
+  removeTransaction: (id: string) => Promise<void>;
+  addEmployee: (e: Omit<Employee, 'id'>) => Promise<void>;
+  updateEmployee: (e: Employee) => Promise<void>;
+  removeEmployee: (id: string) => Promise<void>;
+  addAttendance: (a: Omit<AttendanceRecord, 'id'>) => Promise<void>;
+  addVale: (v: Omit<Vale, 'id'>) => Promise<void>;
+  removeVale: (id: string) => Promise<void>;
+  addCategory: (name: string) => Promise<void>;
+  removeCategory: (id: string) => Promise<void>;
   getMonthlyClosing: (month: number, year: number) => MonthlyClosing;
   getMonthTransactions: (month: number, year: number) => Transaction[];
+  refreshData: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextType | null>(null);
 
-const defaultCategories = [
-  'Alimentação', 'Bebidas', 'Carne', 'Funcionários', 'Energia',
-  'Água', 'Aluguel', 'Manutenção', 'Materiais', 'Vendas', 'Outros'
-];
-
-function loadState<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-const uid = () => Math.random().toString(36).slice(2, 10);
-
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
-  const [transactions, setTransactions] = useState<Transaction[]>(() => loadState('fin_transactions', []));
-  const [employees, setEmployees] = useState<Employee[]>(() => loadState('fin_employees', []));
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>(() => loadState('fin_attendance', []));
-  const [vales, setVales] = useState<Vale[]>(() => loadState('fin_vales', []));
-  const [categories, setCategories] = useState<string[]>(() => loadState('fin_categories', defaultCategories));
+  const { user } = useAuth();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [vales, setVales] = useState<Vale[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => { localStorage.setItem('fin_transactions', JSON.stringify(transactions)); }, [transactions]);
-  useEffect(() => { localStorage.setItem('fin_employees', JSON.stringify(employees)); }, [employees]);
-  useEffect(() => { localStorage.setItem('fin_attendance', JSON.stringify(attendance)); }, [attendance]);
-  useEffect(() => { localStorage.setItem('fin_vales', JSON.stringify(vales)); }, [vales]);
-  useEffect(() => { localStorage.setItem('fin_categories', JSON.stringify(categories)); }, [categories]);
+  const fetchAll = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const [txRes, empRes, attRes, valesRes, catRes] = await Promise.all([
+        supabase.from('transactions').select('*, categories(name)').order('transaction_date', { ascending: false }),
+        supabase.from('employees').select('*').order('name'),
+        supabase.from('attendance').select('*'),
+        supabase.from('vales').select('*').order('vale_date', { ascending: false }),
+        supabase.from('categories').select('*').order('name'),
+      ]);
 
-  const addTransaction = useCallback((t: Omit<Transaction, 'id'>) => {
-    setTransactions(prev => [{ ...t, id: uid() }, ...prev]);
-  }, []);
-  const removeTransaction = useCallback((id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
-  }, []);
-  const addEmployee = useCallback((e: Omit<Employee, 'id'>) => {
-    setEmployees(prev => [...prev, { ...e, id: uid() }]);
-  }, []);
-  const updateEmployee = useCallback((e: Employee) => {
-    setEmployees(prev => prev.map(x => x.id === e.id ? e : x));
-  }, []);
-  const removeEmployee = useCallback((id: string) => {
-    setEmployees(prev => prev.filter(e => e.id !== id));
-  }, []);
-  const addAttendance = useCallback((a: Omit<AttendanceRecord, 'id'>) => {
-    setAttendance(prev => {
-      const existing = prev.find(x => x.employeeId === a.employeeId && x.date === a.date);
-      if (existing) return prev.map(x => x.id === existing.id ? { ...a, id: existing.id } : x);
-      return [...prev, { ...a, id: uid() }];
-    });
-  }, []);
-  const updateAttendance = useCallback((a: AttendanceRecord) => {
-    setAttendance(prev => prev.map(x => x.id === a.id ? a : x));
-  }, []);
-  const addVale = useCallback((v: Omit<Vale, 'id'>) => {
-    setVales(prev => [...prev, { ...v, id: uid() }]);
-  }, []);
-  const removeVale = useCallback((id: string) => {
-    setVales(prev => prev.filter(v => v.id !== id));
-  }, []);
-  const addCategory = useCallback((c: string) => {
-    setCategories(prev => prev.includes(c) ? prev : [...prev, c]);
-  }, []);
-  const removeCategory = useCallback((c: string) => {
-    setCategories(prev => prev.filter(x => x !== c));
-  }, []);
+      if (txRes.data) setTransactions(txRes.data.map((t: any) => ({
+        ...t, category_name: t.categories?.name || 'Sem categoria'
+      })));
+      if (empRes.data) setEmployees(empRes.data as Employee[]);
+      if (attRes.data) setAttendance(attRes.data as AttendanceRecord[]);
+      if (valesRes.data) setVales(valesRes.data as Vale[]);
+      if (catRes.data) setCategories(catRes.data as Category[]);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const addTransaction = useCallback(async (t: Omit<Transaction, 'id' | 'user_id' | 'category_name'>) => {
+    if (!user) return;
+    const { error } = await supabase.from('transactions').insert({ ...t, user_id: user.id });
+    if (error) { toast.error('Erro ao salvar'); throw error; }
+    await fetchAll();
+  }, [user, fetchAll]);
+
+  const removeTransaction = useCallback(async (id: string) => {
+    const { error } = await supabase.from('transactions').delete().eq('id', id);
+    if (error) { toast.error('Erro ao remover'); return; }
+    await fetchAll();
+  }, [fetchAll]);
+
+  const addEmployee = useCallback(async (e: Omit<Employee, 'id'>) => {
+    const { error } = await supabase.from('employees').insert(e);
+    if (error) { toast.error('Erro ao salvar'); throw error; }
+    await fetchAll();
+  }, [fetchAll]);
+
+  const updateEmployee = useCallback(async (e: Employee) => {
+    const { error } = await supabase.from('employees').update({
+      name: e.name, salary: e.salary, hire_date: e.hire_date, status: e.status
+    }).eq('id', e.id);
+    if (error) { toast.error('Erro ao atualizar'); return; }
+    await fetchAll();
+  }, [fetchAll]);
+
+  const removeEmployee = useCallback(async (id: string) => {
+    const { error } = await supabase.from('employees').delete().eq('id', id);
+    if (error) { toast.error('Erro ao remover'); return; }
+    await fetchAll();
+  }, [fetchAll]);
+
+  const addAttendance = useCallback(async (a: Omit<AttendanceRecord, 'id'>) => {
+    // Upsert: if record exists for same employee+date, update
+    const { data: existing } = await supabase
+      .from('attendance')
+      .select('id')
+      .eq('employee_id', a.employee_id)
+      .eq('presence_date', a.presence_date)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase.from('attendance').update({ status: a.status }).eq('id', existing.id);
+    } else {
+      await supabase.from('attendance').insert(a);
+    }
+    await fetchAll();
+  }, [fetchAll]);
+
+  const addVale = useCallback(async (v: Omit<Vale, 'id'>) => {
+    const { error } = await supabase.from('vales').insert(v);
+    if (error) { toast.error('Erro ao salvar'); throw error; }
+    await fetchAll();
+  }, [fetchAll]);
+
+  const removeVale = useCallback(async (id: string) => {
+    const { error } = await supabase.from('vales').delete().eq('id', id);
+    if (error) { toast.error('Erro ao remover'); return; }
+    await fetchAll();
+  }, [fetchAll]);
+
+  const addCategory = useCallback(async (name: string) => {
+    const { error } = await supabase.from('categories').insert({ name });
+    if (error) { toast.error('Categoria já existe ou erro'); return; }
+    await fetchAll();
+  }, [fetchAll]);
+
+  const removeCategory = useCallback(async (id: string) => {
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    if (error) { toast.error('Erro ao remover'); return; }
+    await fetchAll();
+  }, [fetchAll]);
 
   const getMonthTransactions = useCallback((month: number, year: number) => {
     return transactions.filter(t => {
-      const d = new Date(t.date);
+      const d = new Date(t.transaction_date + 'T12:00:00');
       return d.getMonth() === month && d.getFullYear() === year;
     });
   }, [transactions]);
 
   const getMonthlyClosing = useCallback((month: number, year: number): MonthlyClosing => {
     const monthTx = getMonthTransactions(month, year);
-    const totalRevenue = monthTx.filter(t => t.type === 'entrada').reduce((s, t) => s + t.amount, 0);
-    const totalExpenses = monthTx.filter(t => t.type === 'saida').reduce((s, t) => s + t.amount, 0);
+    const totalRevenue = monthTx.filter(t => t.type === 'entrada').reduce((s, t) => s + Number(t.amount), 0);
+    const totalExpenses = monthTx.filter(t => t.type === 'saida').reduce((s, t) => s + Number(t.amount), 0);
 
     const activeEmployees = employees.filter(e => e.status === 'ativo');
     const employeeDetails: EmployeeClosing[] = activeEmployees.map(emp => {
-      const monthAttendance = attendance.filter(a => {
-        const d = new Date(a.date);
-        return a.employeeId === emp.id && d.getMonth() === month && d.getFullYear() === year;
+      const monthAtt = attendance.filter(a => {
+        const d = new Date(a.presence_date + 'T12:00:00');
+        return a.employee_id === emp.id && d.getMonth() === month && d.getFullYear() === year;
       });
-      const absences = monthAttendance.filter(a => a.status === 'falta').length;
-      const halfDays = monthAttendance.filter(a => a.status === 'meio-periodo').length;
-      const dailyRate = emp.salary / 30;
+      const absences = monthAtt.filter(a => a.status === 'falta').length;
+      const halfDays = monthAtt.filter(a => a.status === 'meio-periodo').length;
+      const dailyRate = Number(emp.salary) / 30;
       const absenceDiscount = (absences * dailyRate) + (halfDays * dailyRate * 0.5);
       const empVales = vales.filter(v => {
-        const d = new Date(v.date);
-        return v.employeeId === emp.id && d.getMonth() === month && d.getFullYear() === year;
+        const d = new Date(v.vale_date + 'T12:00:00');
+        return v.employee_id === emp.id && d.getMonth() === month && d.getFullYear() === year;
       });
-      const valesTotal = empVales.reduce((s, v) => s + v.amount, 0);
-      const finalSalary = Math.max(0, emp.salary - absenceDiscount - valesTotal);
-      return {
-        employeeId: emp.id,
-        employeeName: emp.name,
-        baseSalary: emp.salary,
-        absences,
-        halfDays,
-        absenceDiscount,
-        valesTotal,
-        finalSalary,
-      };
+      const valesTotal = empVales.reduce((s, v) => s + Number(v.amount), 0);
+      const finalSalary = Math.max(0, Number(emp.salary) - absenceDiscount - valesTotal);
+      return { employeeId: emp.id, employeeName: emp.name, baseSalary: Number(emp.salary), absences, halfDays, absenceDiscount, valesTotal, finalSalary };
     });
 
     const totalSalaries = employeeDetails.reduce((s, e) => s + e.finalSalary, 0);
@@ -141,10 +244,10 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <FinanceContext.Provider value={{
-      transactions, employees, attendance, vales, categories,
+      transactions, employees, attendance, vales, categories, loading,
       addTransaction, removeTransaction, addEmployee, updateEmployee, removeEmployee,
-      addAttendance, updateAttendance, addVale, removeVale,
-      addCategory, removeCategory, getMonthlyClosing, getMonthTransactions,
+      addAttendance, addVale, removeVale, addCategory, removeCategory,
+      getMonthlyClosing, getMonthTransactions, refreshData: fetchAll,
     }}>
       {children}
     </FinanceContext.Provider>
