@@ -1,5 +1,6 @@
 import { useFinance } from '@/contexts/FinanceContext';
 import { getCurrentMonth, getCurrentYear, getMonthName, getDaysInMonth } from '@/lib/formatters';
+import { ClipboardCheck } from 'lucide-react';
 
 type AttendanceStatus = 'presente' | 'falta' | 'meio-periodo';
 
@@ -39,33 +40,44 @@ export default function PresencaPage() {
 
   return (
     <div>
-      <h1 className="page-title mb-1">Controle de Presença</h1>
-      <p className="text-muted-foreground text-sm mb-6">{getMonthName(month)} de {year} — Clique para alternar: P (Presente) / F (Falta) / ½ (Meio Período)</p>
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <ClipboardCheck size={22} className="text-primary" />
+        </div>
+        <div>
+          <h1 className="page-title">Controle de Presença</h1>
+          <p className="text-muted-foreground text-xs">{getMonthName(month)} de {year} — Clique para alternar: P / F / ½</p>
+        </div>
+      </div>
+
+      <div className="h-6" />
 
       {activeEmployees.length === 0 ? (
-        <div className="metric-card text-center py-8 text-muted-foreground">Cadastre funcionários primeiro</div>
+        <div className="metric-card text-center py-12 text-muted-foreground">
+          Cadastre funcionários primeiro
+        </div>
       ) : (
         <div className="metric-card overflow-x-auto">
           <table className="text-xs w-full">
             <thead>
               <tr className="border-b">
-                <th className="pb-2 text-left font-medium text-muted-foreground sticky left-0 bg-card min-w-[120px]">Funcionário</th>
+                <th className="pb-3 text-left font-medium text-muted-foreground sticky left-0 bg-card min-w-[130px] text-xs">Funcionário</th>
                 {days.map(d => (
-                  <th key={d} className="pb-2 text-center font-medium text-muted-foreground w-8">{d}</th>
+                  <th key={d} className="pb-3 text-center font-medium text-muted-foreground w-8">{d}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {activeEmployees.map(emp => (
-                <tr key={emp.id} className="border-b border-muted/50">
-                  <td className="py-1.5 font-medium sticky left-0 bg-card">{emp.name}</td>
+                <tr key={emp.id} className="border-b border-muted/40">
+                  <td className="py-2 font-medium sticky left-0 bg-card">{emp.name}</td>
                   {days.map(d => {
                     const status = getStatus(emp.id, d);
                     return (
-                      <td key={d} className="py-1.5 text-center">
+                      <td key={d} className="py-2 text-center">
                         <button
                           onClick={() => cycleStatus(emp.id, d)}
-                          className={`w-7 h-7 rounded text-[10px] font-bold border transition-colors ${status ? statusColors[status] : 'bg-muted/30 text-muted-foreground/40 border-transparent hover:bg-muted'}`}
+                          className={`w-7 h-7 rounded-lg text-[10px] font-bold border transition-all duration-150 hover:scale-110 ${status ? statusColors[status] : 'bg-muted/20 text-muted-foreground/30 border-transparent hover:bg-muted/50'}`}
                         >
                           {status ? statusLabels[status] : '·'}
                         </button>

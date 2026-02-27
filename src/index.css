@@ -6,59 +6,54 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 25% 12%;
+    --background: 225 25% 97%;
+    --foreground: 225 30% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 12%;
+    --card-foreground: 225 30% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 12%;
+    --popover-foreground: 225 30% 12%;
 
-    --primary: 220 70% 45%;
+    --primary: 225 65% 48%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 60% 45%;
+    --secondary: 155 55% 42%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 15% 93%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 225 15% 93%;
+    --muted-foreground: 225 12% 50%;
 
-    --accent: 220 30% 92%;
-    --accent-foreground: 220 70% 45%;
+    --accent: 225 30% 93%;
+    --accent-foreground: 225 65% 48%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 160 60% 40%;
+    --success: 155 55% 38%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 38 90% 50%;
+    --warning-foreground: 38 90% 15%;
 
-    --info: 220 90% 56%;
+    --info: 210 95% 55%;
     --info-foreground: 0 0% 100%;
 
-    --border: 220 15% 90%;
-    --input: 220 15% 90%;
-    --ring: 220 70% 45%;
+    --border: 225 18% 90%;
+    --input: 225 18% 88%;
+    --ring: 225 65% 48%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 220 25% 12%;
-    --sidebar-foreground: 220 15% 80%;
-    --sidebar-primary: 160 60% 50%;
+    --sidebar-background: 225 30% 10%;
+    --sidebar-foreground: 225 15% 75%;
+    --sidebar-primary: 155 55% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 20%;
-    --sidebar-accent-foreground: 220 15% 92%;
-    --sidebar-border: 220 20% 20%;
-    --sidebar-ring: 160 60% 50%;
-    --sidebar-muted: 220 20% 28%;
-
-    --gradient-primary: linear-gradient(135deg, hsl(220, 70%, 45%), hsl(260, 60%, 55%));
-    --gradient-success: linear-gradient(135deg, hsl(160, 60%, 40%), hsl(140, 50%, 50%));
-    --gradient-danger: linear-gradient(135deg, hsl(0, 72%, 51%), hsl(20, 80%, 55%));
-    --gradient-info: linear-gradient(135deg, hsl(220, 90%, 56%), hsl(200, 80%, 50%));
+    --sidebar-accent: 225 25% 18%;
+    --sidebar-accent-foreground: 225 15% 92%;
+    --sidebar-border: 225 25% 18%;
+    --sidebar-ring: 155 55% 50%;
+    --sidebar-muted: 225 20% 28%;
   }
 }
 
@@ -71,15 +66,19 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Plus Jakarta Sans', sans-serif;
   }
+
+  h1, h2, h3 {
+    font-family: 'Space Grotesk', sans-serif;
+  }
 }
 
 @layer utilities {
   .metric-card {
-    @apply bg-card rounded-xl border p-5 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+    @apply bg-card rounded-2xl border p-6 transition-all duration-300 shadow-sm hover:shadow-md;
   }
 
   .sidebar-item {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200;
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200;
   }
 
   .sidebar-item-active {
@@ -100,11 +99,22 @@
   }
 
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm rounded-xl border p-5 shadow-sm;
+    @apply bg-card/70 backdrop-blur-lg rounded-2xl border p-6 shadow-sm;
   }
 
-  .gradient-text {
-    @apply bg-clip-text text-transparent;
-    background-image: var(--gradient-primary);
+  .badge-success {
+    @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-success/10 text-success;
+  }
+
+  .badge-danger {
+    @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-destructive/10 text-destructive;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-warning/10 text-warning;
+  }
+
+  .badge-info {
+    @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-info/10 text-info;
   }
 }
