@@ -15,45 +15,95 @@ serve(async (req) => {
 
     let systemPrompt = "";
     let userPrompt = "";
+    let shouldStream = true;
 
-    if (type === "daily") {
-      systemPrompt = `Você é um analista financeiro especializado em negócios de churrasqueiras rotativas (Espetos & Cia).
-Analise os dados financeiros do dia fornecidos e gere um relatório conciso com:
-1. Resumo das entradas e saídas do dia
-2. Observações sobre os gastos
-3. Alertas se houver gastos atípicos
-4. Sugestão rápida para o dia seguinte
-Tom: profissional, direto, focado em números. Responda em português brasileiro com formatação markdown.`;
-      userPrompt = `Dados financeiros do dia:\n${JSON.stringify(financialData, null, 2)}`;
+    if (type === "chat") {
+      systemPrompt = `Você é o consultor financeiro IA da Espetos & Cia, empresa que fabrica churrasqueiras rotativas sob medida.
+Você tem acesso completo aos dados financeiros da empresa e deve responder de forma estratégica, sempre buscando maximizar o retorno financeiro.
+
+DADOS FINANCEIROS ATUAIS:
+${JSON.stringify({
+  faturamento: financialData.closing?.totalRevenue,
+  despesas: financialData.closing?.totalExpenses,
+  lucroLiquido: financialData.closing?.netProfit,
+  margem: financialData.closing?.margin,
+  categorias: financialData.categoryBreakdown,
+  produtos: financialData.products,
+  funcionarios: financialData.employeeCount,
+}, null, 2)}
+
+REGRAS:
+- Sempre use valores em R$ e percentuais concretos
+- Seja direto e estratégico
+- Sugira ações práticas para aumentar lucro
+- Se perguntarem sobre preço, calcule com margem mínima de 30%
+- Analise custos de matéria-prima e sugira otimizações
+- Compare margens entre produtos e destaque os mais rentáveis
+- Identifique desperdícios e oportunidades
+- Responda em português brasileiro com markdown`;
+
+      const chatHistory = financialData.chatHistory || [];
+      const messages = [
+        { role: "system", content: systemPrompt },
+        ...chatHistory.map((m: any) => ({ role: m.role, content: m.content })),
+      ];
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages,
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        return handleAIError(response);
+      }
+
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+
+    } else if (type === "daily") {
+      systemPrompt = `Você é um analista financeiro da Espetos & Cia (churrasqueiras rotativas sob medida).
+Analise os dados do dia e gere um relatório conciso:
+1. Resumo das entradas e saídas
+2. Observações sobre gastos
+3. Alertas de gastos atípicos
+4. Sugestão para o dia seguinte
+Tom: profissional, direto. Português brasileiro com markdown.`;
+      userPrompt = `Dados do dia:\n${JSON.stringify(financialData, null, 2)}`;
     } else if (type === "monthly") {
-      systemPrompt = `Você é um consultor financeiro sênior especializado em empresas de churrasqueiras rotativas (Espetos & Cia).
-Gere um relatório estratégico mensal completo com:
-1. **Diagnóstico Financeiro**: análise detalhada de receitas, despesas e lucro
-2. **Análise de Custos de Produção por Produto**: para cada produto/modelo de churrasqueira, calcule custo total de produção, margem de lucro por unidade, e se o preço de venda está adequado
-3. **Análise de Matéria-Prima**: compare os custos de materiais pagos com os preços de mercado. Se estiver pagando mais caro, INFORME EXATAMENTE quanto deve subir o preço do produto para manter a margem desejada (mínimo 30%)
-4. **Identificação de Desperdícios**: aponte onde há gastos excessivos com valores concretos
-5. **Alertas Críticos**: situações que precisam de atenção imediata
-6. **Sugestões de Precificação**: se algum produto tem margem abaixo de 30%, calcule exatamente o novo preço de venda necessário
-7. **Sugestões Estratégicas**: ações concretas para aumentar margem de lucro
-8. **Projeção**: com base na tendência, projete o próximo mês
+      systemPrompt = `Você é um consultor financeiro sênior da Espetos & Cia (churrasqueiras rotativas sob medida).
+Gere um relatório estratégico mensal:
+1. **Diagnóstico Financeiro**: receitas, despesas, lucro detalhado
+2. **Análise por Produto**: custo total, margem por modelo de churrasqueira, se o preço está adequado
+3. **Análise de Matéria-Prima**: se custos estão altos, informe EXATAMENTE quanto subir no preço para manter margem ≥30%
+4. **Desperdícios**: gastos excessivos com valores concretos
+5. **Alertas Críticos**: situações urgentes
+6. **Precificação**: para margem <30%, calcule o novo preço necessário
+7. **Estratégias**: ações concretas para aumentar lucro
+8. **Projeção**: tendência para o próximo mês
 
-IMPORTANTE: Use dados concretos com valores em R$, percentuais e comparações específicas. 
-Se os dados de produtos estiverem disponíveis, calcule a margem de contribuição de cada um e sugira ajustes de preço quando necessário.
-Tom: profissional, analítico, direto. Responda em português brasileiro com formatação markdown.`;
-      userPrompt = `Dados financeiros do mês:\n${JSON.stringify(financialData, null, 2)}`;
+Use dados concretos em R$ e %. Português brasileiro com markdown.`;
+      userPrompt = `Dados do mês:\n${JSON.stringify(financialData, null, 2)}`;
     } else {
-      // NLP transaction parsing
+      // NLP parsing
+      shouldStream = false;
       systemPrompt = `Você é um assistente financeiro da Espetos & Cia (churrasqueiras rotativas).
-O usuário vai enviar uma mensagem descrevendo uma movimentação financeira.
-Extraia as informações e retorne APENAS um JSON válido com:
+Extraia informações da mensagem e retorne APENAS JSON:
 {
-  "description": "descrição da movimentação",
-  "amount": número (valor em reais),
+  "description": "descrição",
+  "amount": número,
   "type": "entrada" ou "saida",
-  "category": "uma dessas categorias: Alimentação, Bebidas, Carne, Funcionários, Energia, Água, Aluguel, Manutenção, Materiais, Vendas, Outros",
+  "category": "Materiais, Aço, Mão de Obra, Energia, Aluguel, Manutenção, Vendas, Transporte, Alimentação, Outros",
   "payment_method": "Dinheiro, Pix, Cartão, Transferência ou Não especificado"
-}
-Não inclua nenhum texto antes ou depois do JSON.`;
+}`;
       userPrompt = financialData.message;
     }
 
@@ -69,39 +119,23 @@ Não inclua nenhum texto antes ou depois do JSON.`;
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        stream: type === "monthly" || type === "daily",
+        stream: shouldStream,
       }),
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos insuficientes. Adicione créditos ao workspace." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return handleAIError(response);
     }
 
-    if (type === "monthly" || type === "daily") {
+    if (shouldStream) {
       return new Response(response.body, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
 
-    // For NLP parsing, return JSON directly
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
     
-    // Try to parse the JSON from the AI response
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
@@ -109,7 +143,7 @@ Não inclua nenhum texto antes ou depois do JSON.`;
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch {
-      return new Response(JSON.stringify({ error: "Não consegui interpretar a mensagem", raw: content }), {
+      return new Response(JSON.stringify({ error: "Não consegui interpretar", raw: content }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -120,3 +154,26 @@ Não inclua nenhum texto antes ou depois do JSON.`;
     });
   }
 });
+
+async function handleAIError(response: Response) {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+
+  if (response.status === 429) {
+    return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }), {
+      status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  if (response.status === 402) {
+    return new Response(JSON.stringify({ error: "Créditos insuficientes. Adicione créditos ao workspace." }), {
+      status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const t = await response.text();
+  console.error("AI error:", response.status, t);
+  return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
+    status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
