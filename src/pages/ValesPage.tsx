@@ -13,19 +13,21 @@ export default function ValesPage() {
   const year = getCurrentYear();
   const activeEmployees = employees.filter(e => e.status === 'ativo');
 
-  const [form, setForm] = useState({ employeeId: '', date: new Date().toISOString().slice(0, 10), amount: '', description: '' });
+  const [form, setForm] = useState({ employee_id: '', vale_date: new Date().toISOString().slice(0, 10), amount: '', description: '' });
 
   const monthVales = vales.filter(v => {
-    const d = new Date(v.date);
+    const d = new Date(v.vale_date + 'T12:00:00');
     return d.getMonth() === month && d.getFullYear() === year;
   });
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.employeeId || !form.amount) { toast.error('Preencha todos os campos'); return; }
-    addVale({ employeeId: form.employeeId, date: form.date, amount: parseFloat(form.amount), description: form.description });
-    setForm({ ...form, amount: '', description: '' });
-    toast.success('Vale registrado');
+    if (!form.employee_id || !form.amount) { toast.error('Preencha todos os campos'); return; }
+    try {
+      await addVale({ employee_id: form.employee_id, vale_date: form.vale_date, amount: parseFloat(form.amount), description: form.description });
+      setForm({ ...form, amount: '', description: '' });
+      toast.success('Vale registrado');
+    } catch { /* handled */ }
   };
 
   const getEmpName = (id: string) => employees.find(e => e.id === id)?.name || 'Desconhecido';
@@ -38,11 +40,11 @@ export default function ValesPage() {
       <div className="metric-card mb-6">
         <h3 className="section-label mb-3">Registrar Vale</h3>
         <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <Select value={form.employeeId} onValueChange={v => setForm({ ...form, employeeId: v })}>
+          <Select value={form.employee_id} onValueChange={v => setForm({ ...form, employee_id: v })}>
             <SelectTrigger><SelectValue placeholder="Funcionário" /></SelectTrigger>
             <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
           </Select>
-          <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+          <Input type="date" value={form.vale_date} onChange={e => setForm({ ...form, vale_date: e.target.value })} />
           <Input type="number" step="0.01" placeholder="Valor" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
           <Input placeholder="Descrição (opcional)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
           <Button type="submit"><Plus size={16} className="mr-1" /> Registrar</Button>
@@ -67,10 +69,10 @@ export default function ValesPage() {
             )}
             {monthVales.map(v => (
               <tr key={v.id} className="border-b border-muted/50 hover:bg-muted/30">
-                <td className="py-2 font-medium">{getEmpName(v.employeeId)}</td>
-                <td className="py-2">{new Date(v.date).toLocaleDateString('pt-BR')}</td>
+                <td className="py-2 font-medium">{getEmpName(v.employee_id)}</td>
+                <td className="py-2">{new Date(v.vale_date + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
                 <td className="py-2 text-muted-foreground">{v.description || '—'}</td>
-                <td className="py-2 text-right font-mono font-medium">{formatCurrency(v.amount)}</td>
+                <td className="py-2 text-right font-mono font-medium">{formatCurrency(Number(v.amount))}</td>
                 <td className="py-2 text-right">
                   <button onClick={() => removeVale(v.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
                 </td>

@@ -1,74 +1,92 @@
 import { useState } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { getCurrentMonth, getCurrentYear, getMonthName, formatCurrency } from '@/lib/formatters';
-import { Transaction } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus, MessageSquare } from 'lucide-react';
+import { Trash2, Plus, MessageSquare, Search, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import MetricCard from '@/components/MetricCard';
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function FinanceiroPage() {
   const { transactions, categories, addTransaction, removeTransaction, addCategory, removeCategory, getMonthTransactions } = useFinance();
-  const month = getCurrentMonth();
-  const year = getCurrentYear();
-  const monthTx = getMonthTransactions(month, year);
+  const { user } = useAuth();
 
-  const totalIn = monthTx.filter(t => t.type === 'entrada').reduce((s, t) => s + t.amount, 0);
-  const totalOut = monthTx.filter(t => t.type === 'saida').reduce((s, t) => s + t.amount, 0);
+  // Filters
+  const [filterMonth, setFilterMonth] = useState(getCurrentMonth());
+  const [filterYear, setFilterYear] = useState(getCurrentYear());
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<'todos' | 'entrada' | 'saida'>('todos');
 
-  const [form, setForm] = useState({ date: new Date().toISOString().slice(0, 10), description: '', category: '', type: 'saida' as 'entrada' | 'saida', amount: '', paymentMethod: 'Dinheiro' });
+  const monthTx = getMonthTransactions(filterMonth, filterYear);
+  const filteredTx = monthTx.filter(t => {
+    const matchesSearch = !searchTerm || t.description.toLowerCase().includes(searchTerm.toLowerCase()) || (t.category_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = filterType === 'todos' || t.type === filterType;
+    return matchesSearch && matchesType;
+  });
+
+  const totalIn = monthTx.filter(t => t.type === 'entrada').reduce((s, t) => s + Number(t.amount), 0);
+  const totalOut = monthTx.filter(t => t.type === 'saida').reduce((s, t) => s + Number(t.amount), 0);
+
+  const [form, setForm] = useState({ transaction_date: new Date().toISOString().slice(0, 10), description: '', category_id: '', type: 'saida' as 'entrada' | 'saida', amount: '', payment_method: 'Dinheiro' });
   const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
   const [newCat, setNewCat] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.description || !form.category || !form.amount) { toast.error('Preencha todos os campos'); return; }
-    addTransaction({ ...form, amount: parseFloat(form.amount) });
-    setForm({ ...form, description: '', amount: '' });
-    toast.success('Movimentação registrada');
+    if (!form.description || !form.category_id || !form.amount) { toast.error('Preencha todos os campos'); return; }
+    try {
+      await addTransaction({ ...form, amount: parseFloat(form.amount), category_id: form.category_id || null });
+      setForm({ ...form, description: '', amount: '' });
+      toast.success('Movimentação registrada');
+    } catch { /* error handled in context */ }
   };
 
-  const handleAI = () => {
-    if (!aiInput.trim()) return;
-    const text = aiInput.toLowerCase();
-    // Simple NLP parser
-    const valueMatch = text.match(/(\d+[\.,]?\d*)/);
-    if (!valueMatch) { toast.error('Não encontrei um valor na mensagem'); return; }
-    const amount = parseFloat(valueMatch[1].replace(',', '.'));
+  const handleAI = async () => {
+    if (!aiInput.trim() || !user) return;
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-report', {
+        body: { financialData: { message: aiInput }, type: 'parse' },
+      });
+      if (error) throw error;
+      if (data.error) { toast.error(data.error); setAiLoading(false); return; }
 
-    const isEntry = /entrou|receb|vend|faturou|ganhou|receita/.test(text);
-    const type: 'entrada' | 'saida' = isEntry ? 'entrada' : 'saida';
+      const result = data.result;
+      if (!result) { toast.error('Não consegui interpretar a mensagem'); setAiLoading(false); return; }
 
-    let category = 'Outros';
-    if (/carne|picanha|alcatra|frango|proteina/.test(text)) category = 'Carne';
-    else if (/bebida|cerveja|refri|suco|água mineral/.test(text)) category = 'Bebidas';
-    else if (/energia|luz|eletric/.test(text)) category = 'Energia';
-    else if (/água|saneamento/.test(text)) category = 'Água';
-    else if (/aluguel|locação/.test(text)) category = 'Aluguel';
-    else if (/funcionário|salário/.test(text)) category = 'Funcionários';
-    else if (/manutenção|conserto|reparo/.test(text)) category = 'Manutenção';
-    else if (/material|descartável|embalagem/.test(text)) category = 'Materiais';
-    else if (/vend|fatur/.test(text)) category = 'Vendas';
+      // Find category by name
+      const cat = categories.find(c => c.name.toLowerCase() === (result.category || '').toLowerCase());
 
-    addTransaction({
-      date: new Date().toISOString().slice(0, 10),
-      description: aiInput.trim(),
-      category,
-      type,
-      amount,
-      paymentMethod: 'Não especificado',
-    });
-    setAiInput('');
-    toast.success(`IA registrou: ${type === 'entrada' ? 'Entrada' : 'Saída'} de ${formatCurrency(amount)} em ${category}`);
+      await addTransaction({
+        transaction_date: new Date().toISOString().slice(0, 10),
+        description: result.description || aiInput,
+        category_id: cat?.id || null,
+        type: result.type || 'saida',
+        amount: result.amount || 0,
+        payment_method: result.payment_method || 'Não especificado',
+      });
+
+      setAiInput('');
+      toast.success(`IA registrou: ${result.type === 'entrada' ? 'Entrada' : 'Saída'} de ${formatCurrency(result.amount)} em ${result.category}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao processar com IA');
+    } finally {
+      setAiLoading(false);
+    }
   };
+
+  const months = Array.from({ length: 12 }, (_, i) => i);
+  const years = [getCurrentYear() - 1, getCurrentYear(), getCurrentYear() + 1];
 
   return (
     <div>
       <h1 className="page-title mb-1">Financeiro</h1>
-      <p className="text-muted-foreground text-sm mb-6">{getMonthName(month)} de {year}</p>
+      <p className="text-muted-foreground text-sm mb-6">{getMonthName(filterMonth)} de {filterYear}</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <MetricCard label="Entradas" value={totalIn} icon={TrendingUp} variant="success" />
@@ -78,7 +96,7 @@ export default function FinanceiroPage() {
 
       {/* AI Input */}
       <div className="metric-card mb-6">
-        <h3 className="section-label mb-3 flex items-center gap-2"><MessageSquare size={14} /> Registrar movimentação por mensagem</h3>
+        <h3 className="section-label mb-3 flex items-center gap-2"><MessageSquare size={14} /> Registrar movimentação por mensagem (IA)</h3>
         <div className="flex gap-2">
           <Input
             placeholder='Ex: "Comprei 800 reais de carne" ou "Entrou 5200 no caixa"'
@@ -86,8 +104,11 @@ export default function FinanceiroPage() {
             onChange={e => setAiInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAI()}
             className="flex-1"
+            disabled={aiLoading}
           />
-          <Button onClick={handleAI} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">Registrar</Button>
+          <Button onClick={handleAI} disabled={aiLoading} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+            {aiLoading ? 'Processando...' : 'Registrar'}
+          </Button>
         </div>
       </div>
 
@@ -95,11 +116,11 @@ export default function FinanceiroPage() {
       <div className="metric-card mb-6">
         <h3 className="section-label mb-3">Nova Movimentação</h3>
         <form onSubmit={handleSubmit} className="grid grid-cols-2 md:grid-cols-6 gap-3">
-          <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+          <Input type="date" value={form.transaction_date} onChange={e => setForm({ ...form, transaction_date: e.target.value })} />
           <Input placeholder="Descrição" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-          <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+          <Select value={form.category_id} onValueChange={v => setForm({ ...form, category_id: v })}>
             <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
-            <SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            <SelectContent>{categories.filter(c => c.is_active).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
           </Select>
           <Select value={form.type} onValueChange={(v: 'entrada' | 'saida') => setForm({ ...form, type: v })}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -118,9 +139,9 @@ export default function FinanceiroPage() {
         <h3 className="section-label mb-3">Categorias</h3>
         <div className="flex gap-2 flex-wrap mb-2">
           {categories.map(c => (
-            <span key={c} className="inline-flex items-center gap-1 bg-muted text-muted-foreground text-xs px-2.5 py-1 rounded-full">
-              {c}
-              <button onClick={() => removeCategory(c)} className="hover:text-destructive"><Trash2 size={12} /></button>
+            <span key={c.id} className="inline-flex items-center gap-1 bg-muted text-muted-foreground text-xs px-2.5 py-1 rounded-full">
+              {c.name}
+              <button onClick={() => removeCategory(c.id)} className="hover:text-destructive"><Trash2 size={12} /></button>
             </span>
           ))}
         </div>
@@ -130,9 +151,36 @@ export default function FinanceiroPage() {
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="metric-card mb-6">
+        <h3 className="section-label mb-3 flex items-center gap-2"><Filter size={14} /> Filtros</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Select value={String(filterMonth)} onValueChange={v => setFilterMonth(Number(v))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{months.map(m => <SelectItem key={m} value={String(m)}>{getMonthName(m)}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={String(filterYear)} onValueChange={v => setFilterYear(Number(v))}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={filterType} onValueChange={(v: 'todos' | 'entrada' | 'saida') => setFilterType(v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="entrada">Entradas</SelectItem>
+              <SelectItem value="saida">Saídas</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
+          </div>
+        </div>
+      </div>
+
       {/* Transactions table */}
       <div className="metric-card">
-        <h3 className="section-label mb-3">Movimentações do Mês</h3>
+        <h3 className="section-label mb-3">Movimentações ({filteredTx.length})</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -146,20 +194,20 @@ export default function FinanceiroPage() {
               </tr>
             </thead>
             <tbody>
-              {monthTx.length === 0 && (
+              {filteredTx.length === 0 && (
                 <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma movimentação</td></tr>
               )}
-              {monthTx.map(t => (
+              {filteredTx.map(t => (
                 <tr key={t.id} className="border-b border-muted/50 hover:bg-muted/30">
-                  <td className="py-2">{new Date(t.date).toLocaleDateString('pt-BR')}</td>
+                  <td className="py-2">{new Date(t.transaction_date + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
                   <td className="py-2">{t.description}</td>
-                  <td className="py-2"><span className="bg-muted text-xs px-2 py-0.5 rounded">{t.category}</span></td>
+                  <td className="py-2"><span className="bg-muted text-xs px-2 py-0.5 rounded">{t.category_name || 'Sem categoria'}</span></td>
                   <td className="py-2">
                     <span className={t.type === 'entrada' ? 'text-success font-medium' : 'text-destructive font-medium'}>
                       {t.type === 'entrada' ? 'Entrada' : 'Saída'}
                     </span>
                   </td>
-                  <td className="py-2 text-right font-mono font-medium">{formatCurrency(t.amount)}</td>
+                  <td className="py-2 text-right font-mono font-medium">{formatCurrency(Number(t.amount))}</td>
                   <td className="py-2 text-right">
                     <button onClick={() => removeTransaction(t.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
                   </td>

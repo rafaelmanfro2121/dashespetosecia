@@ -1,37 +1,38 @@
 import { useFinance } from '@/contexts/FinanceContext';
 import { getCurrentMonth, getCurrentYear, getMonthName, formatCurrency, formatPercent } from '@/lib/formatters';
 import MetricCard from '@/components/MetricCard';
-import {
-  TrendingUp, TrendingDown, DollarSign, Users, Banknote, Target, Percent
-} from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
-} from 'recharts';
+import { TrendingUp, TrendingDown, DollarSign, Users, Banknote, Target, Percent, Loader2 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const COLORS = ['#0d1b2a', '#2ecc71', '#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22'];
 
 export default function DashboardPage() {
-  const { getMonthlyClosing, getMonthTransactions } = useFinance();
+  const { getMonthlyClosing, getMonthTransactions, loading } = useFinance();
   const month = getCurrentMonth();
   const year = getCurrentYear();
   const closing = getMonthlyClosing(month, year);
   const monthTx = getMonthTransactions(month, year);
 
-  // Category distribution for expenses
   const categoryMap: Record<string, number> = {};
   monthTx.filter(t => t.type === 'saida').forEach(t => {
-    categoryMap[t.category] = (categoryMap[t.category] || 0) + t.amount;
+    categoryMap[t.category_name || 'Outros'] = (categoryMap[t.category_name || 'Outros'] || 0) + Number(t.amount);
   });
   const categoryData = Object.entries(categoryMap).map(([name, value]) => ({ name, value }));
 
-  // Bar chart: Entradas vs Saídas
   const barData = [
     { name: 'Entradas', value: closing.totalRevenue },
     { name: 'Saídas', value: closing.totalExpenses },
     { name: 'Salários', value: closing.totalSalaries },
     { name: 'Vales', value: closing.totalVales },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div>

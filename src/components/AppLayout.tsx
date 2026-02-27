@@ -1,9 +1,10 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, DollarSign, Users, ClipboardCheck,
-  Banknote, CalendarCheck, Brain, ChevronLeft, ChevronRight
+  Banknote, CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut
 } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -18,6 +19,7 @@ const navItems = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
     <div className="flex min-h-screen w-full">
@@ -55,8 +57,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         {!collapsed && (
-          <div className="px-4 py-4 border-t border-sidebar-border">
-            <p className="text-xs text-sidebar-foreground/60">Sistema Interno v1.0</p>
+          <div className="px-4 py-4 border-t border-sidebar-border space-y-2">
+            <button onClick={signOut} className="flex items-center gap-2 text-xs text-sidebar-foreground/60 hover:text-sidebar-primary transition-colors w-full">
+              <LogOut size={14} /> Sair
+            </button>
+            <p className="text-xs text-sidebar-foreground/40">Sistema Interno v2.0</p>
           </div>
         )}
       </aside>

@@ -1,7 +1,7 @@
 import { useFinance } from '@/contexts/FinanceContext';
 import { getCurrentMonth, getCurrentYear, getMonthName, getDaysInMonth } from '@/lib/formatters';
-import { AttendanceStatus } from '@/types/finance';
-import { toast } from 'sonner';
+
+type AttendanceStatus = 'presente' | 'falta' | 'meio-periodo';
 
 const statusColors: Record<AttendanceStatus, string> = {
   'presente': 'bg-success/15 text-success border-success/30',
@@ -25,8 +25,8 @@ export default function PresencaPage() {
 
   const getStatus = (empId: string, day: number): AttendanceStatus | null => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const record = attendance.find(a => a.employeeId === empId && a.date === dateStr);
-    return record?.status || null;
+    const record = attendance.find(a => a.employee_id === empId && a.presence_date === dateStr);
+    return (record?.status as AttendanceStatus) || null;
   };
 
   const cycleStatus = (empId: string, day: number) => {
@@ -34,7 +34,7 @@ export default function PresencaPage() {
     const current = getStatus(empId, day);
     const cycle: AttendanceStatus[] = ['presente', 'falta', 'meio-periodo'];
     const nextIdx = current ? (cycle.indexOf(current) + 1) % cycle.length : 0;
-    addAttendance({ employeeId: empId, date: dateStr, status: cycle[nextIdx] });
+    addAttendance({ employee_id: empId, presence_date: dateStr, status: cycle[nextIdx] });
   };
 
   return (
