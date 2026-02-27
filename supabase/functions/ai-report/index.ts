@@ -23,21 +23,23 @@ Analise os dados financeiros do dia fornecidos e gere um relatório conciso com:
 2. Observações sobre os gastos
 3. Alertas se houver gastos atípicos
 4. Sugestão rápida para o dia seguinte
-Tom: profissional, direto, focado em números. Responda em português brasileiro.`;
+Tom: profissional, direto, focado em números. Responda em português brasileiro com formatação markdown.`;
       userPrompt = `Dados financeiros do dia:\n${JSON.stringify(financialData, null, 2)}`;
     } else if (type === "monthly") {
       systemPrompt = `Você é um consultor financeiro sênior especializado em empresas de churrasqueiras rotativas (Espetos & Cia).
 Gere um relatório estratégico mensal completo com:
 1. **Diagnóstico Financeiro**: análise detalhada de receitas, despesas e lucro
-2. **Análise de Custos de Produção**: calcule o custo estimado por churrasqueira com base nos gastos em matéria-prima (carne, materiais, etc.) vs número de vendas/entradas
-3. **Identificação de Desperdícios**: aponte onde há gastos excessivos
-4. **Alertas**: situações que precisam de atenção imediata
-5. **Análise de Matéria-Prima**: compare custos de insumos com o faturamento para calcular margem de contribuição
-6. **Sugestões Estratégicas**: ações concretas para aumentar margem de lucro
-7. **Projeção**: com base na tendência, projete o próximo mês
+2. **Análise de Custos de Produção por Produto**: para cada produto/modelo de churrasqueira, calcule custo total de produção, margem de lucro por unidade, e se o preço de venda está adequado
+3. **Análise de Matéria-Prima**: compare os custos de materiais pagos com os preços de mercado. Se estiver pagando mais caro, INFORME EXATAMENTE quanto deve subir o preço do produto para manter a margem desejada (mínimo 30%)
+4. **Identificação de Desperdícios**: aponte onde há gastos excessivos com valores concretos
+5. **Alertas Críticos**: situações que precisam de atenção imediata
+6. **Sugestões de Precificação**: se algum produto tem margem abaixo de 30%, calcule exatamente o novo preço de venda necessário
+7. **Sugestões Estratégicas**: ações concretas para aumentar margem de lucro
+8. **Projeção**: com base na tendência, projete o próximo mês
 
-Use dados concretos, percentuais e comparações. Tom: profissional, analítico, direto.
-Responda em português brasileiro com formatação markdown.`;
+IMPORTANTE: Use dados concretos com valores em R$, percentuais e comparações específicas. 
+Se os dados de produtos estiverem disponíveis, calcule a margem de contribuição de cada um e sugira ajustes de preço quando necessário.
+Tom: profissional, analítico, direto. Responda em português brasileiro com formatação markdown.`;
       userPrompt = `Dados financeiros do mês:\n${JSON.stringify(financialData, null, 2)}`;
     } else {
       // NLP transaction parsing

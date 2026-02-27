@@ -139,6 +139,45 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          labor_cost: number
+          material_cost: number
+          name: string
+          other_costs: number
+          sale_price: number
+          units_sold: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          labor_cost?: number
+          material_cost?: number
+          name: string
+          other_costs?: number
+          sale_price?: number
+          units_sold?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          labor_cost?: number
+          material_cost?: number
+          name?: string
+          other_costs?: number
+          sale_price?: number
+          units_sold?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

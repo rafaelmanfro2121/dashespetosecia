@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
 import { getCurrentMonth, getCurrentYear, getMonthName, formatCurrency, formatPercent } from '@/lib/formatters';
-import { Brain, Loader2, FileText, Calendar } from 'lucide-react';
+import { Brain, Loader2, FileText, Calendar, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
 
 export default function RelatorioIAPage() {
   const { getMonthlyClosing, getMonthTransactions, employees, categories } = useFinance();
@@ -17,10 +18,17 @@ export default function RelatorioIAPage() {
   const [dailyReport, setDailyReport] = useState('');
   const [loading, setLoading] = useState(false);
   const [dailyLoading, setDailyLoading] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const hasData = monthTx.length > 0;
 
-  // Category analysis
+  useEffect(() => {
+    supabase.from('products').select('*').then(({ data }) => {
+      if (data) setProducts(data);
+    });
+  }, []);
+
   const categoryMap: Record<string, number> = {};
   monthTx.filter(t => t.type === 'saida').forEach(t => {
     categoryMap[t.category_name || 'Outros'] = (categoryMap[t.category_name || 'Outros'] || 0) + Number(t.amount);
@@ -52,6 +60,16 @@ export default function RelatorioIAPage() {
         transactionCount: monthTx.length,
         entriesCount: monthTx.filter(t => t.type === 'entrada').length,
         exitsCount: monthTx.filter(t => t.type === 'saida').length,
+        products: products.map(p => ({
+          name: p.name,
+          salePrice: Number(p.sale_price),
+          materialCost: Number(p.material_cost),
+          laborCost: Number(p.labor_cost),
+          otherCosts: Number(p.other_costs),
+          totalCost: Number(p.material_cost) + Number(p.labor_cost) + Number(p.other_costs),
+          margin: Number(p.sale_price) > 0 ? ((Number(p.sale_price) - Number(p.material_cost) - Number(p.labor_cost) - Number(p.other_costs)) / Number(p.sale_price) * 100) : 0,
+          unitsSold: Number(p.units_sold),
+        })),
       };
     }
 
@@ -109,11 +127,49 @@ export default function RelatorioIAPage() {
     }
   };
 
+  const exportPDF = async () => {
+    if (!reportRef.current) return;
+    toast.info('Gerando PDF...');
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const jsPDF = (await import('jspdf')).default;
+      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      // Handle multi-page
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let position = 0;
+      if (pdfHeight <= pageHeight) {
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      } else {
+        while (position < pdfHeight) {
+          if (position > 0) pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, -position, pdfWidth, pdfHeight);
+          position += pageHeight;
+        }
+      }
+      pdf.save(`relatorio_ia_${getMonthName(month)}_${year}.pdf`);
+      toast.success('PDF gerado!');
+    } catch {
+      toast.error('Erro ao gerar PDF');
+    }
+  };
+
   return (
     <div>
-      <div className="flex items-center gap-3 mb-1">
-        <Brain size={28} className="text-secondary" />
-        <h1 className="page-title">Relatório Inteligente</h1>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-3">
+          <Brain size={28} className="text-secondary" />
+          <h1 className="page-title">Relatório Inteligente</h1>
+        </div>
+        {(report || dailyReport) && (
+          <Button onClick={exportPDF} variant="outline" size="sm">
+            <Download size={14} className="mr-2" /> Exportar PDF
+          </Button>
+        )}
       </div>
       <p className="text-muted-foreground text-sm mb-6">{getMonthName(month)} de {year} — Powered by Lovable AI</p>
 
@@ -123,8 +179,7 @@ export default function RelatorioIAPage() {
           <p>Registre movimentações financeiras para gerar análises inteligentes.</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* Quick stats */}
+        <div className="space-y-6" ref={reportRef}>
           <div className="metric-card">
             <h3 className="section-label mb-3">📊 Resumo do Mês</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -135,7 +190,6 @@ export default function RelatorioIAPage() {
             </div>
           </div>
 
-          {/* Top expenses */}
           {sortedCategories.length > 0 && (
             <div className="metric-card">
               <h3 className="section-label mb-3">💸 Maiores Despesas por Categoria</h3>
@@ -155,7 +209,6 @@ export default function RelatorioIAPage() {
             </div>
           )}
 
-          {/* AI Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="metric-card">
               <h3 className="section-label mb-3 flex items-center gap-2"><Calendar size={14} /> Relatório do Dia</h3>
@@ -163,8 +216,8 @@ export default function RelatorioIAPage() {
                 {dailyLoading ? <><Loader2 size={16} className="mr-2 animate-spin" /> Gerando...</> : <><Brain size={16} className="mr-2" /> Gerar Relatório do Dia</>}
               </Button>
               {dailyReport && (
-                <div className="prose prose-sm max-w-none text-sm whitespace-pre-wrap bg-muted/30 rounded p-4">
-                  {dailyReport}
+                <div className="prose prose-sm max-w-none text-sm bg-muted/30 rounded p-4">
+                  <ReactMarkdown>{dailyReport}</ReactMarkdown>
                 </div>
               )}
             </div>
@@ -175,8 +228,8 @@ export default function RelatorioIAPage() {
                 {loading ? <><Loader2 size={16} className="mr-2 animate-spin" /> Gerando...</> : <><Brain size={16} className="mr-2" /> Gerar Relatório Mensal</>}
               </Button>
               {report && (
-                <div className="prose prose-sm max-w-none text-sm whitespace-pre-wrap bg-muted/30 rounded p-4">
-                  {report}
+                <div className="prose prose-sm max-w-none text-sm bg-muted/30 rounded p-4">
+                  <ReactMarkdown>{report}</ReactMarkdown>
                 </div>
               )}
             </div>

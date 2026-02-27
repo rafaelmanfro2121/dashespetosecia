@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { LogIn, UserPlus } from 'lucide-react';
+import logoBlack from '@/assets/logo-black.png';
 
 export default function AuthPage() {
   const { signIn, signUp } = useAuth();
@@ -35,8 +36,8 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary tracking-tight">Espetos & Cia</h1>
-          <p className="text-muted-foreground text-sm mt-1">Sistema de Gestão Financeira</p>
+          <img src={logoBlack} alt="Espetos & Cia" className="h-20 mx-auto mb-4 object-contain" />
+          <p className="text-muted-foreground text-sm">Sistema de Gestão Financeira</p>
         </div>
 
         <div className="metric-card">
