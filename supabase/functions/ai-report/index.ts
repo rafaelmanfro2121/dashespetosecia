@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +13,11 @@ serve(async (req) => {
     const { financialData, type } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Handle cost recalculation
+    if (type === "recalculate-costs") {
+      return await handleCostRecalculation(financialData, LOVABLE_API_KEY);
+    }
 
     let systemPrompt = "";
     let userPrompt = "";
@@ -40,6 +46,8 @@ REGRAS:
 - Analise custos de matéria-prima e sugira otimizações
 - Compare margens entre produtos e destaque os mais rentáveis
 - Identifique desperdícios e oportunidades
+- IMPORTANTE: Quando o usuário mencionar compra de material, calcule como isso impacta o custo de produção por unidade
+- Se o custo do material subiu, informe EXATAMENTE quanto deve subir o preço de cada produto afetado para manter margem ≥30%
 - Responda em português brasileiro com markdown`;
 
       const chatHistory = financialData.chatHistory || [];
@@ -61,9 +69,7 @@ REGRAS:
         }),
       });
 
-      if (!response.ok) {
-        return handleAIError(response);
-      }
+      if (!response.ok) return handleAIError(response);
 
       return new Response(response.body, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
@@ -90,20 +96,37 @@ Gere um relatório estratégico mensal:
 7. **Estratégias**: ações concretas para aumentar lucro
 8. **Projeção**: tendência para o próximo mês
 
+IMPORTANTE sobre compras de material:
+- Compare o custo unitário atual com compras anteriores
+- Se o preço do material subiu, calcule o impacto no custo de cada produto
+- Sugira o novo preço de venda para manter margem ≥30%
+- Exemplo: "Inox subiu de R$X para R$Y por chapa. Cada churrasqueira usa Z chapas. Custo adicional: R$W. Novo preço sugerido: R$V"
+
 Use dados concretos em R$ e %. Português brasileiro com markdown.`;
       userPrompt = `Dados do mês:\n${JSON.stringify(financialData, null, 2)}`;
     } else {
-      // NLP parsing
+      // NLP parsing — enhanced to detect material purchases
       shouldStream = false;
       systemPrompt = `Você é um assistente financeiro da Espetos & Cia (churrasqueiras rotativas).
+A empresa compra materiais como: aço inox, chapas, tubos, motores, tintas, parafusos, etc.
+
 Extraia informações da mensagem e retorne APENAS JSON:
 {
   "description": "descrição",
-  "amount": número,
+  "amount": número total gasto,
   "type": "entrada" ou "saida",
   "category": "Materiais, Aço, Mão de Obra, Energia, Aluguel, Manutenção, Vendas, Transporte, Alimentação, Outros",
-  "payment_method": "Dinheiro, Pix, Cartão, Transferência ou Não especificado"
-}`;
+  "payment_method": "Dinheiro, Pix, Cartão, Transferência ou Não especificado",
+  "is_material_purchase": true/false (se é compra de material para produção),
+  "material_name": "nome do material se for compra (ex: 'Chapa de Inox', 'Tubo de Aço')" ou null,
+  "quantity": número de unidades compradas ou null,
+  "unit_price": preço por unidade ou null
+}
+
+Exemplos:
+- "Comprei 5 chapas de inox por 800" → is_material_purchase: true, material_name: "Chapa de Inox", quantity: 5, unit_price: 160, amount: 800
+- "Paguei a conta de luz 350" → is_material_purchase: false
+- "Comprei 10 metros de tubo por 500" → is_material_purchase: true, material_name: "Tubo de Aço", quantity: 10, unit_price: 50, amount: 500`;
       userPrompt = financialData.message;
     }
 
@@ -123,9 +146,7 @@ Extraia informações da mensagem e retorne APENAS JSON:
       }),
     });
 
-    if (!response.ok) {
-      return handleAIError(response);
-    }
+    if (!response.ok) return handleAIError(response);
 
     if (shouldStream) {
       return new Response(response.body, {
@@ -155,12 +176,84 @@ Extraia informações da mensagem e retorne APENAS JSON:
   }
 });
 
-async function handleAIError(response: Response) {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-  };
+async function handleCostRecalculation(financialData: any, apiKey: string) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(supabaseUrl, supabaseKey);
 
+  // Get current products
+  const { data: products } = await sb.from("products").select("*").eq("is_active", true);
+  if (!products || products.length === 0) {
+    return new Response(JSON.stringify({ message: "Nenhum produto para recalcular" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const { materialName, newCost, quantity } = financialData;
+  const unitCost = quantity > 0 ? newCost / quantity : newCost;
+
+  // Ask AI to figure out which products are affected and how to update costs
+  const prompt = `Dado que a empresa comprou "${materialName}" (${quantity} unidades por R$${newCost} total, custo unitário R$${unitCost.toFixed(2)}), analise os produtos abaixo e retorne APENAS um JSON array com os produtos que devem ter o custo de material atualizado.
+
+Produtos atuais:
+${JSON.stringify(products.map(p => ({
+  id: p.id, name: p.name, material_cost: p.material_cost, sale_price: p.sale_price
+})), null, 2)}
+
+Retorne APENAS JSON array (sem texto extra):
+[{"id": "uuid", "new_material_cost": número}]
+
+Regras:
+- Se o material comprado é usado na fabricação de churrasqueiras (aço, inox, chapas, tubos, motores, etc), atualize todos os produtos ativos
+- O novo custo de material deve refletir o custo unitário atualizado
+- Se o material não é relevante para nenhum produto, retorne []`;
+
+  const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: "Você é um assistente de custo de produção. Retorne APENAS JSON válido." },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+
+  if (!aiResponse.ok) {
+    return new Response(JSON.stringify({ error: "Erro ao recalcular custos" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const aiData = await aiResponse.json();
+  const aiContent = aiData.choices?.[0]?.message?.content || "[]";
+  
+  try {
+    const arrayMatch = aiContent.match(/\[[\s\S]*\]/);
+    const updates: Array<{id: string, new_material_cost: number}> = arrayMatch ? JSON.parse(arrayMatch[0]) : [];
+
+    for (const update of updates) {
+      await sb.from("products").update({ material_cost: update.new_material_cost }).eq("id", update.id);
+    }
+
+    return new Response(JSON.stringify({ 
+      message: `${updates.length} produto(s) atualizado(s)`,
+      updates 
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch {
+    return new Response(JSON.stringify({ error: "Erro ao processar recálculo" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+}
+
+async function handleAIError(response: Response) {
   if (response.status === 429) {
     return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns minutos." }), {
       status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
