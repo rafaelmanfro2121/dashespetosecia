@@ -94,6 +94,48 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory: {
+        Row: {
+          cost_per_unit: number
+          created_at: string
+          current_stock: number
+          id: string
+          is_active: boolean
+          last_purchase_date: string | null
+          last_purchase_price: number | null
+          min_stock: number
+          name: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          cost_per_unit?: number
+          created_at?: string
+          current_stock?: number
+          id?: string
+          is_active?: boolean
+          last_purchase_date?: string | null
+          last_purchase_price?: number | null
+          min_stock?: number
+          name: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          cost_per_unit?: number
+          created_at?: string
+          current_stock?: number
+          id?: string
+          is_active?: boolean
+          last_purchase_date?: string | null
+          last_purchase_price?: number | null
+          min_stock?: number
+          name?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       monthly_closings: {
         Row: {
           ai_report: string | null
