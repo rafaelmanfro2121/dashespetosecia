@@ -1,14 +1,16 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, DollarSign, Users, ClipboardCheck,
-  Banknote, CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut
+  Banknote, CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut, Package
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import logoWhite from '@/assets/logo-white.png';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
+  { to: '/produtos', icon: Package, label: 'Produtos' },
   { to: '/funcionarios', icon: Users, label: 'Funcionários' },
   { to: '/presenca', icon: ClipboardCheck, label: 'Presença' },
   { to: '/vales', icon: Banknote, label: 'Vales' },
@@ -26,11 +28,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <aside
         className={`bg-sidebar flex flex-col transition-all duration-200 ${collapsed ? 'w-16' : 'w-60'} shrink-0`}
       >
-        <div className="flex items-center gap-2 px-4 py-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-2 px-4 py-4 border-b border-sidebar-border">
           {!collapsed && (
-            <span className="text-lg font-bold text-sidebar-primary tracking-tight">
-              Espetos & Cia
-            </span>
+            <img src={logoWhite} alt="Espetos & Cia" className="h-10 object-contain" />
           )}
           <button
             onClick={() => setCollapsed(c => !c)}

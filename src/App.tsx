@@ -14,6 +14,7 @@ import PresencaPage from "@/pages/PresencaPage";
 import ValesPage from "@/pages/ValesPage";
 import FechamentoPage from "@/pages/FechamentoPage";
 import RelatorioIAPage from "@/pages/RelatorioIAPage";
+import ProdutosPage from "@/pages/ProdutosPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ function ProtectedRoutes() {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/financeiro" element={<FinanceiroPage />} />
+          <Route path="/produtos" element={<ProdutosPage />} />
           <Route path="/funcionarios" element={<FuncionariosPage />} />
           <Route path="/presenca" element={<PresencaPage />} />
           <Route path="/vales" element={<ValesPage />} />
