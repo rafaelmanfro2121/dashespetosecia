@@ -1,34 +1,85 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCurrentMonth, getCurrentYear, getMonthName, formatCurrency } from '@/lib/formatters';
+import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus, MessageSquare, Search, Filter, DollarSign, Sparkles } from 'lucide-react';
+import { Trash2, Plus, Search, Filter, DollarSign, Sparkles, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import MetricCard from '@/components/MetricCard';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
+  startOfYear, endOfYear, subDays, subWeeks, subMonths, subYears, format, isWithinInterval
+} from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+type Period = 'diario' | 'semanal' | 'mensal' | 'anual';
+
+function getPeriodRange(period: Period, offset: number): { start: Date; end: Date; label: string } {
+  const now = new Date();
+  let ref: Date;
+  let start: Date, end: Date, label: string;
+
+  switch (period) {
+    case 'diario':
+      ref = subDays(now, -offset);
+      start = startOfDay(ref);
+      end = endOfDay(ref);
+      label = format(ref, "dd 'de' MMMM, yyyy", { locale: ptBR });
+      break;
+    case 'semanal':
+      ref = subWeeks(now, -offset);
+      start = startOfWeek(ref, { weekStartsOn: 1 });
+      end = endOfWeek(ref, { weekStartsOn: 1 });
+      label = `${format(start, 'dd/MM')} a ${format(end, 'dd/MM/yyyy')}`;
+      break;
+    case 'mensal':
+      ref = subMonths(now, -offset);
+      start = startOfMonth(ref);
+      end = endOfMonth(ref);
+      label = format(ref, "MMMM 'de' yyyy", { locale: ptBR });
+      break;
+    case 'anual':
+      ref = subYears(now, -offset);
+      start = startOfYear(ref);
+      end = endOfYear(ref);
+      label = format(ref, 'yyyy');
+      break;
+  }
+
+  return { start, end, label };
+}
 
 export default function FinanceiroPage() {
-  const { transactions, categories, addTransaction, removeTransaction, addCategory, removeCategory, getMonthTransactions } = useFinance();
+  const { transactions, categories, addTransaction, removeTransaction, addCategory, removeCategory } = useFinance();
   const { user } = useAuth();
 
-  const [filterMonth, setFilterMonth] = useState(getCurrentMonth());
-  const [filterYear, setFilterYear] = useState(getCurrentYear());
+  const [period, setPeriod] = useState<Period>('diario');
+  const [offset, setOffset] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'todos' | 'entrada' | 'saida'>('todos');
 
-  const monthTx = getMonthTransactions(filterMonth, filterYear);
-  const filteredTx = monthTx.filter(t => {
+  const { start, end, label: periodLabel } = useMemo(() => getPeriodRange(period, offset), [period, offset]);
+
+  const periodTx = useMemo(() =>
+    transactions.filter(t => {
+      const d = new Date(t.transaction_date + 'T12:00:00');
+      return isWithinInterval(d, { start, end });
+    }),
+    [transactions, start, end]
+  );
+
+  const filteredTx = periodTx.filter(t => {
     const matchesSearch = !searchTerm || t.description.toLowerCase().includes(searchTerm.toLowerCase()) || (t.category_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'todos' || t.type === filterType;
     return matchesSearch && matchesType;
   });
 
-  const totalIn = monthTx.filter(t => t.type === 'entrada').reduce((s, t) => s + Number(t.amount), 0);
-  const totalOut = monthTx.filter(t => t.type === 'saida').reduce((s, t) => s + Number(t.amount), 0);
+  const totalIn = periodTx.filter(t => t.type === 'entrada').reduce((s, t) => s + Number(t.amount), 0);
+  const totalOut = periodTx.filter(t => t.type === 'saida').reduce((s, t) => s + Number(t.amount), 0);
 
   const [form, setForm] = useState({ transaction_date: new Date().toISOString().slice(0, 10), description: '', category_id: '', type: 'saida' as 'entrada' | 'saida', amount: '', payment_method: 'Dinheiro' });
   const [aiInput, setAiInput] = useState('');
@@ -69,6 +120,25 @@ export default function FinanceiroPage() {
         payment_method: result.payment_method || 'Não especificado',
       });
 
+      // If it's a material purchase, trigger cost recalculation
+      if (result.is_material_purchase && result.material_name) {
+        try {
+          await supabase.functions.invoke('ai-report', {
+            body: {
+              type: 'recalculate-costs',
+              financialData: {
+                materialName: result.material_name,
+                newCost: result.amount,
+                quantity: result.quantity || 1,
+              },
+            },
+          });
+          toast.info('🔄 Custos dos produtos recalculados com base na nova compra de material');
+        } catch {
+          // Non-critical, don't block
+        }
+      }
+
       setAiInput('');
       toast.success(`IA: ${result.type === 'entrada' ? 'Entrada' : 'Saída'} de ${formatCurrency(result.amount)}`);
     } catch (err: any) {
@@ -78,8 +148,12 @@ export default function FinanceiroPage() {
     }
   };
 
-  const months = Array.from({ length: 12 }, (_, i) => i);
-  const years = [getCurrentYear() - 1, getCurrentYear(), getCurrentYear() + 1];
+  const periodLabels: Record<Period, string> = {
+    diario: 'Diário',
+    semanal: 'Semanal',
+    mensal: 'Mensal',
+    anual: 'Anual',
+  };
 
   return (
     <div>
@@ -89,7 +163,7 @@ export default function FinanceiroPage() {
         </div>
         <div>
           <h1 className="page-title">Financeiro</h1>
-          <p className="text-muted-foreground text-xs">{getMonthName(filterMonth)} de {filterYear}</p>
+          <p className="text-muted-foreground text-xs capitalize">{periodLabel}</p>
         </div>
       </div>
 
@@ -108,9 +182,12 @@ export default function FinanceiroPage() {
           <h3 className="text-sm font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Registro Inteligente</h3>
           <span className="badge-info text-[10px] ml-auto">Powered by IA</span>
         </div>
+        <p className="text-xs text-muted-foreground mb-2">
+          💡 Ao registrar compra de material (ex: "comprei 5 chapas de inox por R$800"), a IA recalcula automaticamente o custo dos produtos.
+        </p>
         <div className="flex gap-2">
           <Input
-            placeholder='Ex: "Comprei 800 reais de aço" ou "Entrou 12.500 da venda de churrasqueira"'
+            placeholder='Ex: "Comprei 5 chapas de inox por 800 reais" ou "Entrou 12.500 da venda de churrasqueira"'
             value={aiInput}
             onChange={e => setAiInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAI()}
@@ -162,21 +239,46 @@ export default function FinanceiroPage() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Period Filters */}
       <div className="metric-card mb-6">
         <div className="flex items-center gap-2 mb-3">
           <Filter size={14} className="text-muted-foreground" />
           <h3 className="text-sm font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Filtros</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Select value={String(filterMonth)} onValueChange={v => setFilterMonth(Number(v))}>
-            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-            <SelectContent>{months.map(m => <SelectItem key={m} value={String(m)}>{getMonthName(m)}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={String(filterYear)} onValueChange={v => setFilterYear(Number(v))}>
-            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-            <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-          </Select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Period selector */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-1.5 block">Período</label>
+            <div className="flex rounded-xl overflow-hidden border border-border">
+              {(['diario', 'semanal', 'mensal', 'anual'] as Period[]).map(p => (
+                <button
+                  key={p}
+                  onClick={() => { setPeriod(p); setOffset(0); }}
+                  className={`flex-1 py-2 text-xs font-medium transition-all ${period === p ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'}`}
+                >
+                  {periodLabels[p]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Navigation + type filter */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-1.5 block">Navegação</label>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setOffset(o => o - 1)}>← Anterior</Button>
+              <div className="flex-1 text-center">
+                <div className="flex items-center justify-center gap-1.5">
+                  <Calendar size={13} className="text-muted-foreground" />
+                  <span className="text-sm font-medium capitalize">{periodLabel}</span>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setOffset(o => o + 1)} disabled={offset >= 0}>Próximo →</Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mt-3">
           <Select value={filterType} onValueChange={(v: 'todos' | 'entrada' | 'saida') => setFilterType(v)}>
             <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
             <SelectContent>
