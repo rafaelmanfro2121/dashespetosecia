@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatPercent } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Package, Edit2, Check, X } from 'lucide-react';
+import { Plus, Trash2, Package, Edit2, Check, X, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Product {
@@ -35,6 +35,12 @@ export default function ProdutosPage() {
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
+  const lowMarginProducts = products.filter(p => {
+    if (!p.is_active || Number(p.sale_price) <= 0) return false;
+    const totalCost = Number(p.material_cost) + Number(p.labor_cost) + Number(p.other_costs);
+    return ((Number(p.sale_price) - totalCost) / Number(p.sale_price)) * 100 < 30;
+  });
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.sale_price) { toast.error('Preencha nome e preço de venda'); return; }
@@ -57,21 +63,14 @@ export default function ProdutosPage() {
     fetchProducts();
   };
 
-  const startEdit = (p: Product) => {
-    setEditingId(p.id);
-    setEditForm({ ...p });
-  };
+  const startEdit = (p: Product) => { setEditingId(p.id); setEditForm({ ...p }); };
 
   const saveEdit = async () => {
     if (!editingId || !editForm) return;
     await supabase.from('products').update({
-      name: editForm.name,
-      description: editForm.description,
-      sale_price: editForm.sale_price,
-      material_cost: editForm.material_cost,
-      labor_cost: editForm.labor_cost,
-      other_costs: editForm.other_costs,
-      units_sold: editForm.units_sold,
+      name: editForm.name, description: editForm.description, sale_price: editForm.sale_price,
+      material_cost: editForm.material_cost, labor_cost: editForm.labor_cost,
+      other_costs: editForm.other_costs, units_sold: editForm.units_sold,
     }).eq('id', editingId);
     setEditingId(null);
     toast.success('Produto atualizado');
@@ -86,9 +85,30 @@ export default function ProdutosPage() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <Package size={28} className="text-secondary" />
+        <Package size={28} className="text-primary" />
         <h1 className="page-title">Produtos / Modelos</h1>
       </div>
+
+      {/* Margin alerts */}
+      {lowMarginProducts.length > 0 && (
+        <div className="bg-warning/10 border border-warning/30 rounded-xl p-4 mb-6 animate-fade-in">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle size={18} className="text-warning" />
+            <h3 className="font-semibold text-sm text-warning">⚠️ Margem Abaixo de 30%</h3>
+          </div>
+          {lowMarginProducts.map(p => {
+            const totalCost = Number(p.material_cost) + Number(p.labor_cost) + Number(p.other_costs);
+            const margin = ((Number(p.sale_price) - totalCost) / Number(p.sale_price)) * 100;
+            const targetPrice = totalCost / 0.7;
+            return (
+              <p key={p.id} className="text-sm text-foreground">
+                <strong>{p.name}</strong>: margem <span className="text-destructive font-bold">{formatPercent(margin)}</span> — 
+                aumente para <span className="text-success font-bold">{formatCurrency(targetPrice)}</span> (+{formatCurrency(targetPrice - Number(p.sale_price))})
+              </p>
+            );
+          })}
+        </div>
+      )}
 
       <div className="metric-card mb-6">
         <h3 className="section-label mb-3">Cadastrar Produto</h3>
@@ -103,14 +123,13 @@ export default function ProdutosPage() {
         </form>
       </div>
 
-      {/* Summary cards */}
       {products.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="metric-card">
+          <div className="metric-card border-l-4 border-l-primary">
             <p className="section-label">Total Produtos</p>
             <p className="text-2xl font-bold mt-1">{products.filter(p => p.is_active).length}</p>
           </div>
-          <div className="metric-card">
+          <div className="metric-card border-l-4 border-l-success">
             <p className="section-label">Margem Média</p>
             <p className="text-2xl font-bold mt-1">
               {formatPercent(
@@ -121,7 +140,7 @@ export default function ProdutosPage() {
               )}
             </p>
           </div>
-          <div className="metric-card">
+          <div className="metric-card border-l-4 border-l-info">
             <p className="section-label">Unidades Vendidas</p>
             <p className="text-2xl font-bold mt-1">{products.reduce((s, p) => s + Number(p.units_sold), 0)}</p>
           </div>
@@ -156,7 +175,7 @@ export default function ProdutosPage() {
                 const isEditing = editingId === p.id;
 
                 return (
-                  <tr key={p.id} className="border-b border-muted/50 hover:bg-muted/30">
+                  <tr key={p.id} className="border-b border-muted/50 hover:bg-muted/30 transition-colors">
                     <td className="py-2 font-medium">
                       {isEditing ? <Input value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="h-7 text-sm" /> : p.name}
                       {p.description && !isEditing && <span className="block text-xs text-muted-foreground">{p.description}</span>}

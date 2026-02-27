@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, DollarSign, Users, ClipboardCheck,
-  Banknote, CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut, Package
+  Banknote, CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut, Package, Warehouse
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
   { to: '/produtos', icon: Package, label: 'Produtos' },
+  { to: '/estoque', icon: Warehouse, label: 'Estoque' },
   { to: '/funcionarios', icon: Users, label: 'Funcionários' },
   { to: '/presenca', icon: ClipboardCheck, label: 'Presença' },
   { to: '/vales', icon: Banknote, label: 'Vales' },
@@ -26,9 +27,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen w-full">
       <aside
-        className={`bg-sidebar flex flex-col transition-all duration-200 ${collapsed ? 'w-16' : 'w-60'} shrink-0`}
+        className={`bg-sidebar flex flex-col transition-all duration-300 ${collapsed ? 'w-16' : 'w-60'} shrink-0`}
+        style={{ background: 'linear-gradient(180deg, hsl(220, 25%, 12%) 0%, hsl(220, 30%, 8%) 100%)' }}
       >
-        <div className="flex items-center gap-2 px-4 py-4 border-b border-sidebar-border">
+        <div className="flex items-center gap-2 px-4 py-5 border-b border-sidebar-border">
           {!collapsed && (
             <img src={logoWhite} alt="Espetos & Cia" className="h-10 object-contain" />
           )}
@@ -61,12 +63,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <button onClick={signOut} className="flex items-center gap-2 text-xs text-sidebar-foreground/60 hover:text-sidebar-primary transition-colors w-full">
               <LogOut size={14} /> Sair
             </button>
-            <p className="text-xs text-sidebar-foreground/40">Sistema Interno v2.0</p>
+            <p className="text-xs text-sidebar-foreground/40">ESP Insight AI v3.0</p>
           </div>
         )}
       </aside>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-background">
         <div className="p-6 max-w-7xl mx-auto animate-fade-in">
           {children}
         </div>
