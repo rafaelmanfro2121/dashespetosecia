@@ -136,6 +136,39 @@ export type Database = {
         }
         Relationships: []
       }
+      material_purchases: {
+        Row: {
+          created_at: string
+          id: string
+          material_name: string
+          purchase_date: string
+          quantity: number
+          supplier: string | null
+          total_cost: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          material_name: string
+          purchase_date?: string
+          quantity?: number
+          supplier?: string | null
+          total_cost?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          material_name?: string
+          purchase_date?: string
+          quantity?: number
+          supplier?: string | null
+          total_cost?: number
+          unit_price?: number
+        }
+        Relationships: []
+      }
       monthly_closings: {
         Row: {
           ai_report: string | null
