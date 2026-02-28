@@ -37,7 +37,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-primary-foreground">
       <div className="w-full max-w-md px-6">
         <div className="text-center mb-10">
           <img src={logoBlack} alt="Espetos & Cia" className="h-28 mx-auto mb-5 object-contain" />
@@ -53,19 +53,19 @@ export default function AuthPage() {
             {isLogin ? 'Bem-vindo de volta' : 'Criar sua conta'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
+            {!isLogin &&
+            <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Nome completo</label>
-                <Input placeholder="Seu nome" value={name} onChange={e => setName(e.target.value)} required className="h-12 rounded-xl bg-muted/30 border-muted" />
+                <Input placeholder="Seu nome" value={name} onChange={(e) => setName(e.target.value)} required className="h-12 rounded-xl bg-muted/30 border-muted" />
               </div>
-            )}
+            }
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Email</label>
-              <Input type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required className="h-12 rounded-xl bg-muted/30 border-muted" />
+              <Input type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-12 rounded-xl bg-muted/30 border-muted" />
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Senha</label>
-              <Input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className="h-12 rounded-xl bg-muted/30 border-muted" />
+              <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="h-12 rounded-xl bg-muted/30 border-muted" />
             </div>
             <Button type="submit" className="w-full h-12 rounded-xl text-sm font-bold mt-2" disabled={submitting}>
               {isLogin ? <><LogIn size={16} className="mr-2" /> Entrar</> : <><UserPlus size={16} className="mr-2" /> Criar Conta</>}
@@ -74,13 +74,13 @@ export default function AuthPage() {
           <div className="mt-6 pt-5 border-t border-border">
             <button
               onClick={() => setIsLogin(!isLogin)}
-              className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors font-medium"
-            >
+              className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors font-medium">
+
               {isLogin ? 'Não tem conta? Criar uma' : 'Já tem conta? Entrar'}
             </button>
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
