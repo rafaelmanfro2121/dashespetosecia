@@ -1,16 +1,19 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, DollarSign, Users, ClipboardCheck,
-  Banknote, CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut, Package, Sparkles
+  Banknote, CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut, Package, Sparkles, Hammer
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileQuickInput from '@/components/MobileQuickInput';
 import logoWhite from '@/assets/logo-white.png';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
   { to: '/produtos', icon: Package, label: 'Produtos' },
+  { to: '/materiais', icon: Hammer, label: 'Materiais' },
   { to: '/funcionarios', icon: Users, label: 'Funcionários' },
   { to: '/presenca', icon: ClipboardCheck, label: 'Presença' },
   { to: '/vales', icon: Banknote, label: 'Vales' },
@@ -22,6 +25,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { signOut } = useAuth();
+  const isMobile = useIsMobile();
+
+  // On mobile, show only the quick input interface
+  if (isMobile) {
+    return <MobileQuickInput />;
+  }
 
   return (
     <div className="flex min-h-screen w-full">

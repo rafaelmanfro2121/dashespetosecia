@@ -3,10 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useFinance } from '@/contexts/FinanceContext';
 import { getCurrentMonth, getCurrentYear, getMonthName, formatCurrency, formatPercent } from '@/lib/formatters';
 import MetricCard from '@/components/MetricCard';
-import { TrendingUp, TrendingDown, DollarSign, Users, Banknote, Target, Percent, Loader2, AlertTriangle, Sparkles } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Users, Banknote, Target, Percent, Loader2, AlertTriangle, Sparkles, Flame, CalendarDays, BarChart3, TrendingUp as Forecast } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, Legend
+  PieChart, Pie, Cell, LineChart, Line, Legend, AreaChart, Area
 } from 'recharts';
 
 const COLORS = ['hsl(225,65%,48%)', 'hsl(155,55%,42%)', 'hsl(0,75%,55%)', 'hsl(210,95%,55%)', 'hsl(38,90%,50%)', 'hsl(280,55%,55%)', 'hsl(180,50%,42%)', 'hsl(30,80%,55%)'];
@@ -23,7 +23,7 @@ interface Product {
 }
 
 export default function DashboardPage() {
-  const { getMonthlyClosing, getMonthTransactions, loading } = useFinance();
+  const { getMonthlyClosing, getMonthTransactions, transactions, attendance, loading } = useFinance();
   const [products, setProducts] = useState<Product[]>([]);
   const month = getCurrentMonth();
   const year = getCurrentYear();
@@ -37,6 +37,58 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
+  // ---- INFOGRÁFICO DATA ----
+
+  // Churrasqueiras vendidas por mês (últimos 6 meses)
+  const churrasqueirasByMonth = [];
+  for (let i = 5; i >= 0; i--) {
+    let m = month - i;
+    let y = year;
+    if (m < 0) { m += 12; y -= 1; }
+    const mTx = transactions.filter(t => {
+      const d = new Date(t.transaction_date + 'T12:00:00');
+      return d.getMonth() === m && d.getFullYear() === y && t.type === 'entrada';
+    });
+    // Count entries that mention churrasqueira
+    const count = mTx.filter(t => t.description.toLowerCase().includes('churrasqueir')).length;
+    const totalSales = mTx.reduce((s, t) => s + Number(t.amount), 0);
+    churrasqueirasByMonth.push({
+      name: getMonthName(m).slice(0, 3),
+      churrasqueiras: count,
+      faturamento: totalSales,
+    });
+  }
+
+  // Dias trabalhados no mês
+  const monthAttendance = attendance.filter(a => {
+    const d = new Date(a.presence_date + 'T12:00:00');
+    return d.getMonth() === month && d.getFullYear() === year;
+  });
+  const uniqueWorkDays = new Set(monthAttendance.filter(a => a.status === 'presente' || a.status === 'meio-periodo').map(a => a.presence_date)).size;
+
+  // Média de faturamento por dia
+  const avgDailyRevenue = uniqueWorkDays > 0 ? closing.totalRevenue / uniqueWorkDays : 0;
+
+  // Margem de lucro
+  const profitMargin = closing.margin;
+
+  // Previsão anual (extrapolação dos últimos 6 meses)
+  let totalRevLast6 = 0;
+  let totalProfitLast6 = 0;
+  for (let i = 5; i >= 0; i--) {
+    let m = month - i;
+    let y = year;
+    if (m < 0) { m += 12; y -= 1; }
+    const c = getMonthlyClosing(m, y);
+    totalRevLast6 += c.totalRevenue;
+    totalProfitLast6 += c.netProfit;
+  }
+  const avgMonthlyRev = totalRevLast6 / 6;
+  const avgMonthlyProfit = totalProfitLast6 / 6;
+  const annualForecastRevenue = avgMonthlyRev * 12;
+  const annualForecastProfit = avgMonthlyProfit * 12;
+
+  // Low margin products
   const lowMarginProducts = products.filter(p => {
     if (Number(p.sale_price) <= 0) return false;
     const totalCost = Number(p.material_cost) + Number(p.labor_cost) + Number(p.other_costs);
@@ -52,16 +104,6 @@ export default function DashboardPage() {
     })
     .sort((a, b) => b.margem - a.margem);
 
-  const productRevenueData = products
-    .filter(p => Number(p.units_sold) > 0)
-    .map(p => ({
-      name: p.name.length > 18 ? p.name.slice(0, 18) + '…' : p.name,
-      receita: Number(p.sale_price) * Number(p.units_sold),
-      lucro: (Number(p.sale_price) - Number(p.material_cost) - Number(p.labor_cost) - Number(p.other_costs)) * Number(p.units_sold),
-    }))
-    .sort((a, b) => b.receita - a.receita)
-    .slice(0, 8);
-
   const categoryMap: Record<string, number> = {};
   monthTx.filter(t => t.type === 'saida').forEach(t => {
     categoryMap[t.category_name || 'Outros'] = (categoryMap[t.category_name || 'Outros'] || 0) + Number(t.amount);
@@ -75,7 +117,7 @@ export default function DashboardPage() {
     if (m < 0) { m += 12; y -= 1; }
     const c = getMonthlyClosing(m, y);
     profitEvolution.push({
-      name: `${getMonthName(m).slice(0, 3)}`,
+      name: getMonthName(m).slice(0, 3),
       lucro: c.netProfit,
       receita: c.totalRevenue,
       despesas: c.totalExpenses + c.totalSalaries,
@@ -135,6 +177,64 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* ============ INFOGRÁFICO ============ */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="metric-card text-center">
+          <Flame size={20} className="text-primary mx-auto mb-2" />
+          <p className="text-2xl font-bold text-foreground">{churrasqueirasByMonth[churrasqueirasByMonth.length - 1]?.churrasqueiras || 0}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Churrasqueiras vendidas</p>
+          <p className="text-[10px] text-muted-foreground">este mês</p>
+        </div>
+        <div className="metric-card text-center">
+          <CalendarDays size={20} className="text-secondary mx-auto mb-2" />
+          <p className="text-2xl font-bold text-foreground">{uniqueWorkDays}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Dias trabalhados</p>
+          <p className="text-[10px] text-muted-foreground">este mês</p>
+        </div>
+        <div className="metric-card text-center">
+          <BarChart3 size={20} className="text-info mx-auto mb-2" />
+          <p className="text-2xl font-bold text-foreground">{formatCurrency(avgDailyRevenue)}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Média/dia</p>
+          <p className="text-[10px] text-muted-foreground">faturamento</p>
+        </div>
+        <div className="metric-card text-center">
+          <Percent size={20} className={`mx-auto mb-2 ${profitMargin >= 30 ? 'text-success' : profitMargin >= 15 ? 'text-warning' : 'text-destructive'}`} />
+          <p className={`text-2xl font-bold ${profitMargin >= 30 ? 'text-success' : profitMargin >= 15 ? 'text-warning' : 'text-destructive'}`}>{profitMargin.toFixed(1)}%</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Margem de lucro</p>
+          <p className="text-[10px] text-muted-foreground">líquida</p>
+        </div>
+        <div className="metric-card text-center col-span-2 lg:col-span-1">
+          <Forecast size={20} className="text-primary mx-auto mb-2" />
+          <p className="text-lg font-bold text-foreground">{formatCurrency(annualForecastRevenue)}</p>
+          <p className="text-xs font-semibold text-success">{formatCurrency(annualForecastProfit)} lucro</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Previsão anual</p>
+        </div>
+      </div>
+
+      {/* Churrasqueiras vendidas por mês */}
+      <div className="metric-card mb-6">
+        <h3 className="text-sm font-bold mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Churrasqueiras Vendidas & Faturamento — 6 meses</h3>
+        <ResponsiveContainer width="100%" height={280}>
+          <AreaChart data={churrasqueirasByMonth}>
+            <defs>
+              <linearGradient id="colorFat" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(225,65%,48%)" stopOpacity={0.15}/>
+                <stop offset="95%" stopColor="hsl(225,65%,48%)" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(225,15%,92%)" />
+            <XAxis dataKey="name" fontSize={12} fontWeight={500} />
+            <YAxis yAxisId="left" fontSize={11} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
+            <YAxis yAxisId="right" orientation="right" fontSize={11} />
+            <Tooltip formatter={(v: number, name: string) => name === 'churrasqueiras' ? v : formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)', fontSize: '12px' }} />
+            <Legend wrapperStyle={{ fontSize: '12px' }} />
+            <Area yAxisId="left" type="monotone" dataKey="faturamento" name="Faturamento" stroke="hsl(225,65%,48%)" fill="url(#colorFat)" strokeWidth={2} />
+            <Bar yAxisId="right" dataKey="churrasqueiras" name="Unidades" fill="hsl(155,55%,42%)" radius={[6, 6, 0, 0]} barSize={28} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Existing metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <MetricCard label="Entradas" value={closing.totalRevenue} icon={TrendingUp} variant="success" />
         <MetricCard label="Saídas" value={closing.totalExpenses} icon={TrendingDown} variant="danger" />
@@ -185,68 +285,27 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </div>
 
-          {productRevenueData.length > 0 && (
-            <div className="metric-card">
-              <h3 className="text-sm font-bold mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Ranking de Rentabilidade</h3>
+          <div className="metric-card">
+            <h3 className="text-sm font-bold mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Gastos por Categoria</h3>
+            {categoryData.length === 0 ? (
+              <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">
+                Sem dados de saídas este mês
+              </div>
+            ) : (
               <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={productRevenueData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(225,15%,92%)" />
-                  <XAxis dataKey="name" fontSize={10} angle={-15} textAnchor="end" height={50} />
-                  <YAxis fontSize={11} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
+                <PieChart>
+                  <Pie data={categoryData} cx="50%" cy="50%" innerRadius={65} outerRadius={105} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={11}>
+                    {categoryData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
                   <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)' }} />
-                  <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  <Bar dataKey="receita" name="Receita" fill="hsl(225,65%,48%)" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="lucro" name="Lucro" fill="hsl(155,55%,42%)" radius={[6, 6, 0, 0]} />
-                </BarChart>
+                </PieChart>
               </ResponsiveContainer>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="metric-card">
-          <h3 className="text-sm font-bold mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Resumo do Mês</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={[
-              { name: 'Entradas', value: closing.totalRevenue },
-              { name: 'Saídas', value: closing.totalExpenses },
-              { name: 'Salários', value: closing.totalSalaries },
-              { name: 'Vales', value: closing.totalVales },
-            ]}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(225,15%,92%)" />
-              <XAxis dataKey="name" fontSize={12} />
-              <YAxis fontSize={11} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)' }} />
-              <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                {[0, 1, 2, 3].map(i => (
-                  <Cell key={i} fill={COLORS[i]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="metric-card">
-          <h3 className="text-sm font-bold mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Gastos por Categoria</h3>
-          {categoryData.length === 0 ? (
-            <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">
-              Sem dados de saídas este mês
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie data={categoryData} cx="50%" cy="50%" innerRadius={65} outerRadius={105} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={11}>
-                  {categoryData.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
