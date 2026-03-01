@@ -354,6 +354,84 @@ export type Database = {
         }
         Relationships: []
       }
+      service_orders: {
+        Row: {
+          atendimento_data: string
+          atendimento_hora: string | null
+          cliente_contato: string | null
+          cliente_cpf_cnpj: string | null
+          cliente_nome: string
+          cliente_telefone: string | null
+          created_at: string
+          desconto: number
+          descricao_pagamento: string | null
+          empresa_cnpj: string | null
+          empresa_email: string | null
+          empresa_endereco: string | null
+          empresa_nome: string
+          empresa_telefone: string | null
+          forma_pagamento: string | null
+          id: string
+          items: Json
+          observacoes: string | null
+          os_number: string
+          subtotal: number
+          total: number
+          user_id: string
+          vendedor: string | null
+        }
+        Insert: {
+          atendimento_data?: string
+          atendimento_hora?: string | null
+          cliente_contato?: string | null
+          cliente_cpf_cnpj?: string | null
+          cliente_nome?: string
+          cliente_telefone?: string | null
+          created_at?: string
+          desconto?: number
+          descricao_pagamento?: string | null
+          empresa_cnpj?: string | null
+          empresa_email?: string | null
+          empresa_endereco?: string | null
+          empresa_nome?: string
+          empresa_telefone?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          items?: Json
+          observacoes?: string | null
+          os_number?: string
+          subtotal?: number
+          total?: number
+          user_id: string
+          vendedor?: string | null
+        }
+        Update: {
+          atendimento_data?: string
+          atendimento_hora?: string | null
+          cliente_contato?: string | null
+          cliente_cpf_cnpj?: string | null
+          cliente_nome?: string
+          cliente_telefone?: string | null
+          created_at?: string
+          desconto?: number
+          descricao_pagamento?: string | null
+          empresa_cnpj?: string | null
+          empresa_email?: string | null
+          empresa_endereco?: string | null
+          empresa_nome?: string
+          empresa_telefone?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          items?: Json
+          observacoes?: string | null
+          os_number?: string
+          subtotal?: number
+          total?: number
+          user_id?: string
+          vendedor?: string | null
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
