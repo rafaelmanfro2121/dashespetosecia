@@ -263,7 +263,7 @@ export default function OrdemServicoPage() {
           #os-print .print-compact { margin-bottom: 6px !important; padding: 6px !important; }
           #os-print .print-compact h3 { margin-bottom: 4px !important; padding-bottom: 4px !important; font-size: 11px !important; }
           #os-print input, #os-print textarea { height: 20px !important; font-size: 11px !important; padding: 1px 4px !important; }
-          #os-print textarea { min-height: 40px !important; height: 40px !important; }
+          #os-print textarea { min-height: 30px !important; height: auto !important; overflow: visible !important; }
           #os-print table td, #os-print table th { padding: 2px 4px !important; font-size: 11px !important; }
           #os-print .print-signatures { margin-top: 20px !important; gap: 2rem !important; margin-bottom: 0 !important; }
           .no-print { display: none !important; }
@@ -448,7 +448,7 @@ export default function OrdemServicoPage() {
           {/* Observations */}
           <div className="border border-gray-300 rounded-lg p-3 mb-3 print-compact">
             <h3 className="font-bold text-xs mb-2 text-center border-b border-gray-200 pb-1">Observações</h3>
-            <Textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} className="min-h-[50px] text-xs border-gray-300 bg-transparent text-black resize-y" placeholder="Observações adicionais..." />
+            <Textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} className="min-h-[50px] text-xs border-gray-300 bg-transparent text-black resize-y overflow-visible" placeholder="Observações adicionais..." style={{ overflow: 'visible' }} />
           </div>
 
           {/* Authorization */}
@@ -459,9 +459,9 @@ export default function OrdemServicoPage() {
           </div>
 
           {/* Signatures */}
-          <div className="grid grid-cols-2 gap-12 mt-6 mb-2 print-signatures">
-            <div className="text-center"><div className="border-t border-black pt-1 mx-6"><span className="text-xs font-medium">Responsável pelo atendimento</span></div></div>
-            <div className="text-center"><div className="border-t border-black pt-1 mx-6"><span className="text-xs font-medium">Cliente</span></div></div>
+          <div className="grid grid-cols-2 gap-12 mt-16 mb-2 print-signatures">
+            <div className="text-center"><div className="border-t border-black pt-2 mx-4"><span className="text-xs font-medium">Responsável pelo atendimento</span></div></div>
+            <div className="text-center"><div className="border-t border-black pt-2 mx-4"><span className="text-xs font-medium">Cliente</span></div></div>
           </div>
         </div>
       </div>
