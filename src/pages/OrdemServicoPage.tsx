@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Printer, Save, FileDown, History, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Printer, Save, FileDown, History, ArrowLeft, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,6 +25,28 @@ interface SavedOS {
   created_at: string;
 }
 
+const EMPRESA_STORAGE_KEY = 'os_empresa_data';
+
+function loadEmpresaFromStorage() {
+  try {
+    const saved = localStorage.getItem(EMPRESA_STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return { nome: 'Espetos & Cia', cnpj: '', telefone: '', endereco: '', email: '' };
+}
+
+function getNextOsNumber(orders: SavedOS[]): string {
+  if (orders.length === 0) return '';
+  // Find the highest numeric OS number
+  let max = 0;
+  orders.forEach(os => {
+    const num = parseInt(os.os_number, 10);
+    if (!isNaN(num) && num > max) max = num;
+  });
+  if (max === 0) return '';
+  return String(max + 1).padStart(String(max).length >= 5 ? String(max).length : 5, '0');
+}
+
 export default function OrdemServicoPage() {
   const printRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
@@ -34,7 +56,11 @@ export default function OrdemServicoPage() {
   const [currentOsId, setCurrentOsId] = useState<string | null>(null);
 
   const [osNumber, setOsNumber] = useState('');
-  const [empresa, setEmpresa] = useState({ nome: 'Espetos & Cia', cnpj: '', telefone: '', endereco: '', email: '' });
+  const [empresa, setEmpresa] = useState(loadEmpresaFromStorage);
+  const [empresaLocked, setEmpresaLocked] = useState(() => {
+    // Lock by default if empresa data already saved
+    return !!localStorage.getItem(EMPRESA_STORAGE_KEY);
+  });
   const [cliente, setCliente] = useState({ nome: '', telefone: '', cpfCnpj: '', contato: '' });
   const [atendimento, setAtendimento] = useState({ vendedor: '', data: new Date().toISOString().split('T')[0], hora: new Date().toTimeString().slice(0, 5) });
   const [items, setItems] = useState<ServiceItem[]>([{ id: 1, name: '', quantity: 1, price: 0 }]);
@@ -55,13 +81,43 @@ export default function OrdemServicoPage() {
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
+  // Set auto OS number for new forms based on history
+  useEffect(() => {
+    if (!currentOsId && savedOrders.length > 0 && !osNumber) {
+      const next = getNextOsNumber(savedOrders);
+      if (next) setOsNumber(next);
+    }
+  }, [savedOrders, currentOsId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save empresa to localStorage whenever it changes and is unlocked (being edited)
+  const updateEmpresa = (update: Partial<typeof empresa>) => {
+    setEmpresa(prev => {
+      const updated = { ...prev, ...update };
+      localStorage.setItem(EMPRESA_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const toggleEmpresaLock = () => {
+    if (!empresaLocked) {
+      // Locking: save current data
+      localStorage.setItem(EMPRESA_STORAGE_KEY, JSON.stringify(empresa));
+      toast.success('Dados da empresa travados');
+    } else {
+      toast.info('Dados da empresa liberados para edição');
+    }
+    setEmpresaLocked(prev => !prev);
+  };
+
   const addItem = () => setItems(prev => [...prev, { id: Date.now(), name: '', quantity: 1, price: 0 }]);
   const removeItem = (id: number) => { if (items.length > 1) setItems(prev => prev.filter(i => i.id !== id)); };
   const updateItem = (id: number, field: keyof ServiceItem, value: string | number) => setItems(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i));
 
   const clearForm = () => {
     setCurrentOsId(null);
-    setOsNumber('');
+    // Auto-set next OS number
+    const next = getNextOsNumber(savedOrders);
+    setOsNumber(next);
     setCliente({ nome: '', telefone: '', cpfCnpj: '', contato: '' });
     setAtendimento({ vendedor: '', data: new Date().toISOString().split('T')[0], hora: new Date().toTimeString().slice(0, 5) });
     setItems([{ id: 1, name: '', quantity: 1, price: 0 }]);
@@ -70,6 +126,8 @@ export default function OrdemServicoPage() {
     setFormaPagamento('');
     setDescricaoPagamento('');
     setObservacoes('');
+    // Keep empresa data from localStorage
+    setEmpresa(loadEmpresaFromStorage());
   };
 
   const saveOS = async () => {
@@ -95,7 +153,27 @@ export default function OrdemServicoPage() {
       if (error) { toast.error('Erro ao salvar'); return; }
       toast.success('OS salva');
     }
-    fetchHistory();
+    await fetchHistory();
+
+    // After saving a new OS, auto-advance to next number and clear form
+    if (!currentOsId) {
+      // Refetch to get updated list, then clear
+      const { data } = await supabase.from('service_orders').select('id, os_number, cliente_nome, total, created_at').order('created_at', { ascending: false });
+      if (data) {
+        setSavedOrders(data as SavedOS[]);
+        const next = getNextOsNumber(data as SavedOS[]);
+        setOsNumber(next);
+      }
+      setCurrentOsId(null);
+      setCliente({ nome: '', telefone: '', cpfCnpj: '', contato: '' });
+      setAtendimento({ vendedor: '', data: new Date().toISOString().split('T')[0], hora: new Date().toTimeString().slice(0, 5) });
+      setItems([{ id: 1, name: '', quantity: 1, price: 0 }]);
+      setDesconto(0);
+      setShowDesconto(false);
+      setFormaPagamento('');
+      setDescricaoPagamento('');
+      setObservacoes('');
+    }
   };
 
   const loadOS = async (id: string) => {
@@ -103,7 +181,7 @@ export default function OrdemServicoPage() {
     if (!data) return;
     setCurrentOsId(data.id);
     setOsNumber(data.os_number || '');
-    setEmpresa({ nome: data.empresa_nome || '', cnpj: data.empresa_cnpj || '', telefone: data.empresa_telefone || '', endereco: data.empresa_endereco || '', email: data.empresa_email || '' });
+    // Don't overwrite empresa from loaded OS — keep the locked empresa data
     setCliente({ nome: data.cliente_nome || '', telefone: data.cliente_telefone || '', cpfCnpj: data.cliente_cpf_cnpj || '', contato: data.cliente_contato || '' });
     setAtendimento({ vendedor: data.vendedor || '', data: data.atendimento_data || '', hora: data.atendimento_hora || '' });
     setItems((data.items as any as ServiceItem[]) || [{ id: 1, name: '', quantity: 1, price: 0 }]);
@@ -207,28 +285,59 @@ export default function OrdemServicoPage() {
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-2 text-lg font-bold">
               Ordem de Serviço nº
-              <Input value={osNumber} onChange={e => setOsNumber(e.target.value)} className="w-28 text-center font-bold border-b-2 border-t-0 border-x-0 rounded-none bg-transparent h-8 text-black" placeholder="000" />
+              <Input value={osNumber} onChange={e => setOsNumber(e.target.value)} className="w-28 text-center font-bold border-b-2 border-t-0 border-x-0 rounded-none bg-transparent h-8 text-black" placeholder="00001" />
             </div>
           </div>
 
-          {/* Header: Logo + Company */}
-          <div className="border border-gray-300 rounded-lg p-4 mb-6 flex gap-6">
+          {/* Header: Logo + Company with Lock */}
+          <div className="border border-gray-300 rounded-lg p-4 mb-6 flex gap-6 relative">
+            {/* Lock toggle button */}
+            <button
+              onClick={toggleEmpresaLock}
+              className="no-print absolute top-2 right-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+              title={empresaLocked ? 'Desbloquear edição dos dados da empresa' : 'Travar dados da empresa'}
+            >
+              {empresaLocked ? (
+                <Lock size={16} className="text-amber-600" />
+              ) : (
+                <Unlock size={16} className="text-gray-400" />
+              )}
+            </button>
+
             <div className="flex-shrink-0 flex items-center justify-center w-40">
               <img src={logoBlack} alt="Logo" className="h-16 object-contain" />
             </div>
             <div className="flex-1 grid grid-cols-1 gap-1.5 text-sm">
-              {[
-                { label: 'Empresa / CNPJ:', fields: [{ key: 'nome' as const, ph: 'Nome da empresa', cls: 'flex-1' }, { key: 'cnpj' as const, ph: 'CNPJ', cls: 'w-44' }] },
-              ].map(r => (
-                <div key={r.label} className="flex items-center gap-2">
-                  <span className="font-semibold whitespace-nowrap w-32 text-right">{r.label}</span>
-                  {r.fields.map(f => <Input key={f.key} value={empresa[f.key]} onChange={e => setEmpresa(p => ({ ...p, [f.key]: e.target.value }))} className={`${f.cls} h-7 text-sm border-gray-300 bg-transparent text-black`} placeholder={f.ph} />)}
-                </div>
-              ))}
-              {(['telefone', 'endereco', 'email'] as const).map(k => (
+              <div className="flex items-center gap-2">
+                <span className="font-semibold whitespace-nowrap w-32 text-right">Empresa / CNPJ:</span>
+                <Input
+                  value={empresa.nome}
+                  onChange={e => updateEmpresa({ nome: e.target.value })}
+                  disabled={empresaLocked}
+                  className={`flex-1 h-7 text-sm border-gray-300 bg-transparent text-black ${empresaLocked ? 'opacity-80 cursor-default border-transparent' : ''}`}
+                  placeholder="Nome da empresa"
+                />
+                <Input
+                  value={empresa.cnpj}
+                  onChange={e => updateEmpresa({ cnpj: e.target.value })}
+                  disabled={empresaLocked}
+                  className={`w-44 h-7 text-sm border-gray-300 bg-transparent text-black ${empresaLocked ? 'opacity-80 cursor-default border-transparent' : ''}`}
+                  placeholder="CNPJ"
+                />
+              </div>
+              {([
+                ['telefone', 'Telefone'],
+                ['endereco', 'Endereço'],
+                ['email', 'E-mail'],
+              ] as const).map(([k, label]) => (
                 <div key={k} className="flex items-center gap-2">
-                  <span className="font-semibold whitespace-nowrap w-32 text-right capitalize">{k === 'endereco' ? 'Endereço' : k === 'email' ? 'E-mail' : 'Telefone'}:</span>
-                  <Input value={empresa[k]} onChange={e => setEmpresa(p => ({ ...p, [k]: e.target.value }))} className="flex-1 h-7 text-sm border-gray-300 bg-transparent text-black" />
+                  <span className="font-semibold whitespace-nowrap w-32 text-right">{label}:</span>
+                  <Input
+                    value={empresa[k]}
+                    onChange={e => updateEmpresa({ [k]: e.target.value })}
+                    disabled={empresaLocked}
+                    className={`flex-1 h-7 text-sm border-gray-300 bg-transparent text-black ${empresaLocked ? 'opacity-80 cursor-default border-transparent' : ''}`}
+                  />
                 </div>
               ))}
             </div>
