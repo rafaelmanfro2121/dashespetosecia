@@ -109,6 +109,33 @@ export type Database = {
         }
         Relationships: []
       }
+      fixed_costs: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          monthly_amount: number
+          name: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          monthly_amount?: number
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          monthly_amount?: number
+          name?: string
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           cost_per_unit: number
@@ -228,6 +255,38 @@ export type Database = {
           total_vales?: number
         }
         Relationships: []
+      }
+      product_materials: {
+        Row: {
+          created_at: string
+          id: string
+          material_name: string
+          product_id: string
+          quantity_per_unit: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          material_name: string
+          product_id: string
+          quantity_per_unit?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          material_name?: string
+          product_id?: string
+          quantity_per_unit?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_materials_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {

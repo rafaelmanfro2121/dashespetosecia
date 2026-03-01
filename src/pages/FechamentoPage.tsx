@@ -94,9 +94,7 @@ export default function FechamentoPage() {
         {/* PDF Header - only visible during export */}
         <div className="pdf-header hidden">
           <div className="text-center mb-6 pb-4 border-b-2 border-primary">
-            <h1 className="text-2xl font-bold text-primary" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              ESPETOS & CIA
-            </h1>
+            <img src="/logo-pdf.png" alt="Espetos & Cia" className="h-16 mx-auto mb-2" />
             <p className="text-sm text-muted-foreground mt-1">Relatório de Fechamento Mensal</p>
             <p className="text-lg font-semibold mt-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               {getMonthName(month)} / {year}
