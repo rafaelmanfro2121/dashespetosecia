@@ -259,7 +259,13 @@ export default function OrdemServicoPage() {
         @media print {
           body * { visibility: hidden; }
           #os-print, #os-print * { visibility: visible; }
-          #os-print { position: absolute; left: 0; top: 0; width: 100%; }
+          #os-print { position: absolute; left: 0; top: 0; width: 100%; padding: 8mm !important; font-size: 11px !important; }
+          #os-print .print-compact { margin-bottom: 6px !important; padding: 6px !important; }
+          #os-print .print-compact h3 { margin-bottom: 4px !important; padding-bottom: 4px !important; font-size: 11px !important; }
+          #os-print input, #os-print textarea { height: 20px !important; font-size: 11px !important; padding: 1px 4px !important; }
+          #os-print textarea { min-height: 40px !important; height: 40px !important; }
+          #os-print table td, #os-print table th { padding: 2px 4px !important; font-size: 11px !important; }
+          #os-print .print-signatures { margin-top: 20px !important; gap: 2rem !important; margin-bottom: 0 !important; }
           .no-print { display: none !important; }
         }
       `}</style>
@@ -282,15 +288,15 @@ export default function OrdemServicoPage() {
 
         <div id="os-print" ref={printRef} className="max-w-4xl mx-auto p-8 bg-white text-black">
           {/* OS Number */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 text-lg font-bold">
+          <div className="text-center mb-3">
+            <div className="inline-flex items-center gap-2 text-base font-bold">
               Ordem de Serviço nº
-              <Input value={osNumber} onChange={e => setOsNumber(e.target.value)} className="w-28 text-center font-bold border-b-2 border-t-0 border-x-0 rounded-none bg-transparent h-8 text-black" placeholder="00001" />
+              <Input value={osNumber} onChange={e => setOsNumber(e.target.value)} className="w-28 text-center font-bold border-b-2 border-t-0 border-x-0 rounded-none bg-transparent h-7 text-sm text-black" placeholder="00001" />
             </div>
           </div>
 
           {/* Header: Logo + Company with Lock */}
-          <div className="border border-gray-300 rounded-lg p-4 mb-6 flex gap-6 relative">
+          <div className="border border-gray-300 rounded-lg p-3 mb-4 flex gap-4 relative print-compact">
             {/* Lock toggle button */}
             <button
               onClick={toggleEmpresaLock}
@@ -305,9 +311,9 @@ export default function OrdemServicoPage() {
             </button>
 
             <div className="flex-shrink-0 flex items-center justify-center w-40">
-              <img src={logoBlack} alt="Logo" className="h-16 object-contain" />
+              <img src={logoBlack} alt="Logo" className="h-12 object-contain" />
             </div>
-            <div className="flex-1 grid grid-cols-1 gap-1.5 text-sm">
+            <div className="flex-1 grid grid-cols-1 gap-1 text-xs">
               <div className="flex items-center gap-2">
                 <span className="font-semibold whitespace-nowrap w-32 text-right">Empresa / CNPJ:</span>
                 <Input
@@ -344,10 +350,10 @@ export default function OrdemServicoPage() {
           </div>
 
           {/* Client + Atendimento */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="border border-gray-300 rounded-lg p-4">
-              <h3 className="font-bold text-sm mb-3 text-center border-b border-gray-200 pb-2">Informações do Cliente</h3>
-              <div className="space-y-2 text-sm">
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="border border-gray-300 rounded-lg p-3 print-compact">
+              <h3 className="font-bold text-xs mb-2 text-center border-b border-gray-200 pb-1">Informações do Cliente</h3>
+              <div className="space-y-1 text-xs">
                 {([['nome', 'Nome'], ['telefone', 'Telefone'], ['email', 'E-mail'], ['cpfCnpj', 'CPF/CNPJ'], ['contato', 'Contato']] as const).map(([k, l]) => (
                   <div key={k} className="flex items-center gap-2">
                     <span className="font-semibold w-24 text-right">{l}:</span>
@@ -356,9 +362,9 @@ export default function OrdemServicoPage() {
                 ))}
               </div>
             </div>
-            <div className="border border-gray-300 rounded-lg p-4">
-              <h3 className="font-bold text-sm mb-3 text-center border-b border-gray-200 pb-2">Dados do Atendimento</h3>
-              <div className="space-y-2 text-sm">
+            <div className="border border-gray-300 rounded-lg p-3 print-compact">
+              <h3 className="font-bold text-xs mb-2 text-center border-b border-gray-200 pb-1">Dados do Atendimento</h3>
+              <div className="space-y-1 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold w-24 text-right">Vendedor:</span>
                   <Input value={atendimento.vendedor} onChange={e => setAtendimento(p => ({ ...p, vendedor: e.target.value }))} className="flex-1 h-7 text-sm border-gray-300 bg-transparent text-black" />
@@ -378,9 +384,9 @@ export default function OrdemServicoPage() {
           </div>
 
           {/* Products & Services */}
-          <div className="border border-gray-300 rounded-lg p-4 mb-6">
-            <h3 className="font-bold text-sm mb-3 text-center border-b border-gray-200 pb-2">Produtos e Serviços</h3>
-            <table className="w-full text-sm">
+          <div className="border border-gray-300 rounded-lg p-3 mb-4 print-compact">
+            <h3 className="font-bold text-xs mb-2 text-center border-b border-gray-200 pb-1">Produtos e Serviços</h3>
+            <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-1.5 w-8">#</th>
@@ -407,7 +413,7 @@ export default function OrdemServicoPage() {
             <div className="no-print mt-2">
               <Button type="button" variant="outline" size="sm" onClick={addItem} className="gap-1 text-xs"><Plus size={14} /> Adicionar Item</Button>
             </div>
-            <div className="mt-4 border-t border-gray-200 pt-3 space-y-1.5 text-sm">
+            <div className="mt-2 border-t border-gray-200 pt-2 space-y-1 text-xs">
               <div className="flex justify-end items-center gap-4">
                 <span className="font-semibold">Subtotal:</span>
                 <span className="w-32 text-right font-medium">{fmt(subtotal)}</span>
@@ -423,7 +429,7 @@ export default function OrdemServicoPage() {
                   <Button type="button" variant="outline" size="sm" onClick={() => setShowDesconto(true)} className="gap-1 text-xs"><Plus size={14} /> Adicionar Desconto</Button>
                 </div>
               )}
-              <div className="flex justify-end items-center gap-4 text-base font-bold border-t border-gray-300 pt-2">
+              <div className="flex justify-end items-center gap-4 text-sm font-bold border-t border-gray-300 pt-1">
                 <span>Total OS:</span>
                 <span className="w-32 text-right">{fmt(total)}</span>
               </div>
@@ -431,31 +437,31 @@ export default function OrdemServicoPage() {
           </div>
 
           {/* Payment */}
-          <div className="border border-gray-300 rounded-lg p-4 mb-6">
-            <h3 className="font-bold text-sm mb-3 text-center border-b border-gray-200 pb-2">Forma de Pagamento</h3>
-            <div className="flex gap-4 text-sm">
-              <div className="flex-1"><Input value={formaPagamento} onChange={e => setFormaPagamento(e.target.value)} className="h-8 text-sm border-gray-300 bg-transparent text-black" placeholder="Ex: PIX, Cartão, Boleto..." /></div>
-              <div className="flex-1"><Input value={descricaoPagamento} onChange={e => setDescricaoPagamento(e.target.value)} className="h-8 text-sm border-gray-300 bg-transparent text-black" placeholder="Descrição / Parcelas" /></div>
+          <div className="border border-gray-300 rounded-lg p-3 mb-3 print-compact">
+            <h3 className="font-bold text-xs mb-2 text-center border-b border-gray-200 pb-1">Forma de Pagamento</h3>
+            <div className="flex gap-3 text-xs">
+              <div className="flex-1"><Input value={formaPagamento} onChange={e => setFormaPagamento(e.target.value)} className="h-7 text-xs border-gray-300 bg-transparent text-black" placeholder="Ex: PIX, Cartão, Boleto..." /></div>
+              <div className="flex-1"><Input value={descricaoPagamento} onChange={e => setDescricaoPagamento(e.target.value)} className="h-7 text-xs border-gray-300 bg-transparent text-black" placeholder="Descrição / Parcelas" /></div>
             </div>
           </div>
 
           {/* Observations */}
-          <div className="border border-gray-300 rounded-lg p-4 mb-6">
-            <h3 className="font-bold text-sm mb-3 text-center border-b border-gray-200 pb-2">Observações</h3>
-            <Textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} className="min-h-[80px] text-sm border-gray-300 bg-transparent text-black resize-y" placeholder="Observações adicionais..." />
+          <div className="border border-gray-300 rounded-lg p-3 mb-3 print-compact">
+            <h3 className="font-bold text-xs mb-2 text-center border-b border-gray-200 pb-1">Observações</h3>
+            <Textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} className="min-h-[50px] text-xs border-gray-300 bg-transparent text-black resize-y" placeholder="Observações adicionais..." />
           </div>
 
           {/* Authorization */}
-          <div className="mb-8">
-            <p className="text-sm font-medium text-center bg-gray-100 border border-gray-300 rounded px-4 py-2">
+          <div className="mb-4">
+            <p className="text-xs font-medium text-center bg-gray-100 border border-gray-300 rounded px-3 py-1.5">
               Autorizo e concordo com a realização dos serviços listados conforme o combinado.
             </p>
           </div>
 
           {/* Signatures */}
-          <div className="grid grid-cols-2 gap-16 mt-12 mb-4">
-            <div className="text-center"><div className="border-t border-black pt-2 mx-8"><span className="text-sm font-medium">Responsável pelo atendimento</span></div></div>
-            <div className="text-center"><div className="border-t border-black pt-2 mx-8"><span className="text-sm font-medium">Cliente</span></div></div>
+          <div className="grid grid-cols-2 gap-12 mt-6 mb-2 print-signatures">
+            <div className="text-center"><div className="border-t border-black pt-1 mx-6"><span className="text-xs font-medium">Responsável pelo atendimento</span></div></div>
+            <div className="text-center"><div className="border-t border-black pt-1 mx-6"><span className="text-xs font-medium">Cliente</span></div></div>
           </div>
         </div>
       </div>
