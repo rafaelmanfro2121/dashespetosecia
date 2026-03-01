@@ -118,3 +118,26 @@
     @apply inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-info/10 text-info;
   }
 }
+
+/* PDF Export Styles */
+.pdf-export {
+  background: white !important;
+  padding: 24px !important;
+  border-radius: 0 !important;
+  color: #1a1a2e !important;
+}
+
+.pdf-export .pdf-header,
+.pdf-export .pdf-footer {
+  display: block !important;
+}
+
+.pdf-export .metric-card {
+  box-shadow: none !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.pdf-export * {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}

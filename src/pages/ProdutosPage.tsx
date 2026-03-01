@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatPercent } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Package, Edit2, Check, X, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Package, Edit2, Check, X, AlertTriangle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Product {
@@ -18,26 +18,43 @@ interface Product {
   is_active: boolean;
 }
 
+interface MaterialPurchase {
+  id: string;
+  material_name: string;
+  total_cost: number;
+}
+
 export default function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [totalMaterialSpent, setTotalMaterialSpent] = useState(0);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
-    name: '', description: '', sale_price: '', material_cost: '', labor_cost: '', other_costs: '',
+    name: '', description: '', sale_price: '', labor_cost: '', other_costs: '',
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Product>>({});
 
   const fetchProducts = useCallback(async () => {
-    const { data } = await supabase.from('products').select('*').order('name');
-    if (data) setProducts(data as Product[]);
+    const [{ data: prodData }, { data: purchaseData }] = await Promise.all([
+      supabase.from('products').select('*').order('name'),
+      supabase.from('material_purchases').select('total_cost'),
+    ]);
+    if (prodData) setProducts(prodData as Product[]);
+    const totalSpent = (purchaseData || []).reduce((s: number, p: any) => s + Number(p.total_cost), 0);
+    setTotalMaterialSpent(totalSpent);
     setLoading(false);
   }, []);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
+  // Auto-calculate: total material purchases / total units sold across all products
+  const totalUnitsSold = products.reduce((s, p) => s + Number(p.units_sold), 0);
+  const autoMaterialCostPerUnit = totalUnitsSold > 0 ? totalMaterialSpent / totalUnitsSold : 0;
+
   const lowMarginProducts = products.filter(p => {
     if (!p.is_active || Number(p.sale_price) <= 0) return false;
-    const totalCost = Number(p.material_cost) + Number(p.labor_cost) + Number(p.other_costs);
+    const matCost = totalUnitsSold > 0 ? autoMaterialCostPerUnit : Number(p.material_cost);
+    const totalCost = matCost + Number(p.labor_cost) + Number(p.other_costs);
     return ((Number(p.sale_price) - totalCost) / Number(p.sale_price)) * 100 < 30;
   });
 
@@ -48,12 +65,12 @@ export default function ProdutosPage() {
       name: form.name,
       description: form.description || null,
       sale_price: parseFloat(form.sale_price),
-      material_cost: parseFloat(form.material_cost || '0'),
+      material_cost: 0, // auto-calculated
       labor_cost: parseFloat(form.labor_cost || '0'),
       other_costs: parseFloat(form.other_costs || '0'),
     });
     if (error) { toast.error('Erro ao salvar'); return; }
-    setForm({ name: '', description: '', sale_price: '', material_cost: '', labor_cost: '', other_costs: '' });
+    setForm({ name: '', description: '', sale_price: '', labor_cost: '', other_costs: '' });
     toast.success('Produto cadastrado');
     fetchProducts();
   };
@@ -69,7 +86,7 @@ export default function ProdutosPage() {
     if (!editingId || !editForm) return;
     await supabase.from('products').update({
       name: editForm.name, description: editForm.description, sale_price: editForm.sale_price,
-      material_cost: editForm.material_cost, labor_cost: editForm.labor_cost,
+      labor_cost: editForm.labor_cost,
       other_costs: editForm.other_costs, units_sold: editForm.units_sold,
     }).eq('id', editingId);
     setEditingId(null);
@@ -89,7 +106,18 @@ export default function ProdutosPage() {
         <h1 className="page-title">Produtos / Modelos</h1>
       </div>
 
-      {/* Margin alerts */}
+      {/* Auto-calc explanation */}
+      <div className="bg-info/10 border border-info/30 rounded-xl p-4 mb-6 flex items-start gap-3">
+        <Info size={18} className="text-info mt-0.5 shrink-0" />
+        <div className="text-sm">
+          <p className="font-semibold text-info mb-1">Custo de Material Automático</p>
+          <p className="text-muted-foreground">
+            O custo de material é calculado automaticamente: total gasto em compras de materiais ({formatCurrency(totalMaterialSpent)}) 
+            ÷ total de unidades vendidas ({totalUnitsSold}) = <strong className="text-foreground">{formatCurrency(autoMaterialCostPerUnit)}</strong> por unidade.
+          </p>
+        </div>
+      </div>
+
       {lowMarginProducts.length > 0 && (
         <div className="bg-warning/10 border border-warning/30 rounded-xl p-4 mb-6 animate-fade-in">
           <div className="flex items-center gap-2 mb-2">
@@ -97,7 +125,8 @@ export default function ProdutosPage() {
             <h3 className="font-semibold text-sm text-warning">⚠️ Margem Abaixo de 30%</h3>
           </div>
           {lowMarginProducts.map(p => {
-            const totalCost = Number(p.material_cost) + Number(p.labor_cost) + Number(p.other_costs);
+            const matCost = totalUnitsSold > 0 ? autoMaterialCostPerUnit : Number(p.material_cost);
+            const totalCost = matCost + Number(p.labor_cost) + Number(p.other_costs);
             const margin = ((Number(p.sale_price) - totalCost) / Number(p.sale_price)) * 100;
             const targetPrice = totalCost / 0.7;
             return (
@@ -112,11 +141,10 @@ export default function ProdutosPage() {
 
       <div className="metric-card mb-6">
         <h3 className="section-label mb-3">Cadastrar Produto</h3>
-        <form onSubmit={handleAdd} className="grid grid-cols-2 md:grid-cols-7 gap-3">
+        <form onSubmit={handleAdd} className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <Input placeholder="Nome do modelo" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
           <Input placeholder="Descrição" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
           <Input type="number" step="0.01" placeholder="Preço venda" value={form.sale_price} onChange={e => setForm({ ...form, sale_price: e.target.value })} />
-          <Input type="number" step="0.01" placeholder="Custo material" value={form.material_cost} onChange={e => setForm({ ...form, material_cost: e.target.value })} />
           <Input type="number" step="0.01" placeholder="Custo mão de obra" value={form.labor_cost} onChange={e => setForm({ ...form, labor_cost: e.target.value })} />
           <Input type="number" step="0.01" placeholder="Outros custos" value={form.other_costs} onChange={e => setForm({ ...form, other_costs: e.target.value })} />
           <Button type="submit"><Plus size={16} className="mr-1" /> Cadastrar</Button>
@@ -134,7 +162,8 @@ export default function ProdutosPage() {
             <p className="text-2xl font-bold mt-1">
               {formatPercent(
                 products.filter(p => p.is_active && Number(p.sale_price) > 0).reduce((acc, p) => {
-                  const totalCost = Number(p.material_cost) + Number(p.labor_cost) + Number(p.other_costs);
+                  const matCost = totalUnitsSold > 0 ? autoMaterialCostPerUnit : Number(p.material_cost);
+                  const totalCost = matCost + Number(p.labor_cost) + Number(p.other_costs);
                   return acc + ((Number(p.sale_price) - totalCost) / Number(p.sale_price) * 100);
                 }, 0) / Math.max(1, products.filter(p => p.is_active && Number(p.sale_price) > 0).length)
               )}
@@ -142,7 +171,7 @@ export default function ProdutosPage() {
           </div>
           <div className="metric-card border-l-4 border-l-info">
             <p className="section-label">Unidades Vendidas</p>
-            <p className="text-2xl font-bold mt-1">{products.reduce((s, p) => s + Number(p.units_sold), 0)}</p>
+            <p className="text-2xl font-bold mt-1">{totalUnitsSold}</p>
           </div>
         </div>
       )}
@@ -169,7 +198,8 @@ export default function ProdutosPage() {
                 <tr><td colSpan={9} className="text-center py-8 text-muted-foreground">Nenhum produto cadastrado</td></tr>
               )}
               {products.map(p => {
-                const totalCost = Number(p.material_cost) + Number(p.labor_cost) + Number(p.other_costs);
+                const matCost = totalUnitsSold > 0 ? autoMaterialCostPerUnit : Number(p.material_cost);
+                const totalCost = matCost + Number(p.labor_cost) + Number(p.other_costs);
                 const profit = Number(p.sale_price) - totalCost;
                 const margin = Number(p.sale_price) > 0 ? (profit / Number(p.sale_price)) * 100 : 0;
                 const isEditing = editingId === p.id;
@@ -183,8 +213,9 @@ export default function ProdutosPage() {
                     <td className="py-2 text-right font-mono">
                       {isEditing ? <Input type="number" step="0.01" value={editForm.sale_price ?? ''} onChange={e => setEditForm({ ...editForm, sale_price: parseFloat(e.target.value) })} className="h-7 text-sm w-24 ml-auto" /> : formatCurrency(Number(p.sale_price))}
                     </td>
-                    <td className="py-2 text-right font-mono">
-                      {isEditing ? <Input type="number" step="0.01" value={editForm.material_cost ?? ''} onChange={e => setEditForm({ ...editForm, material_cost: parseFloat(e.target.value) })} className="h-7 text-sm w-24 ml-auto" /> : formatCurrency(Number(p.material_cost))}
+                    <td className="py-2 text-right font-mono text-info">
+                      {formatCurrency(matCost)}
+                      <span className="block text-[10px] text-muted-foreground">auto</span>
                     </td>
                     <td className="py-2 text-right font-mono">
                       {isEditing ? <Input type="number" step="0.01" value={editForm.labor_cost ?? ''} onChange={e => setEditForm({ ...editForm, labor_cost: parseFloat(e.target.value) })} className="h-7 text-sm w-24 ml-auto" /> : formatCurrency(Number(p.labor_cost))}

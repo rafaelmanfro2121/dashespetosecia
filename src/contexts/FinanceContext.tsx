@@ -22,6 +22,9 @@ export interface Employee {
   salary: number;
   hire_date: string;
   status: 'ativo' | 'inativo';
+  age?: number | null;
+  job_function?: string;
+  contract_url?: string | null;
 }
 
 export interface AttendanceRecord {
@@ -150,7 +153,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
 
   const updateEmployee = useCallback(async (e: Employee) => {
     const { error } = await supabase.from('employees').update({
-      name: e.name, salary: e.salary, hire_date: e.hire_date, status: e.status
+      name: e.name, salary: e.salary, hire_date: e.hire_date, status: e.status,
+      age: (e as any).age, job_function: (e as any).job_function, contract_url: (e as any).contract_url,
     }).eq('id', e.id);
     if (error) { toast.error('Erro ao atualizar'); return; }
     await fetchAll();
