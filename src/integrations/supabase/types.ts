@@ -69,25 +69,34 @@ export type Database = {
       }
       employees: {
         Row: {
+          age: number | null
+          contract_url: string | null
           created_at: string
           hire_date: string
           id: string
+          job_function: string | null
           name: string
           salary: number
           status: string
         }
         Insert: {
+          age?: number | null
+          contract_url?: string | null
           created_at?: string
           hire_date?: string
           id?: string
+          job_function?: string | null
           name: string
           salary?: number
           status?: string
         }
         Update: {
+          age?: number | null
+          contract_url?: string | null
           created_at?: string
           hire_date?: string
           id?: string
+          job_function?: string | null
           name?: string
           salary?: number
           status?: string
