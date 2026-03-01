@@ -77,6 +77,7 @@ export type Database = {
           id: string
           job_function: string | null
           name: string
+          payment_type: string
           pix_key: string | null
           salary: number
           status: string
@@ -90,6 +91,7 @@ export type Database = {
           id?: string
           job_function?: string | null
           name: string
+          payment_type?: string
           pix_key?: string | null
           salary?: number
           status?: string
@@ -103,6 +105,7 @@ export type Database = {
           id?: string
           job_function?: string | null
           name?: string
+          payment_type?: string
           pix_key?: string | null
           salary?: number
           status?: string
