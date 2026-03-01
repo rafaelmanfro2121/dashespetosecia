@@ -71,33 +71,39 @@ export type Database = {
         Row: {
           age: number | null
           contract_url: string | null
+          cpf: string | null
           created_at: string
           hire_date: string
           id: string
           job_function: string | null
           name: string
+          pix_key: string | null
           salary: number
           status: string
         }
         Insert: {
           age?: number | null
           contract_url?: string | null
+          cpf?: string | null
           created_at?: string
           hire_date?: string
           id?: string
           job_function?: string | null
           name: string
+          pix_key?: string | null
           salary?: number
           status?: string
         }
         Update: {
           age?: number | null
           contract_url?: string | null
+          cpf?: string | null
           created_at?: string
           hire_date?: string
           id?: string
           job_function?: string | null
           name?: string
+          pix_key?: string | null
           salary?: number
           status?: string
         }
