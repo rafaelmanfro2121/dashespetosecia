@@ -49,6 +49,13 @@ const COMMON_MATERIALS = [
   'Tubos', 'Barras', 'Rebites', 'Graxa', 'Módulo', 'Fonte', 'Trafo',
 ];
 
+// Initial composition for new product form
+interface MaterialComposition {
+  material_name: string;
+  quantity: string;
+  modelo: string;
+}
+
 export default function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [productMaterials, setProductMaterials] = useState<ProductMaterial[]>([]);
@@ -57,7 +64,14 @@ export default function ProdutosPage() {
   const [loading, setLoading] = useState(true);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
 
+  // New product form with inline material composition
   const [form, setForm] = useState({ name: '', description: '', sale_price: '', labor_cost: '', other_costs: '' });
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newMaterials, setNewMaterials] = useState<MaterialComposition[]>(
+    COMMON_MATERIALS.map(m => ({ material_name: m, quantity: '', modelo: '' }))
+  );
+  const [customMaterials, setCustomMaterials] = useState<MaterialComposition[]>([]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Product>>({});
   const [matForm, setMatForm] = useState({ material_name: '', quantity_per_unit: '1', custom_name: '' });
@@ -116,17 +130,36 @@ export default function ProdutosPage() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.sale_price) { toast.error('Preencha nome e preço de venda'); return; }
-    const { error } = await supabase.from('products').insert({
+
+    // 1. Create the product
+    const { data: newProduct, error } = await supabase.from('products').insert({
       name: form.name,
       description: form.description || null,
       sale_price: parseFloat(form.sale_price),
       material_cost: 0,
       labor_cost: parseFloat(form.labor_cost || '0'),
       other_costs: parseFloat(form.other_costs || '0'),
-    });
-    if (error) { toast.error('Erro ao salvar'); return; }
+    }).select('id').single();
+
+    if (error || !newProduct) { toast.error('Erro ao salvar produto'); return; }
+
+    // 2. Save materials that have quantity filled
+    const allMats = [...newMaterials, ...customMaterials].filter(m => m.quantity && parseFloat(m.quantity) > 0);
+    if (allMats.length > 0) {
+      const inserts = allMats.map(m => ({
+        product_id: newProduct.id,
+        material_name: m.modelo ? `${m.material_name} (${m.modelo})` : m.material_name,
+        quantity_per_unit: parseFloat(m.quantity),
+      }));
+      await supabase.from('product_materials').insert(inserts);
+    }
+
+    // Reset form
     setForm({ name: '', description: '', sale_price: '', labor_cost: '', other_costs: '' });
-    toast.success('Produto cadastrado');
+    setNewMaterials(COMMON_MATERIALS.map(m => ({ material_name: m, quantity: '', modelo: '' })));
+    setCustomMaterials([]);
+    setShowNewForm(false);
+    toast.success('Produto cadastrado com materiais');
     fetchAll();
   };
 
@@ -245,26 +278,132 @@ export default function ProdutosPage() {
                 const targetPrice = totalCost / 0.7;
                 return (
                   <p key={p.id} className="text-sm text-foreground">
-                    <strong>{p.name}</strong>: margem <span className="text-destructive font-bold">{formatPercent(margin)}</span> —
-                    recomendado <span className="text-success font-bold">{formatCurrency(targetPrice)}</span>
+                    <strong>{p.name}</strong>: margem <span className="text-destructive font-bold">{formatPercent(margin)}</span> — recomendado <span className="text-success font-bold">{formatCurrency(targetPrice)}</span>
                   </p>
                 );
               })}
             </div>
           )}
 
-          {/* Add product form */}
-          <div className="metric-card mb-6">
-            <h3 className="section-label mb-3">Cadastrar Produto</h3>
-            <form onSubmit={handleAdd} className="grid grid-cols-2 md:grid-cols-6 gap-3">
-              <Input placeholder="Nome do modelo" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="rounded-xl" />
-              <Input placeholder="Descrição" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="rounded-xl" />
-              <Input type="number" step="0.01" placeholder="Preço venda" value={form.sale_price} onChange={e => setForm({ ...form, sale_price: e.target.value })} className="rounded-xl" />
-              <Input type="number" step="0.01" placeholder="Custo mão de obra" value={form.labor_cost} onChange={e => setForm({ ...form, labor_cost: e.target.value })} className="rounded-xl" />
-              <Input type="number" step="0.01" placeholder="Outros custos" value={form.other_costs} onChange={e => setForm({ ...form, other_costs: e.target.value })} className="rounded-xl" />
-              <Button type="submit" className="rounded-xl"><Plus size={16} className="mr-1" /> Cadastrar</Button>
-            </form>
-          </div>
+          {/* Toggle new product form */}
+          {!showNewForm ? (
+            <Button onClick={() => setShowNewForm(true)} className="mb-6 rounded-xl gap-1">
+              <Plus size={16} /> Cadastrar Novo Produto
+            </Button>
+          ) : (
+            <div className="metric-card mb-6 animate-fade-in">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="section-label">Cadastrar Produto</h3>
+                <button onClick={() => setShowNewForm(false)} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
+              </div>
+              <form onSubmit={handleAdd} className="space-y-4">
+                {/* Basic info */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <Input placeholder="Nome / Modelo *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="rounded-xl" />
+                  <Input placeholder="Descrição" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="rounded-xl" />
+                  <Input type="number" step="0.01" placeholder="Preço venda *" value={form.sale_price} onChange={e => setForm({ ...form, sale_price: e.target.value })} className="rounded-xl" />
+                  <Input type="number" step="0.01" placeholder="Custo mão de obra" value={form.labor_cost} onChange={e => setForm({ ...form, labor_cost: e.target.value })} className="rounded-xl" />
+                  <Input type="number" step="0.01" placeholder="Outros custos" value={form.other_costs} onChange={e => setForm({ ...form, other_costs: e.target.value })} className="rounded-xl" />
+                </div>
+
+                {/* Material composition section */}
+                <div className="border border-muted rounded-xl p-4">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                    📦 Composição de Materiais <span className="text-[10px] font-normal normal-case">(todos opcionais — preencha apenas o que usa)</span>
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {newMaterials.map((mat, idx) => (
+                      <div key={mat.material_name} className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors">
+                        <span className="text-sm font-medium w-32 shrink-0">{mat.material_name}</span>
+                        <Input
+                          placeholder="Modelo"
+                          value={mat.modelo}
+                          onChange={e => {
+                            const updated = [...newMaterials];
+                            updated[idx] = { ...updated[idx], modelo: e.target.value };
+                            setNewMaterials(updated);
+                          }}
+                          className="h-7 text-xs rounded-lg flex-1"
+                        />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Qtd"
+                          value={mat.quantity}
+                          onChange={e => {
+                            const updated = [...newMaterials];
+                            updated[idx] = { ...updated[idx], quantity: e.target.value };
+                            setNewMaterials(updated);
+                          }}
+                          className="h-7 text-xs rounded-lg w-20"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Custom materials */}
+                  {customMaterials.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">Materiais Personalizados</p>
+                      {customMaterials.map((mat, idx) => (
+                        <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/20">
+                          <Input
+                            placeholder="Nome do material"
+                            value={mat.material_name}
+                            onChange={e => {
+                              const updated = [...customMaterials];
+                              updated[idx] = { ...updated[idx], material_name: e.target.value };
+                              setCustomMaterials(updated);
+                            }}
+                            className="h-7 text-xs rounded-lg w-32"
+                          />
+                          <Input
+                            placeholder="Modelo"
+                            value={mat.modelo}
+                            onChange={e => {
+                              const updated = [...customMaterials];
+                              updated[idx] = { ...updated[idx], modelo: e.target.value };
+                              setCustomMaterials(updated);
+                            }}
+                            className="h-7 text-xs rounded-lg flex-1"
+                          />
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="Qtd"
+                            value={mat.quantity}
+                            onChange={e => {
+                              const updated = [...customMaterials];
+                              updated[idx] = { ...updated[idx], quantity: e.target.value };
+                              setCustomMaterials(updated);
+                            }}
+                            className="h-7 text-xs rounded-lg w-20"
+                          />
+                          <button onClick={() => setCustomMaterials(prev => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-destructive shrink-0">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCustomMaterials(prev => [...prev, { material_name: '', quantity: '', modelo: '' }])}
+                    className="mt-2 text-xs gap-1"
+                  >
+                    <Plus size={12} /> Adicionar outro material
+                  </Button>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button type="submit" className="rounded-xl gap-1"><Plus size={16} /> Cadastrar Produto</Button>
+                </div>
+              </form>
+            </div>
+          )}
 
           {/* Summary cards */}
           {products.length > 0 && (
@@ -519,7 +658,6 @@ export default function ProdutosPage() {
 
         {/* === GARANTIA TAB === */}
         <TabsContent value="garantia">
-          {/* Summary */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div className="metric-card border-l-4 border-l-destructive">
               <p className="section-label">Total Garantias</p>
@@ -535,26 +673,21 @@ export default function ProdutosPage() {
             </div>
           </div>
 
-          {/* Register warranty cost */}
           <div className="metric-card mb-6">
             <h3 className="section-label mb-3">Registrar Custo de Garantia / Reposição</h3>
             <form onSubmit={handleAddWarranty} className="space-y-3">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <select
-                  value={warrantyForm.product_id}
-                  onChange={e => setWarrantyForm({ ...warrantyForm, product_id: e.target.value })}
-                  className="rounded-xl border border-input bg-background px-3 py-2 text-sm"
-                >
+                <select value={warrantyForm.product_id} onChange={e => setWarrantyForm({ ...warrantyForm, product_id: e.target.value })} className="rounded-xl border border-input bg-background px-3 py-2 text-sm">
                   <option value="">Produto (opcional)</option>
                   {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
                 <Input placeholder="Descrição do problema" value={warrantyForm.description} onChange={e => setWarrantyForm({ ...warrantyForm, description: e.target.value })} className="rounded-xl" />
-                <Input placeholder="Peça enviada (ex: Rolamento)" value={warrantyForm.part_name} onChange={e => setWarrantyForm({ ...warrantyForm, part_name: e.target.value })} className="rounded-xl" />
+                <Input placeholder="Peça enviada" value={warrantyForm.part_name} onChange={e => setWarrantyForm({ ...warrantyForm, part_name: e.target.value })} className="rounded-xl" />
                 <Input type="date" value={warrantyForm.warranty_date} onChange={e => setWarrantyForm({ ...warrantyForm, warranty_date: e.target.value })} className="rounded-xl" />
               </div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <Input type="number" placeholder="Qtd" value={warrantyForm.quantity} onChange={e => setWarrantyForm({ ...warrantyForm, quantity: e.target.value })} className="rounded-xl" />
-                <Input type="number" step="0.01" placeholder="Custo unitário peça" value={warrantyForm.unit_cost} onChange={e => setWarrantyForm({ ...warrantyForm, unit_cost: e.target.value })} className="rounded-xl" />
+                <Input type="number" step="0.01" placeholder="Custo unitário" value={warrantyForm.unit_cost} onChange={e => setWarrantyForm({ ...warrantyForm, unit_cost: e.target.value })} className="rounded-xl" />
                 <Input type="number" step="0.01" placeholder="Custo frete" value={warrantyForm.shipping_cost} onChange={e => setWarrantyForm({ ...warrantyForm, shipping_cost: e.target.value })} className="rounded-xl" />
                 <Input placeholder="Observações" value={warrantyForm.notes} onChange={e => setWarrantyForm({ ...warrantyForm, notes: e.target.value })} className="rounded-xl" />
                 <Button type="submit" className="rounded-xl"><Plus size={16} className="mr-1" /> Registrar</Button>
@@ -562,7 +695,6 @@ export default function ProdutosPage() {
             </form>
           </div>
 
-          {/* Warranty history */}
           <div className="metric-card">
             <h3 className="section-label mb-4">Histórico de Garantias ({warrantyCosts.length})</h3>
             <div className="overflow-x-auto">
