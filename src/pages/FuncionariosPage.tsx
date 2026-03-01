@@ -103,7 +103,13 @@ export default function FuncionariosPage() {
             <Input type="number" step="0.01" placeholder="Salário" value={form.salary} onChange={e => setForm({ ...form, salary: e.target.value })} className="rounded-xl" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            <Input placeholder="CPF (000.000.000-00)" value={form.cpf} onChange={e => setForm({ ...form, cpf: e.target.value })} className="rounded-xl" />
+            <Input placeholder="CPF (000.000.000-00)" value={form.cpf} onChange={e => {
+              let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+              if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+              else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+              else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+              setForm({ ...form, cpf: v });
+            }} maxLength={14} className="rounded-xl" />
             <Input placeholder="Chave PIX" value={form.pix_key} onChange={e => setForm({ ...form, pix_key: e.target.value })} className="rounded-xl" />
             <Input type="date" value={form.hire_date} onChange={e => setForm({ ...form, hire_date: e.target.value })} className="rounded-xl" />
             <Button type="submit" className="rounded-xl"><Plus size={16} className="mr-1" /> Cadastrar</Button>
