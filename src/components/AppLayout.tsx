@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, DollarSign, Users,
-  CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut, Package, Sparkles, Hammer, ClipboardList
+  CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut, Package, Sparkles, Hammer, ClipboardList, Contact
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +17,7 @@ const navItems = [
   { to: '/materiais', icon: Hammer, label: 'Materiais' },
   { to: '/funcionarios', icon: Users, label: 'Funcionários' },
   { to: '/ordem-servico', icon: ClipboardList, label: 'Ordem de Serviço' },
+  { to: '/clientes', icon: Contact, label: 'Clientes' },
   { to: '/fechamento', icon: CalendarCheck, label: 'Fechamento' },
   { to: '/relatorio-ia', icon: Brain, label: 'Consultor IA' },
 ];

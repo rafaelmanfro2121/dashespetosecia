@@ -15,6 +15,7 @@ import RelatorioIAPage from "@/pages/RelatorioIAPage";
 import ProdutosPage from "@/pages/ProdutosPage";
 import MateriaisPage from "@/pages/MateriaisPage";
 import OrdemServicoPage from "@/pages/OrdemServicoPage";
+import ClientesPage from "@/pages/ClientesPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ function ProtectedRoutes() {
           <Route path="/fechamento" element={<FechamentoPage />} />
           <Route path="/relatorio-ia" element={<RelatorioIAPage />} />
           <Route path="/ordem-servico" element={<OrdemServicoPage />} />
+          <Route path="/clientes" element={<ClientesPage />} />
           {/* Redirect old routes */}
           <Route path="/presenca" element={<Navigate to="/funcionarios" replace />} />
           <Route path="/vales" element={<Navigate to="/funcionarios" replace />} />

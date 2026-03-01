@@ -61,7 +61,7 @@ export default function OrdemServicoPage() {
     // Lock by default if empresa data already saved
     return !!localStorage.getItem(EMPRESA_STORAGE_KEY);
   });
-  const [cliente, setCliente] = useState({ nome: '', telefone: '', cpfCnpj: '', contato: '' });
+  const [cliente, setCliente] = useState({ nome: '', telefone: '', cpfCnpj: '', contato: '', email: '' });
   const [atendimento, setAtendimento] = useState({ vendedor: '', data: new Date().toISOString().split('T')[0], hora: new Date().toTimeString().slice(0, 5) });
   const [items, setItems] = useState<ServiceItem[]>([{ id: 1, name: '', quantity: 1, price: 0 }]);
   const [desconto, setDesconto] = useState(0);
@@ -118,7 +118,7 @@ export default function OrdemServicoPage() {
     // Auto-set next OS number
     const next = getNextOsNumber(savedOrders);
     setOsNumber(next);
-    setCliente({ nome: '', telefone: '', cpfCnpj: '', contato: '' });
+    setCliente({ nome: '', telefone: '', cpfCnpj: '', contato: '', email: '' });
     setAtendimento({ vendedor: '', data: new Date().toISOString().split('T')[0], hora: new Date().toTimeString().slice(0, 5) });
     setItems([{ id: 1, name: '', quantity: 1, price: 0 }]);
     setDesconto(0);
@@ -137,7 +137,7 @@ export default function OrdemServicoPage() {
     const payload = {
       os_number: osNumber,
       empresa_nome: empresa.nome, empresa_cnpj: empresa.cnpj, empresa_telefone: empresa.telefone, empresa_endereco: empresa.endereco, empresa_email: empresa.email,
-      cliente_nome: cliente.nome, cliente_telefone: cliente.telefone, cliente_cpf_cnpj: cliente.cpfCnpj, cliente_contato: cliente.contato,
+      cliente_nome: cliente.nome, cliente_telefone: cliente.telefone, cliente_cpf_cnpj: cliente.cpfCnpj, cliente_contato: cliente.contato, cliente_email: cliente.email,
       vendedor: atendimento.vendedor, atendimento_data: atendimento.data, atendimento_hora: atendimento.hora,
       items: items as any, subtotal, desconto, total,
       forma_pagamento: formaPagamento, descricao_pagamento: descricaoPagamento, observacoes,
@@ -165,7 +165,7 @@ export default function OrdemServicoPage() {
         setOsNumber(next);
       }
       setCurrentOsId(null);
-      setCliente({ nome: '', telefone: '', cpfCnpj: '', contato: '' });
+      setCliente({ nome: '', telefone: '', cpfCnpj: '', contato: '', email: '' });
       setAtendimento({ vendedor: '', data: new Date().toISOString().split('T')[0], hora: new Date().toTimeString().slice(0, 5) });
       setItems([{ id: 1, name: '', quantity: 1, price: 0 }]);
       setDesconto(0);
@@ -182,7 +182,7 @@ export default function OrdemServicoPage() {
     setCurrentOsId(data.id);
     setOsNumber(data.os_number || '');
     // Don't overwrite empresa from loaded OS — keep the locked empresa data
-    setCliente({ nome: data.cliente_nome || '', telefone: data.cliente_telefone || '', cpfCnpj: data.cliente_cpf_cnpj || '', contato: data.cliente_contato || '' });
+    setCliente({ nome: data.cliente_nome || '', telefone: data.cliente_telefone || '', cpfCnpj: data.cliente_cpf_cnpj || '', contato: data.cliente_contato || '', email: (data as any).cliente_email || '' });
     setAtendimento({ vendedor: data.vendedor || '', data: data.atendimento_data || '', hora: data.atendimento_hora || '' });
     setItems((data.items as any as ServiceItem[]) || [{ id: 1, name: '', quantity: 1, price: 0 }]);
     setDesconto(Number(data.desconto) || 0);
@@ -348,7 +348,7 @@ export default function OrdemServicoPage() {
             <div className="border border-gray-300 rounded-lg p-4">
               <h3 className="font-bold text-sm mb-3 text-center border-b border-gray-200 pb-2">Informações do Cliente</h3>
               <div className="space-y-2 text-sm">
-                {([['nome', 'Nome'], ['telefone', 'Telefone'], ['cpfCnpj', 'CPF/CNPJ'], ['contato', 'Contato']] as const).map(([k, l]) => (
+                {([['nome', 'Nome'], ['telefone', 'Telefone'], ['email', 'E-mail'], ['cpfCnpj', 'CPF/CNPJ'], ['contato', 'Contato']] as const).map(([k, l]) => (
                   <div key={k} className="flex items-center gap-2">
                     <span className="font-semibold w-24 text-right">{l}:</span>
                     <Input value={cliente[k]} onChange={e => setCliente(p => ({ ...p, [k]: e.target.value }))} className="flex-1 h-7 text-sm border-gray-300 bg-transparent text-black" />

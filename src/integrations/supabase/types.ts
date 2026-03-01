@@ -360,6 +360,7 @@ export type Database = {
           atendimento_hora: string | null
           cliente_contato: string | null
           cliente_cpf_cnpj: string | null
+          cliente_email: string | null
           cliente_nome: string
           cliente_telefone: string | null
           created_at: string
@@ -385,6 +386,7 @@ export type Database = {
           atendimento_hora?: string | null
           cliente_contato?: string | null
           cliente_cpf_cnpj?: string | null
+          cliente_email?: string | null
           cliente_nome?: string
           cliente_telefone?: string | null
           created_at?: string
@@ -410,6 +412,7 @@ export type Database = {
           atendimento_hora?: string | null
           cliente_contato?: string | null
           cliente_cpf_cnpj?: string | null
+          cliente_email?: string | null
           cliente_nome?: string
           cliente_telefone?: string | null
           created_at?: string
