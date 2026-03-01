@@ -10,8 +10,6 @@ import AuthPage from "@/pages/AuthPage";
 import DashboardPage from "@/pages/DashboardPage";
 import FinanceiroPage from "@/pages/FinanceiroPage";
 import FuncionariosPage from "@/pages/FuncionariosPage";
-import PresencaPage from "@/pages/PresencaPage";
-import ValesPage from "@/pages/ValesPage";
 import FechamentoPage from "@/pages/FechamentoPage";
 import RelatorioIAPage from "@/pages/RelatorioIAPage";
 import ProdutosPage from "@/pages/ProdutosPage";
@@ -45,10 +43,11 @@ function ProtectedRoutes() {
           <Route path="/produtos" element={<ProdutosPage />} />
           <Route path="/materiais" element={<MateriaisPage />} />
           <Route path="/funcionarios" element={<FuncionariosPage />} />
-          <Route path="/presenca" element={<PresencaPage />} />
-          <Route path="/vales" element={<ValesPage />} />
           <Route path="/fechamento" element={<FechamentoPage />} />
           <Route path="/relatorio-ia" element={<RelatorioIAPage />} />
+          {/* Redirect old routes */}
+          <Route path="/presenca" element={<Navigate to="/funcionarios" replace />} />
+          <Route path="/vales" element={<Navigate to="/funcionarios" replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AppLayout>

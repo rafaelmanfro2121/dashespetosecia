@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, DollarSign, Users, ClipboardCheck,
-  Banknote, CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut, Package, Sparkles, Hammer
+  LayoutDashboard, DollarSign, Users,
+  CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut, Package, Sparkles, Hammer
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,8 +15,6 @@ const navItems = [
   { to: '/produtos', icon: Package, label: 'Produtos' },
   { to: '/materiais', icon: Hammer, label: 'Materiais' },
   { to: '/funcionarios', icon: Users, label: 'Funcionários' },
-  { to: '/presenca', icon: ClipboardCheck, label: 'Presença' },
-  { to: '/vales', icon: Banknote, label: 'Vales' },
   { to: '/fechamento', icon: CalendarCheck, label: 'Fechamento' },
   { to: '/relatorio-ia', icon: Brain, label: 'Consultor IA' },
 ];
@@ -27,7 +25,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { signOut } = useAuth();
   const isMobile = useIsMobile();
 
-  // On mobile, show only the quick input interface
   if (isMobile) {
     return <MobileQuickInput />;
   }
