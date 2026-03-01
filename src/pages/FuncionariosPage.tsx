@@ -24,7 +24,7 @@ export default function FuncionariosPage() {
   const { employees, addEmployee, updateEmployee, removeEmployee, attendance, addAttendance, vales, addVale, removeVale } = useFinance();
   const [form, setForm] = useState({
     name: '', age: '', job_function: '', salary: '3000', hire_date: new Date().toISOString().slice(0, 10),
-    cpf: '', pix_key: '',
+    cpf: '', pix_key: '', payment_type: 'mensal' as 'mensal' | 'diaria',
   });
   const [uploading, setUploading] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,9 +91,9 @@ export default function FuncionariosPage() {
       await addEmployee({
         name: form.name, salary: parseFloat(form.salary), hire_date: form.hire_date, status: 'ativo',
         age: form.age ? parseInt(form.age) : null, job_function: form.job_function || '',
-        cpf: form.cpf || '', pix_key: form.pix_key || '',
+        cpf: form.cpf || '', pix_key: form.pix_key || '', payment_type: form.payment_type,
       });
-      setForm({ name: '', age: '', job_function: '', salary: '3000', hire_date: new Date().toISOString().slice(0, 10), cpf: '', pix_key: '' });
+      setForm({ name: '', age: '', job_function: '', salary: '3000', hire_date: new Date().toISOString().slice(0, 10), cpf: '', pix_key: '', payment_type: 'mensal' });
       toast.success('Funcionário cadastrado');
     } catch { /* handled */ }
   };
@@ -150,16 +150,26 @@ export default function FuncionariosPage() {
       const presences = monthAtt.filter(a => a.status === 'presente').length;
       const absences = monthAtt.filter(a => a.status === 'falta').length;
       const halfDays = monthAtt.filter(a => a.status === 'meio-periodo').length;
-      const dailyRate = Number(emp.salary) / 30;
-      const hourlyRate = dailyRate / 8;
-      const absenceDiscount = (absences * dailyRate) + (halfDays * dailyRate * 0.5);
       const empVales = vales.filter(v => {
         const d = new Date(v.vale_date + 'T12:00:00');
         return v.employee_id === emp.id && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
       });
       const valesTotal = empVales.reduce((s, v) => s + Number(v.amount), 0);
-      const finalSalary = Math.max(0, Number(emp.salary) - absenceDiscount - valesTotal);
-      const hoursWorked = (presences * 8) + (halfDays * 4);
+
+      const paymentType = emp.payment_type || 'mensal';
+      const salaryValue = Number(emp.salary);
+      let absenceDiscount = 0;
+      let finalSalary = 0;
+      let hoursWorked = (presences * 8) + (halfDays * 4);
+
+      if (paymentType === 'diaria') {
+        const earned = (presences + halfDays * 0.5) * salaryValue;
+        finalSalary = Math.max(0, earned - valesTotal);
+      } else {
+        const dailyRate = salaryValue / 30;
+        absenceDiscount = (absences * dailyRate) + (halfDays * dailyRate * 0.5);
+        finalSalary = Math.max(0, salaryValue - absenceDiscount - valesTotal);
+      }
 
       // PDF Content
       pdf.setFont('helvetica', 'bold');
@@ -187,6 +197,7 @@ export default function FuncionariosPage() {
         ['Nome:', emp.name],
         ['CPF:', emp.cpf || '—'],
         ['Função:', emp.job_function || '—'],
+        ['Tipo Pagamento:', paymentType === 'diaria' ? 'Diária' : 'Mensal Fixo'],
         ['Chave PIX:', emp.pix_key || '—'],
         ['Data Admissão:', new Date(emp.hire_date + 'T12:00:00').toLocaleDateString('pt-BR')],
       ];
@@ -211,8 +222,14 @@ export default function FuncionariosPage() {
         ['Meio Período:', String(halfDays)],
         ['Faltas:', String(absences)],
         ['Horas Trabalhadas:', `${hoursWorked}h`],
-        ['Valor Hora:', formatCurrencySimple(hourlyRate)],
       ];
+      if (paymentType === 'diaria') {
+        attInfo.push(['Valor da Diária:', formatCurrencySimple(salaryValue)]);
+        attInfo.push(['Total Bruto (dias):', formatCurrencySimple((presences + halfDays * 0.5) * salaryValue)]);
+      } else {
+        const hourlyRate = (salaryValue / 30) / 8;
+        attInfo.push(['Valor Hora:', formatCurrencySimple(hourlyRate)]);
+      }
       attInfo.forEach(([label, val]) => {
         pdf.setFont('helvetica', 'bold');
         pdf.text(label, 25, y);
@@ -238,11 +255,14 @@ export default function FuncionariosPage() {
       pdf.setTextColor(0, 0, 0);
       y += 8;
 
-      const rows = [
-        ['Salário Base', formatCurrencySimple(Number(emp.salary))],
-        [`Desconto Faltas (${absences} dias)`, absenceDiscount > 0 ? `- ${formatCurrencySimple(absenceDiscount)}` : '—'],
-        [`Desconto Meio Período (${halfDays} dias)`, halfDays > 0 ? '(incluso acima)' : '—'],
-      ];
+      const rows: string[][] = [];
+      if (paymentType === 'diaria') {
+        rows.push(['Diárias Trabalhadas (' + presences + ' dias + ' + halfDays + ' meio)', formatCurrencySimple((presences + halfDays * 0.5) * salaryValue)]);
+      } else {
+        rows.push(['Salário Base (Mensal)', formatCurrencySimple(salaryValue)]);
+        rows.push([`Desconto Faltas (${absences} dias)`, absenceDiscount > 0 ? `- ${formatCurrencySimple(absenceDiscount)}` : '—']);
+        if (halfDays > 0) rows.push([`Desconto Meio Período (${halfDays} dias)`, '(incluso acima)']);
+      }
 
       // Add each vale as a row
       empVales.forEach(v => {
@@ -333,7 +353,14 @@ export default function FuncionariosPage() {
                 <Input placeholder="Nome completo" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="rounded-xl" />
                 <Input type="number" placeholder="Idade" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} className="rounded-xl" />
                 <Input placeholder="Função (ex: Soldador)" value={form.job_function} onChange={e => setForm({ ...form, job_function: e.target.value })} className="rounded-xl" />
-                <Input type="number" step="0.01" placeholder="Salário" value={form.salary} onChange={e => setForm({ ...form, salary: e.target.value })} className="rounded-xl" />
+                <Select value={form.payment_type} onValueChange={v => setForm({ ...form, payment_type: v as 'mensal' | 'diaria' })}>
+                  <SelectTrigger className="rounded-xl"><SelectValue placeholder="Tipo Pgto" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mensal">Mensal (fixo)</SelectItem>
+                    <SelectItem value="diaria">Diária</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input type="number" step="0.01" placeholder={form.payment_type === 'diaria' ? 'Valor da diária' : 'Salário mensal'} value={form.salary} onChange={e => setForm({ ...form, salary: e.target.value })} className="rounded-xl" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 <Input placeholder="CPF" value={form.cpf} onChange={e => handleCpfChange(e.target.value)} maxLength={14} className="rounded-xl" />
@@ -352,9 +379,10 @@ export default function FuncionariosPage() {
                   <tr className="border-b text-left">
                     <th className="pb-3 font-medium text-muted-foreground text-xs">Nome</th>
                     <th className="pb-3 font-medium text-muted-foreground text-xs">Função</th>
+                    <th className="pb-3 font-medium text-muted-foreground text-xs">Tipo</th>
                     <th className="pb-3 font-medium text-muted-foreground text-xs">CPF</th>
                     <th className="pb-3 font-medium text-muted-foreground text-xs">PIX</th>
-                    <th className="pb-3 font-medium text-muted-foreground text-xs">Salário</th>
+                    <th className="pb-3 font-medium text-muted-foreground text-xs">Valor</th>
                     <th className="pb-3 font-medium text-muted-foreground text-xs">Contrato</th>
                     <th className="pb-3 font-medium text-muted-foreground text-xs">Status</th>
                     <th className="pb-3"></th>
@@ -362,7 +390,7 @@ export default function FuncionariosPage() {
                 </thead>
                 <tbody>
                   {employees.length === 0 && (
-                    <tr><td colSpan={8} className="text-center py-10 text-muted-foreground">Nenhum funcionário cadastrado</td></tr>
+                    <tr><td colSpan={9} className="text-center py-10 text-muted-foreground">Nenhum funcionário cadastrado</td></tr>
                   )}
                   {employees.map(emp => {
                     const empAny = emp as any;
@@ -373,9 +401,17 @@ export default function FuncionariosPage() {
                           {empAny.age && <span className="text-xs text-muted-foreground ml-1">({empAny.age}a)</span>}
                         </td>
                         <td className="py-3 text-muted-foreground text-xs">{empAny.job_function || '—'}</td>
+                        <td className="py-3">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${empAny.payment_type === 'diaria' ? 'bg-warning/15 text-warning' : 'bg-primary/10 text-primary'}`}>
+                            {empAny.payment_type === 'diaria' ? 'Diária' : 'Mensal'}
+                          </span>
+                        </td>
                         <td className="py-3 text-muted-foreground font-mono text-xs">{empAny.cpf || '—'}</td>
                         <td className="py-3 text-muted-foreground font-mono text-xs">{empAny.pix_key || '—'}</td>
-                        <td className="py-3 font-mono">{formatCurrency(Number(emp.salary))}</td>
+                        <td className="py-3 font-mono">
+                          {formatCurrency(Number(emp.salary))}
+                          <span className="text-muted-foreground text-[10px] ml-1">{empAny.payment_type === 'diaria' ? '/dia' : '/mês'}</span>
+                        </td>
                         <td className="py-3">
                           {empAny.contract_url ? (
                             <div className="flex items-center gap-1">

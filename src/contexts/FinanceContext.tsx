@@ -27,6 +27,7 @@ export interface Employee {
   contract_url?: string | null;
   cpf?: string;
   pix_key?: string;
+  payment_type?: 'mensal' | 'diaria';
 }
 
 export interface AttendanceRecord {
@@ -157,6 +158,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.from('employees').update({
       name: e.name, salary: e.salary, hire_date: e.hire_date, status: e.status,
       age: (e as any).age, job_function: (e as any).job_function, contract_url: (e as any).contract_url,
+      payment_type: (e as any).payment_type,
     }).eq('id', e.id);
     if (error) { toast.error('Erro ao atualizar'); return; }
     await fetchAll();
@@ -227,17 +229,33 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         const d = new Date(a.presence_date + 'T12:00:00');
         return a.employee_id === emp.id && d.getMonth() === month && d.getFullYear() === year;
       });
+      const presences = monthAtt.filter(a => a.status === 'presente').length;
       const absences = monthAtt.filter(a => a.status === 'falta').length;
       const halfDays = monthAtt.filter(a => a.status === 'meio-periodo').length;
-      const dailyRate = Number(emp.salary) / 30;
-      const absenceDiscount = (absences * dailyRate) + (halfDays * dailyRate * 0.5);
       const empVales = vales.filter(v => {
         const d = new Date(v.vale_date + 'T12:00:00');
         return v.employee_id === emp.id && d.getMonth() === month && d.getFullYear() === year;
       });
       const valesTotal = empVales.reduce((s, v) => s + Number(v.amount), 0);
-      const finalSalary = Math.max(0, Number(emp.salary) - absenceDiscount - valesTotal);
-      return { employeeId: emp.id, employeeName: emp.name, baseSalary: Number(emp.salary), absences, halfDays, absenceDiscount, valesTotal, finalSalary };
+
+      const paymentType = (emp as any).payment_type || 'mensal';
+      let absenceDiscount = 0;
+      let baseSalary = Number(emp.salary);
+      let finalSalary = 0;
+
+      if (paymentType === 'diaria') {
+        // Daily: salary field = daily rate, pay = (presences + halfDays*0.5) * dailyRate
+        const earned = (presences + halfDays * 0.5) * baseSalary;
+        absenceDiscount = 0;
+        finalSalary = Math.max(0, earned - valesTotal);
+      } else {
+        // Monthly: fixed salary minus absences
+        const dailyRate = baseSalary / 30;
+        absenceDiscount = (absences * dailyRate) + (halfDays * dailyRate * 0.5);
+        finalSalary = Math.max(0, baseSalary - absenceDiscount - valesTotal);
+      }
+
+      return { employeeId: emp.id, employeeName: emp.name, baseSalary, absences, halfDays, absenceDiscount, valesTotal, finalSalary };
     });
 
     const totalSalaries = employeeDetails.reduce((s, e) => s + e.finalSalary, 0);
