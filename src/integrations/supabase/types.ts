@@ -433,6 +433,56 @@ export type Database = {
           },
         ]
       }
+      warranty_costs: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          notes: string | null
+          part_name: string
+          product_id: string | null
+          quantity: number
+          shipping_cost: number
+          total_cost: number
+          unit_cost: number
+          warranty_date: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          notes?: string | null
+          part_name: string
+          product_id?: string | null
+          quantity?: number
+          shipping_cost?: number
+          total_cost?: number
+          unit_cost?: number
+          warranty_date?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          part_name?: string
+          product_id?: string | null
+          quantity?: number
+          shipping_cost?: number
+          total_cost?: number
+          unit_cost?: number
+          warranty_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warranty_costs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
