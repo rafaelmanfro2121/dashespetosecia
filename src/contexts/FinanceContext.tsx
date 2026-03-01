@@ -25,6 +25,8 @@ export interface Employee {
   age?: number | null;
   job_function?: string;
   contract_url?: string | null;
+  cpf?: string;
+  pix_key?: string;
 }
 
 export interface AttendanceRecord {

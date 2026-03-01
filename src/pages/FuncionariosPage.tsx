@@ -10,7 +10,8 @@ import { toast } from 'sonner';
 export default function FuncionariosPage() {
   const { employees, addEmployee, updateEmployee, removeEmployee } = useFinance();
   const [form, setForm] = useState({
-    name: '', age: '', job_function: '', salary: '3000', hire_date: new Date().toISOString().slice(0, 10)
+    name: '', age: '', job_function: '', salary: '3000', hire_date: new Date().toISOString().slice(0, 10),
+    cpf: '', pix_key: '',
   });
   const [uploading, setUploading] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,8 +28,10 @@ export default function FuncionariosPage() {
         status: 'ativo',
         age: form.age ? parseInt(form.age) : null,
         job_function: form.job_function || '',
+        cpf: form.cpf || '',
+        pix_key: form.pix_key || '',
       });
-      setForm({ name: '', age: '', job_function: '', salary: '3000', hire_date: new Date().toISOString().slice(0, 10) });
+      setForm({ name: '', age: '', job_function: '', salary: '3000', hire_date: new Date().toISOString().slice(0, 10), cpf: '', pix_key: '' });
       toast.success('Funcionário cadastrado');
     } catch { /* handled */ }
   };
@@ -92,13 +95,19 @@ export default function FuncionariosPage() {
 
       <div className="metric-card mb-6">
         <h3 className="text-sm font-bold mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Novo Funcionário</h3>
-        <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <Input placeholder="Nome completo" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="rounded-xl" />
-          <Input type="number" placeholder="Idade" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} className="rounded-xl" />
-          <Input placeholder="Função (ex: Soldador)" value={form.job_function} onChange={e => setForm({ ...form, job_function: e.target.value })} className="rounded-xl" />
-          <Input type="number" step="0.01" placeholder="Salário" value={form.salary} onChange={e => setForm({ ...form, salary: e.target.value })} className="rounded-xl" />
-          <Input type="date" value={form.hire_date} onChange={e => setForm({ ...form, hire_date: e.target.value })} className="rounded-xl" />
-          <Button type="submit" className="rounded-xl"><Plus size={16} className="mr-1" /> Cadastrar</Button>
+        <form onSubmit={handleAdd} className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <Input placeholder="Nome completo" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="rounded-xl" />
+            <Input type="number" placeholder="Idade" value={form.age} onChange={e => setForm({ ...form, age: e.target.value })} className="rounded-xl" />
+            <Input placeholder="Função (ex: Soldador)" value={form.job_function} onChange={e => setForm({ ...form, job_function: e.target.value })} className="rounded-xl" />
+            <Input type="number" step="0.01" placeholder="Salário" value={form.salary} onChange={e => setForm({ ...form, salary: e.target.value })} className="rounded-xl" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <Input placeholder="CPF (000.000.000-00)" value={form.cpf} onChange={e => setForm({ ...form, cpf: e.target.value })} className="rounded-xl" />
+            <Input placeholder="Chave PIX" value={form.pix_key} onChange={e => setForm({ ...form, pix_key: e.target.value })} className="rounded-xl" />
+            <Input type="date" value={form.hire_date} onChange={e => setForm({ ...form, hire_date: e.target.value })} className="rounded-xl" />
+            <Button type="submit" className="rounded-xl"><Plus size={16} className="mr-1" /> Cadastrar</Button>
+          </div>
         </form>
       </div>
 
@@ -111,8 +120,9 @@ export default function FuncionariosPage() {
                 <th className="pb-3 font-medium text-muted-foreground text-xs">Nome</th>
                 <th className="pb-3 font-medium text-muted-foreground text-xs">Idade</th>
                 <th className="pb-3 font-medium text-muted-foreground text-xs">Função</th>
+                <th className="pb-3 font-medium text-muted-foreground text-xs">CPF</th>
+                <th className="pb-3 font-medium text-muted-foreground text-xs">Chave PIX</th>
                 <th className="pb-3 font-medium text-muted-foreground text-xs">Salário</th>
-                <th className="pb-3 font-medium text-muted-foreground text-xs">Valor/Dia</th>
                 <th className="pb-3 font-medium text-muted-foreground text-xs">Admissão</th>
                 <th className="pb-3 font-medium text-muted-foreground text-xs">Contrato</th>
                 <th className="pb-3 font-medium text-muted-foreground text-xs">Status</th>
@@ -121,18 +131,18 @@ export default function FuncionariosPage() {
             </thead>
             <tbody>
               {employees.length === 0 && (
-                <tr><td colSpan={9} className="text-center py-10 text-muted-foreground">Nenhum funcionário cadastrado</td></tr>
+                <tr><td colSpan={10} className="text-center py-10 text-muted-foreground">Nenhum funcionário cadastrado</td></tr>
               )}
               {employees.map(emp => {
-                const daily = Number(emp.salary) / 30;
                 const empAny = emp as any;
                 return (
                   <tr key={emp.id} className="border-b border-muted/40 hover:bg-muted/20 transition-colors">
                     <td className="py-3 font-medium">{emp.name}</td>
                     <td className="py-3 text-muted-foreground">{empAny.age || '—'}</td>
                     <td className="py-3 text-muted-foreground">{empAny.job_function || '—'}</td>
+                    <td className="py-3 text-muted-foreground font-mono text-xs">{empAny.cpf || '—'}</td>
+                    <td className="py-3 text-muted-foreground font-mono text-xs">{empAny.pix_key || '—'}</td>
                     <td className="py-3 font-mono">{formatCurrency(Number(emp.salary))}</td>
-                    <td className="py-3 font-mono text-muted-foreground">{formatCurrency(daily)}</td>
                     <td className="py-3 text-muted-foreground">{new Date(emp.hire_date + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
                     <td className="py-3">
                       {empAny.contract_url ? (
