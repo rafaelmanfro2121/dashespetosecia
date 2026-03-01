@@ -33,21 +33,23 @@ export default function FuncionariosPage() {
   // Vales form
   const [valeForm, setValeForm] = useState({ employee_id: '', vale_date: new Date().toISOString().slice(0, 10), amount: '', description: '' });
 
-  const month = getCurrentMonth();
-  const year = getCurrentYear();
-  const daysInMonth = getDaysInMonth(month, year);
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+  const [selectedYear, setSelectedYear] = useState(getCurrentYear());
+  const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
   const activeEmployees = employees.filter(e => e.status === 'ativo');
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const months = Array.from({ length: 12 }, (_, i) => i);
+  const years = [getCurrentYear() - 2, getCurrentYear() - 1, getCurrentYear(), getCurrentYear() + 1];
 
   // Attendance helpers
   const getStatus = (empId: string, day: number): AttendanceStatus | null => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const record = attendance.find(a => a.employee_id === empId && a.presence_date === dateStr);
     return (record?.status as AttendanceStatus) || null;
   };
 
   const cycleStatus = (empId: string, day: number) => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const current = getStatus(empId, day);
     const cycle: AttendanceStatus[] = ['presente', 'falta', 'meio-periodo'];
     const nextIdx = current ? (cycle.indexOf(current) + 1) % cycle.length : 0;
@@ -57,7 +59,7 @@ export default function FuncionariosPage() {
   // Vales helpers
   const monthVales = vales.filter(v => {
     const d = new Date(v.vale_date + 'T12:00:00');
-    return d.getMonth() === month && d.getFullYear() === year;
+    return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
   });
   const totalVales = monthVales.reduce((s, v) => s + Number(v.amount), 0);
 
@@ -143,7 +145,7 @@ export default function FuncionariosPage() {
       // Employee attendance for the month
       const monthAtt = attendance.filter(a => {
         const d = new Date(a.presence_date + 'T12:00:00');
-        return a.employee_id === emp.id && d.getMonth() === month && d.getFullYear() === year;
+        return a.employee_id === emp.id && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
       });
       const presences = monthAtt.filter(a => a.status === 'presente').length;
       const absences = monthAtt.filter(a => a.status === 'falta').length;
@@ -153,7 +155,7 @@ export default function FuncionariosPage() {
       const absenceDiscount = (absences * dailyRate) + (halfDays * dailyRate * 0.5);
       const empVales = vales.filter(v => {
         const d = new Date(v.vale_date + 'T12:00:00');
-        return v.employee_id === emp.id && d.getMonth() === month && d.getFullYear() === year;
+        return v.employee_id === emp.id && d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
       });
       const valesTotal = empVales.reduce((s, v) => s + Number(v.amount), 0);
       const finalSalary = Math.max(0, Number(emp.salary) - absenceDiscount - valesTotal);
@@ -171,7 +173,7 @@ export default function FuncionariosPage() {
       pdf.line(20, 32, pw - 20, 32);
 
       pdf.setFontSize(11);
-      pdf.text(`Referência: ${getMonthName(month)} / ${year}`, pw / 2, 40, { align: 'center' });
+      pdf.text(`Referência: ${getMonthName(selectedMonth)} / ${selectedYear}`, pw / 2, 40, { align: 'center' });
 
       // Employee info
       let y = 50;
@@ -291,7 +293,7 @@ export default function FuncionariosPage() {
       pdf.text('Espetos & Cia — Sistema de Gestão', pw / 2, y + 5, { align: 'center' });
       pdf.setTextColor(0, 0, 0);
 
-      pdf.save(`comprovante_${emp.name.replace(/\s/g, '_')}_${getMonthName(month)}_${year}.pdf`);
+      pdf.save(`comprovante_${emp.name.replace(/\s/g, '_')}_${getMonthName(selectedMonth)}_${selectedYear}.pdf`);
       toast.success('Comprovante gerado!');
     } catch (err) {
       console.error(err);
@@ -413,8 +415,16 @@ export default function FuncionariosPage() {
 
         {/* === PRESENÇA TAB === */}
         <TabsContent value="presenca">
-          <div className="mb-4">
-            <p className="text-muted-foreground text-xs">{getMonthName(month)} de {year} — Clique para alternar: P / F / ½</p>
+          <div className="flex items-center gap-3 mb-4">
+            <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
+              <SelectTrigger className="w-36 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>{months.map(m => <SelectItem key={m} value={String(m)}>{getMonthName(m)}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
+              <SelectTrigger className="w-24 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+            </Select>
+            <p className="text-muted-foreground text-xs">Clique para alternar: P / F / ½</p>
           </div>
           {activeEmployees.length === 0 ? (
             <div className="metric-card text-center py-12 text-muted-foreground">Cadastre funcionários primeiro</div>
@@ -454,8 +464,16 @@ export default function FuncionariosPage() {
 
         {/* === VALES TAB === */}
         <TabsContent value="vales">
-          <div className="mb-4">
-            <p className="text-muted-foreground text-xs">{getMonthName(month)} de {year} — Total: {formatCurrency(totalVales)}</p>
+          <div className="flex items-center gap-3 mb-4">
+            <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
+              <SelectTrigger className="w-36 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>{months.map(m => <SelectItem key={m} value={String(m)}>{getMonthName(m)}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
+              <SelectTrigger className="w-24 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+            </Select>
+            <p className="text-muted-foreground text-xs">Total: {formatCurrency(totalVales)}</p>
           </div>
 
           <div className="metric-card mb-6">
