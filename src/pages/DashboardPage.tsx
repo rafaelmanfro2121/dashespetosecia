@@ -10,6 +10,11 @@ import {
 } from 'recharts';
 
 const COLORS = ['hsl(225,65%,48%)', 'hsl(155,55%,42%)', 'hsl(0,75%,55%)', 'hsl(210,95%,55%)', 'hsl(38,90%,50%)', 'hsl(280,55%,55%)', 'hsl(180,50%,42%)', 'hsl(30,80%,55%)'];
+const MODEL_COLORS: Record<string, string> = {
+  FAZE: 'hsl(225,65%,48%)',
+  LEGACY: 'hsl(155,55%,42%)',
+  IMPERIAL: 'hsl(38,90%,50%)',
+};
 
 interface Product {
   id: string;
@@ -22,9 +27,17 @@ interface Product {
   is_active: boolean;
 }
 
+interface PaidOS {
+  os_number: string;
+  atendimento_data: string;
+  items: Array<{ name?: string; quantity?: number }>;
+  payment_status: string;
+}
+
 export default function DashboardPage() {
   const { getMonthlyClosing, getMonthTransactions, transactions, attendance, loading } = useFinance();
   const [products, setProducts] = useState<Product[]>([]);
+  const [paidOrders, setPaidOrders] = useState<PaidOS[]>([]);
   const month = getCurrentMonth();
   const year = getCurrentYear();
   const closing = getMonthlyClosing(month, year);
@@ -35,22 +48,63 @@ export default function DashboardPage() {
     if (data) setProducts(data as Product[]);
   }, []);
 
-  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  const fetchPaidOrders = useCallback(async () => {
+    const { data } = await supabase
+      .from('service_orders')
+      .select('os_number, atendimento_data, items, payment_status')
+      .neq('payment_status', 'pendente');
+    if (data) setPaidOrders(data as PaidOS[]);
+  }, []);
 
-  // ---- INFOGRÁFICO DATA ----
+  useEffect(() => { fetchProducts(); fetchPaidOrders(); }, [fetchProducts, fetchPaidOrders]);
 
-  // Churrasqueiras vendidas por mês (últimos 6 meses)
+  // ---- Count churrasqueiras from paid service orders ----
+  const getModelFromItems = (items: Array<{ name?: string; quantity?: number }> | null): string[] => {
+    if (!items || !Array.isArray(items)) return [];
+    const models: string[] = [];
+    items.forEach(item => {
+      const name = (item.name || '').toUpperCase();
+      if (name.includes('FAZE')) models.push('FAZE');
+      else if (name.includes('LEGACY')) models.push('LEGACY');
+      else if (name.includes('IMPERIAL')) models.push('IMPERIAL');
+      else if (name.includes('CHURRASQUEIRA')) models.push('OUTRO');
+    });
+    return models;
+  };
+
+  const filterOsByMonth = (m: number, y: number) => {
+    return paidOrders.filter(os => {
+      const d = new Date(os.atendimento_data + 'T12:00:00');
+      return d.getMonth() === m && d.getFullYear() === y;
+    });
+  };
+
+  // Current month model counts
+  const currentMonthOS = filterOsByMonth(month, year);
+  const modelCounts: Record<string, number> = { FAZE: 0, LEGACY: 0, IMPERIAL: 0 };
+  let totalChurrasqueirasMonth = 0;
+  currentMonthOS.forEach(os => {
+    const models = getModelFromItems(os.items);
+    models.forEach(m => {
+      if (m in modelCounts) modelCounts[m]++;
+      totalChurrasqueirasMonth++;
+    });
+  });
+
+  // Churrasqueiras vendidas por mês (últimos 6 meses) from service_orders
   const churrasqueirasByMonth = [];
   for (let i = 5; i >= 0; i--) {
     let m = month - i;
     let y = year;
     if (m < 0) { m += 12; y -= 1; }
+    const monthOS = filterOsByMonth(m, y);
+    let count = 0;
+    monthOS.forEach(os => { count += getModelFromItems(os.items).length; });
+    // Revenue still from transactions
     const mTx = transactions.filter(t => {
       const d = new Date(t.transaction_date + 'T12:00:00');
       return d.getMonth() === m && d.getFullYear() === y && t.type === 'entrada';
     });
-    // Count entries that mention churrasqueira
-    const count = mTx.filter(t => t.description.toLowerCase().includes('churrasqueir')).length;
     const totalSales = mTx.reduce((s, t) => s + Number(t.amount), 0);
     churrasqueirasByMonth.push({
       name: getMonthName(m).slice(0, 3),
@@ -181,7 +235,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <div className="metric-card text-center">
           <Flame size={20} className="text-primary mx-auto mb-2" />
-          <p className="text-2xl font-bold text-foreground">{churrasqueirasByMonth[churrasqueirasByMonth.length - 1]?.churrasqueiras || 0}</p>
+          <p className="text-2xl font-bold text-foreground">{totalChurrasqueirasMonth}</p>
           <p className="text-[11px] text-muted-foreground mt-1">Churrasqueiras vendidas</p>
           <p className="text-[10px] text-muted-foreground">este mês</p>
         </div>
@@ -209,6 +263,17 @@ export default function DashboardPage() {
           <p className="text-xs font-semibold text-success">{formatCurrency(annualForecastProfit)} lucro</p>
           <p className="text-[11px] text-muted-foreground mt-1">Previsão anual</p>
         </div>
+      </div>
+
+      {/* Vendas por Modelo */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        {Object.entries(modelCounts).map(([model, count]) => (
+          <div key={model} className="metric-card text-center border-t-4" style={{ borderTopColor: MODEL_COLORS[model] || 'hsl(0,0%,70%)' }}>
+            <p className="text-2xl font-bold text-foreground">{count}</p>
+            <p className="text-xs font-semibold mt-1" style={{ color: MODEL_COLORS[model] }}>{model}</p>
+            <p className="text-[10px] text-muted-foreground">vendidas este mês</p>
+          </div>
+        ))}
       </div>
 
       {/* Churrasqueiras vendidas por mês */}
