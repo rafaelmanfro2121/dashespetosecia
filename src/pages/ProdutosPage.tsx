@@ -61,6 +61,7 @@ export default function ProdutosPage() {
   const [productMaterials, setProductMaterials] = useState<ProductMaterial[]>([]);
   const [materialPrices, setMaterialPrices] = useState<MaterialPrice[]>([]);
   const [warrantyCosts, setWarrantyCosts] = useState<WarrantyCost[]>([]);
+  const [osSalesCount, setOsSalesCount] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
 
@@ -82,16 +83,41 @@ export default function ProdutosPage() {
   });
 
   const fetchAll = useCallback(async () => {
-    const [{ data: prodData }, { data: pmData }, { data: purchaseData }, { data: warrantyData }] = await Promise.all([
+    const [{ data: prodData }, { data: pmData }, { data: purchaseData }, { data: warrantyData }, { data: osData }] = await Promise.all([
       supabase.from('products').select('*').order('name'),
       supabase.from('product_materials').select('*'),
       supabase.from('material_purchases').select('material_name, unit_price, total_cost, quantity'),
       supabase.from('warranty_costs').select('*').order('warranty_date', { ascending: false }),
+      supabase.from('service_orders').select('items'),
     ]);
 
     if (prodData) setProducts(prodData as Product[]);
     if (pmData) setProductMaterials(pmData as ProductMaterial[]);
     if (warrantyData) setWarrantyCosts(warrantyData as WarrantyCost[]);
+
+    // Count units sold from OS items matching product names
+    if (osData && prodData) {
+      const salesCount: Record<string, number> = {};
+      (prodData as Product[]).forEach(p => { salesCount[p.id] = 0; });
+      (osData as any[]).forEach(os => {
+        if (!Array.isArray(os.items)) return;
+        os.items.forEach((item: any) => {
+          const itemName = String(item?.name || '').toUpperCase();
+          (prodData as Product[]).forEach(p => {
+            const pName = p.name.toUpperCase();
+            // Match if item name contains the product name or vice-versa
+            if (itemName.includes(pName) || pName.includes(itemName) || 
+                (itemName.includes('CHURRASQUEIRA') && pName.includes('CHURRASQUEIRA')) ||
+                (itemName.includes('FAZE') && pName.includes('FAZE')) ||
+                (itemName.includes('LEGACY') && pName.includes('LEGACY')) ||
+                (itemName.includes('IMPERIAL') && pName.includes('IMPERIAL'))) {
+              salesCount[p.id] = (salesCount[p.id] || 0) + (Number(item.quantity) || 1);
+            }
+          });
+        });
+      });
+      setOsSalesCount(salesCount);
+    }
 
     if (purchaseData) {
       const matMap: Record<string, { totalCost: number; totalQty: number }> = {};
@@ -243,7 +269,7 @@ export default function ProdutosPage() {
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
-  const totalUnitsSold = products.reduce((s, p) => s + Number(p.units_sold), 0);
+  const totalUnitsSold = Object.values(osSalesCount).reduce((s, c) => s + c, 0);
 
   return (
     <div>
@@ -476,16 +502,8 @@ export default function ProdutosPage() {
                         </span>
                       </div>
                       <div className="text-center hidden md:block">
-                        <span className="text-[10px] text-muted-foreground block">Vendidos</span>
-                        {isEditing ? (
-                          <Input type="number" value={editForm.units_sold ?? 0} onChange={e => setEditForm({ ...editForm, units_sold: parseInt(e.target.value) })} className="h-7 text-sm w-16" />
-                        ) : (
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => updateUnitsSold(p.id, Math.max(0, Number(p.units_sold) - 1))} className="text-muted-foreground hover:text-foreground text-xs px-1">−</button>
-                            <span className="font-mono w-6 text-center">{p.units_sold}</span>
-                            <button onClick={() => updateUnitsSold(p.id, Number(p.units_sold) + 1)} className="text-muted-foreground hover:text-foreground text-xs px-1">+</button>
-                          </div>
-                        )}
+                        <span className="text-[10px] text-muted-foreground block">Vendidos (OS)</span>
+                        <span className="font-mono w-6 text-center">{osSalesCount[p.id] || 0}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         {isEditing ? (
