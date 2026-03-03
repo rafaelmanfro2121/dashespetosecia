@@ -196,8 +196,6 @@ export default function OrdemServicoPage() {
       user_id: user.id,
     };
 
-    const isNew = !currentOsId;
-
     if (currentOsId) {
       const { error } = await supabase.from('service_orders').update(payload).eq('id', currentOsId);
       if (error) { toast.error('Erro ao atualizar'); return; }
@@ -208,69 +206,6 @@ export default function OrdemServicoPage() {
       toast.success('OS salva com sucesso!');
     }
 
-    // Auto-register sale as "entrada" transaction (only on new OS)
-    if (isNew && total > 0) {
-      try {
-        // Find "Vendas" category
-        const { data: cats } = await supabase.from('categories').select('id').eq('name', 'Vendas').limit(1);
-        const vendaCatId = cats?.[0]?.id || null;
-
-        // Identify churrasqueira type from items
-        const churrasqueiraTypes: string[] = [];
-        for (const item of items) {
-          const nameUpper = item.name.toUpperCase();
-          if (nameUpper.includes('FAZE')) churrasqueiraTypes.push('FAZE');
-          else if (nameUpper.includes('LEGACY')) churrasqueiraTypes.push('LEGACY');
-          else if (nameUpper.includes('IMPERIAL')) churrasqueiraTypes.push('IMPERIAL');
-        }
-
-        const typeLabel = churrasqueiraTypes.length > 0
-          ? `Venda ${churrasqueiraTypes.join(' + ')}` 
-          : 'Venda OS';
-        const description = `${typeLabel} - OS #${osNumber} - ${cliente.nome}`;
-
-        await supabase.from('transactions').insert({
-          transaction_date: atendimento.data,
-          description,
-          category_id: vendaCatId,
-          type: 'entrada',
-          amount: total,
-          payment_method: formaPagamento || 'Não especificado',
-          user_id: user.id,
-        });
-
-        // Auto-register products if not already in catalog
-        const { data: existingProducts } = await supabase.from('products').select('name');
-        const existingNames = new Set((existingProducts || []).map(p => p.name.toUpperCase()));
-
-        for (const item of items) {
-          const nameUpper = item.name.toUpperCase();
-          if ((nameUpper.includes('FAZE') || nameUpper.includes('LEGACY') || nameUpper.includes('IMPERIAL') || nameUpper.includes('CHURRASQUEIRA'))
-              && !existingNames.has(nameUpper)) {
-            await supabase.from('products').insert({
-              name: item.name,
-              sale_price: item.price,
-              is_active: true,
-            });
-            existingNames.add(nameUpper);
-          }
-        }
-
-        // Update units_sold for matching products
-        for (const item of items) {
-          const { data: prod } = await supabase.from('products').select('id, units_sold').ilike('name', item.name).limit(1);
-          if (prod && prod[0]) {
-            await supabase.from('products').update({ 
-              units_sold: (prod[0].units_sold || 0) + item.quantity 
-            }).eq('id', prod[0].id);
-          }
-        }
-
-        toast.info(`💰 Entrada de ${fmt(total)} registrada automaticamente`);
-      } catch (err) {
-        console.error('[OS] Error auto-registering sale:', err);
-      }
-    }
     const { data: freshOrders } = await supabase.from('service_orders').select('id, os_number, cliente_nome, total, created_at').order('created_at', { ascending: false });
     if (freshOrders) setSavedOrders(freshOrders as SavedOS[]);
     clearForm(freshOrders as SavedOS[] | undefined);
