@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Printer, Save, FileDown, History, ArrowLeft, Lock, Unlock } from 'lucide-react';
+import { Plus, Trash2, Printer, Save, FileDown, History, ArrowLeft, Lock, Unlock, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +16,12 @@ interface ServiceItem {
   name: string;
   quantity: number;
   price: number;
+}
+
+interface CatalogProduct {
+  id: string;
+  name: string;
+  sale_price: number;
 }
 
 interface SavedOS {
@@ -71,7 +77,8 @@ export default function OrdemServicoPage() {
   const [formaPagamento, setFormaPagamento] = useState('');
   const [descricaoPagamento, setDescricaoPagamento] = useState('');
   const [observacoes, setObservacoes] = useState('');
-
+  const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([]);
+  const [activeSearchId, setActiveSearchId] = useState<number | null>(null);
   const subtotal = items.reduce((sum, i) => sum + i.quantity * i.price, 0);
   const total = Math.max(0, subtotal - desconto);
   const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -90,6 +97,14 @@ export default function OrdemServicoPage() {
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+  useEffect(() => {
+    const fetchCatalog = async () => {
+      const { data } = await supabase.from('products').select('id, name, sale_price').eq('is_active', true).order('name');
+      if (data) setCatalogProducts(data as CatalogProduct[]);
+    };
+    fetchCatalog();
+  }, []);
 
   // Set auto OS number for new forms based on history
   useEffect(() => {
@@ -418,16 +433,51 @@ export default function OrdemServicoPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, idx) => (
-                  <tr key={item.id} className="border-b border-gray-100">
-                    <td className="py-1.5 text-gray-500">{idx + 1}</td>
-                    <td className="py-1.5"><Input value={item.name} onChange={e => updateItem(item.id, 'name', e.target.value)} className="h-7 text-sm border-gray-300 bg-transparent text-black" placeholder="Nome do produto/serviço" /></td>
-                    <td className="py-1.5"><Input type="number" min={1} value={item.quantity} onChange={e => updateItem(item.id, 'quantity', Number(e.target.value))} className="h-7 text-sm text-center border-gray-300 bg-transparent text-black" /></td>
-                    <td className="py-1.5"><Input type="number" min={0} step={0.01} value={item.price || ''} onChange={e => updateItem(item.id, 'price', Number(e.target.value))} className="h-7 text-sm text-center border-gray-300 bg-transparent text-black" placeholder="0,00" /></td>
-                    <td className="py-1.5 text-right font-medium">{fmt(item.quantity * item.price)}</td>
-                    <td className="py-1.5 text-center no-print"><button onClick={() => removeItem(item.id)} className="text-red-500 hover:text-red-700 p-1"><Trash2 size={14} /></button></td>
-                  </tr>
-                ))}
+                {items.map((item, idx) => {
+                  const searchTerm = item.name.toLowerCase();
+                  const suggestions = activeSearchId === item.id && searchTerm.length > 0
+                    ? catalogProducts.filter(p => p.name.toLowerCase().includes(searchTerm))
+                    : [];
+                  return (
+                    <tr key={item.id} className="border-b border-gray-100">
+                      <td className="py-1.5 text-gray-500">{idx + 1}</td>
+                      <td className="py-1.5 relative">
+                        <Input
+                          value={item.name}
+                          onChange={e => { updateItem(item.id, 'name', e.target.value); setActiveSearchId(item.id); }}
+                          onFocus={() => setActiveSearchId(item.id)}
+                          onBlur={() => setTimeout(() => setActiveSearchId(null), 200)}
+                          className="h-7 text-sm border-gray-300 bg-transparent text-black"
+                          placeholder="Buscar produto ou digitar..."
+                        />
+                        {suggestions.length > 0 && (
+                          <div className="absolute z-50 left-0 right-0 top-full bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto no-print">
+                            {suggestions.map(p => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 flex justify-between items-center"
+                                onMouseDown={e => {
+                                  e.preventDefault();
+                                  updateItem(item.id, 'name', p.name);
+                                  updateItem(item.id, 'price', p.sale_price);
+                                  setActiveSearchId(null);
+                                }}
+                              >
+                                <span className="font-medium text-black">{p.name}</span>
+                                <span className="text-gray-500 font-mono">{fmt(p.sale_price)}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-1.5"><Input type="number" min={1} value={item.quantity} onChange={e => updateItem(item.id, 'quantity', Number(e.target.value))} className="h-7 text-sm text-center border-gray-300 bg-transparent text-black" /></td>
+                      <td className="py-1.5"><Input type="number" min={0} step={0.01} value={item.price || ''} onChange={e => updateItem(item.id, 'price', Number(e.target.value))} className="h-7 text-sm text-center border-gray-300 bg-transparent text-black" placeholder="0,00" /></td>
+                      <td className="py-1.5 text-right font-medium">{fmt(item.quantity * item.price)}</td>
+                      <td className="py-1.5 text-center no-print"><button onClick={() => removeItem(item.id)} className="text-red-500 hover:text-red-700 p-1"><Trash2 size={14} /></button></td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             <div className="no-print mt-2">
