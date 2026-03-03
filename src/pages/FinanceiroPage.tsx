@@ -127,7 +127,7 @@ export default function FinanceiroPage() {
       await addTransaction({ ...form, amount: parseFloat(form.amount), category_id: form.category_id || null });
       setForm({ ...form, description: '', amount: '' });
       toast.success('Movimentação registrada');
-    } catch { /* handled */ }
+    } catch (err: any) { console.error('[Financeiro] Submit error:', err); toast.error(err.message || 'Erro ao salvar'); }
   };
 
   const handleAI = async () => {
