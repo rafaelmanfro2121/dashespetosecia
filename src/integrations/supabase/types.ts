@@ -378,6 +378,8 @@ export type Database = {
           observacoes: string | null
           order_status: string
           os_number: string
+          paid_amount: number
+          payment_method_client: string
           payment_status: string
           subtotal: number
           total: number
@@ -407,6 +409,8 @@ export type Database = {
           observacoes?: string | null
           order_status?: string
           os_number?: string
+          paid_amount?: number
+          payment_method_client?: string
           payment_status?: string
           subtotal?: number
           total?: number
@@ -436,6 +440,8 @@ export type Database = {
           observacoes?: string | null
           order_status?: string
           os_number?: string
+          paid_amount?: number
+          payment_method_client?: string
           payment_status?: string
           subtotal?: number
           total?: number

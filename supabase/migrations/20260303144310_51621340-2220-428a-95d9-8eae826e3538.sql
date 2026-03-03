@@ -1,0 +1,2 @@
+ALTER TABLE public.service_orders ADD COLUMN IF NOT EXISTS paid_amount numeric NOT NULL DEFAULT 0;
+ALTER TABLE public.service_orders ADD COLUMN IF NOT EXISTS payment_method_client text NOT NULL DEFAULT '';
