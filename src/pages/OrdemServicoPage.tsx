@@ -298,7 +298,7 @@ export default function OrdemServicoPage() {
           #os-print .print-compact { margin-bottom: 6px !important; padding: 6px !important; }
           #os-print .print-compact h3 { margin-bottom: 4px !important; padding-bottom: 4px !important; font-size: 11px !important; }
           #os-print input { height: 20px !important; font-size: 11px !important; padding: 1px 4px !important; }
-          #os-print textarea { height: auto !important; min-height: 20px !important; overflow: visible !important; font-size: 11px !important; padding: 1px 4px !important; white-space: pre-wrap !important; }
+          #os-print textarea { height: auto !important; min-height: 20px !important; max-height: none !important; overflow: visible !important; font-size: 11px !important; padding: 1px 4px !important; white-space: pre-wrap !important; word-wrap: break-word !important; display: block !important; }
           #os-print table td, #os-print table th { padding: 2px 4px !important; font-size: 11px !important; }
           #os-print .print-signatures { margin-top: 20px !important; gap: 2rem !important; margin-bottom: 0 !important; }
           .no-print { display: none !important; }
