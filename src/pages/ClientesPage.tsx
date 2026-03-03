@@ -113,24 +113,96 @@ export default function ClientesPage() {
   const processPayment = async (cliente: ClienteRow, amount: number, isCard: boolean) => {
     if (!user) { toast.error('Faça login primeiro'); return; }
     setPayingId(cliente.id);
+
     const netAmount = isCard ? amount * (1 - CARD_FEE) : amount;
     const newPaidAmount = (cliente.paid_amount || 0) + amount;
     const isPaidFull = newPaidAmount >= (cliente.total || 0);
     const method = isCard ? 'Cartão de Crédito' : 'Dinheiro/PIX';
 
-    const { error: statusError } = await supabase.from('service_orders').update({ payment_status: isPaidFull ? 'pago' : 'parcial', paid_amount: newPaidAmount, payment_method_client: method }).eq('id', cliente.id);
-    if (statusError) { toast.error('Erro ao registrar pagamento'); setPayingId(null); return; }
+    const { error: statusError } = await supabase
+      .from('service_orders')
+      .update({
+        payment_status: isPaidFull ? 'pago' : 'parcial',
+        paid_amount: newPaidAmount,
+        payment_method_client: method,
+      })
+      .eq('id', cliente.id);
 
-    const feeNote = isCard ? ` (taxa cartão ${(CARD_FEE * 100).toFixed(2)}%)` : '';
-    const { error: txError } = await supabase.from('transactions').insert({ description: `Pagamento OS #${cliente.os_number} - ${cliente.cliente_nome}${feeNote}`, amount: Math.round(netAmount * 100) / 100, type: 'receita', transaction_date: new Date().toISOString().split('T')[0], user_id: user.id, payment_method: method });
+    if (statusError) {
+      toast.error('Erro ao registrar pagamento');
+      setPayingId(null);
+      return;
+    }
 
-    if (txError) { toast.error('Erro ao registrar entrada no financeiro'); }
-    else {
-      setClientes(prev => prev.map(c => c.id === cliente.id ? { ...c, payment_status: isPaidFull ? 'pago' : 'parcial', paid_amount: newPaidAmount, payment_method_client: method } : c));
+    // Regra: ao confirmar pagamento (mesmo parcial), registrar a venda com valor total da OS no financeiro
+    const itemNames = Array.isArray(cliente.items)
+      ? cliente.items.map((i: any) => String(i?.name || '').toUpperCase())
+      : [];
+    const types = new Set<string>();
+    itemNames.forEach((name: string) => {
+      if (name.includes('FAZE')) types.add('FAZE');
+      if (name.includes('LEGACY')) types.add('LEGACY');
+      if (name.includes('IMPERIAL')) types.add('IMPERIAL');
+    });
+    const tipoVenda = types.size > 0 ? Array.from(types).join(' + ') : 'CHURRASQUEIRA';
+    const vendaDescription = `[VENDA_OS] ${tipoVenda} - OS #${cliente.os_number} - ${cliente.cliente_nome}`;
+
+    // Categoria "Vendas" (se existir)
+    const { data: catData } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('name', 'Vendas')
+      .limit(1);
+    const vendaCategoryId = catData?.[0]?.id ?? null;
+
+    // Evita duplicidade: uma única entrada por OS
+    const { data: existingSaleTx } = await supabase
+      .from('transactions')
+      .select('id, amount')
+      .ilike('description', `%OS #${cliente.os_number}%`)
+      .eq('type', 'entrada')
+      .limit(1)
+      .maybeSingle();
+
+    let txError: any = null;
+    if (existingSaleTx?.id) {
+      const { error } = await supabase
+        .from('transactions')
+        .update({
+          amount: cliente.total || 0,
+          category_id: vendaCategoryId,
+          payment_method: method,
+        })
+        .eq('id', existingSaleTx.id);
+      txError = error;
+    } else {
+      const { error } = await supabase.from('transactions').insert({
+        description: vendaDescription,
+        amount: cliente.total || 0,
+        type: 'entrada',
+        category_id: vendaCategoryId,
+        transaction_date: new Date().toISOString().split('T')[0],
+        user_id: user.id,
+        payment_method: method,
+      });
+      txError = error;
+    }
+
+    if (txError) {
+      toast.error('Pagamento salvo, mas houve erro ao lançar entrada no financeiro');
+    } else {
+      setClientes(prev => prev.map(c =>
+        c.id === cliente.id
+          ? { ...c, payment_status: isPaidFull ? 'pago' : 'parcial', paid_amount: newPaidAmount, payment_method_client: method }
+          : c
+      ));
       const cardMsg = isCard ? ` | Líquido: ${fmt(netAmount)}` : '';
       toast.success(`${fmt(amount)} registrado${cardMsg}`);
     }
-    setPayingId(null); setCustomAmountId(null); setCustomAmount('');
+
+    setPayingId(null);
+    setCustomAmountId(null);
+    setCustomAmount('');
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
