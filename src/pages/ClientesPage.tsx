@@ -175,8 +175,9 @@ export default function ClientesPage() {
         })
         .eq('id', existingSaleTx.id);
       txError = error;
+      if (error) console.error('[Clientes] Update transaction error:', JSON.stringify(error));
     } else {
-      const { error } = await supabase.from('transactions').insert({
+      const insertPayload = {
         description: vendaDescription,
         amount: cliente.total || 0,
         type: 'entrada',
@@ -184,7 +185,10 @@ export default function ClientesPage() {
         transaction_date: new Date().toISOString().split('T')[0],
         user_id: user.id,
         payment_method: method,
-      });
+      };
+      console.log('[Clientes] Inserting transaction:', JSON.stringify(insertPayload));
+      const { data: insertData, error } = await supabase.from('transactions').insert(insertPayload).select();
+      console.log('[Clientes] Insert result:', JSON.stringify(insertData), 'error:', JSON.stringify(error));
       txError = error;
     }
 
