@@ -252,6 +252,16 @@ export default function OrdemServicoPage() {
     setLoadingPdf(false);
   };
 
+  const handlePrint = () => {
+    const textarea = printRef.current?.querySelector('textarea') as HTMLTextAreaElement | null;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+      textarea.style.overflow = 'visible';
+    }
+    window.print();
+  };
+
   // History view
   if (view === 'history') {
     return (
@@ -317,7 +327,7 @@ export default function OrdemServicoPage() {
             <Button variant="outline" size="sm" onClick={generatePDF} disabled={loadingPdf} className="gap-1">
               <FileDown size={14} /> {loadingPdf ? 'Gerando...' : 'PDF'}
             </Button>
-            <Button size="sm" onClick={() => window.print()} className="gap-1"><Printer size={14} /> Imprimir</Button>
+            <Button size="sm" onClick={handlePrint} className="gap-1"><Printer size={14} /> Imprimir</Button>
           </div>
         </div>
 
@@ -526,14 +536,11 @@ export default function OrdemServicoPage() {
                 e.target.style.height = e.target.scrollHeight + 'px';
               }}
               onFocus={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
-              className="min-h-[50px] text-xs border-gray-300 bg-transparent text-black resize-none overflow-hidden print:hidden"
+              className="min-h-[50px] text-xs border-gray-300 bg-transparent text-black resize-none overflow-hidden"
               placeholder="Observações adicionais..."
               style={{ overflow: 'hidden' }}
               ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; } }}
             />
-            <div className="hidden print:block text-xs whitespace-pre-wrap break-words leading-relaxed min-h-[20px]">
-              {observacoes || ' '}
-            </div>
           </div>
 
           {/* Authorization */}
