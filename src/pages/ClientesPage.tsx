@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Search, FileText, Upload, Eye, Loader2, Download } from 'lucide-react';
+import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ClienteRow {
   id: string;
@@ -19,6 +20,8 @@ interface ClienteRow {
   os_number: string;
   order_status: string;
   nota_fiscal_url: string;
+  total: number;
+  payment_status: string;
 }
 
 export default function ClientesPage() {
@@ -26,14 +29,16 @@ export default function ClientesPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [payingId, setPayingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const fetchClientes = async () => {
     const { data } = await supabase
       .from('service_orders')
-      .select('id, cliente_nome, cliente_telefone, cliente_email, atendimento_data, items, os_number, order_status, nota_fiscal_url')
+      .select('id, cliente_nome, cliente_telefone, cliente_email, atendimento_data, items, os_number, order_status, nota_fiscal_url, total, payment_status')
       .order('atendimento_data', { ascending: false });
     if (data) setClientes(data as ClienteRow[]);
     setLoading(false);
@@ -55,6 +60,8 @@ export default function ClientesPage() {
     return items.map((i: any) => i.name).filter(Boolean).join(', ') || '—';
   };
 
+  const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
   const handleStatusChange = async (id: string, newStatus: string) => {
     const { error } = await supabase
       .from('service_orders')
@@ -66,6 +73,43 @@ export default function ClientesPage() {
       setClientes(prev => prev.map(c => c.id === id ? { ...c, order_status: newStatus } : c));
       toast.success(newStatus === 'enviado' ? 'Marcado como Enviado' : 'Marcado como Em Produção');
     }
+  };
+
+  const handleMarkPaid = async (cliente: ClienteRow) => {
+    if (!user) { toast.error('Faça login primeiro'); return; }
+    setPayingId(cliente.id);
+
+    // Update payment_status
+    const { error: statusError } = await supabase
+      .from('service_orders')
+      .update({ payment_status: 'pago' })
+      .eq('id', cliente.id);
+
+    if (statusError) {
+      toast.error('Erro ao marcar como pago');
+      setPayingId(null);
+      return;
+    }
+
+    // Create revenue transaction
+    const { error: txError } = await supabase
+      .from('transactions')
+      .insert({
+        description: `Pagamento OS #${cliente.os_number} - ${cliente.cliente_nome}`,
+        amount: cliente.total || 0,
+        type: 'receita',
+        transaction_date: new Date().toISOString().split('T')[0],
+        user_id: user.id,
+        payment_method: 'Dinheiro',
+      });
+
+    if (txError) {
+      toast.error('Erro ao registrar entrada no financeiro');
+    } else {
+      setClientes(prev => prev.map(c => c.id === cliente.id ? { ...c, payment_status: 'pago' } : c));
+      toast.success(`Pagamento de ${fmt(cliente.total || 0)} registrado como entrada`);
+    }
+    setPayingId(null);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,13 +154,6 @@ export default function ClientesPage() {
     setTimeout(() => fileInputRef.current?.click(), 100);
   };
 
-  const getStatusBadge = (status: string) => {
-    if (status === 'enviado') {
-      return <Badge className="bg-green-600 hover:bg-green-700 text-white text-xs">Enviado</Badge>;
-    }
-    return <Badge variant="secondary" className="text-xs">Em Produção</Badge>;
-  };
-
   return (
     <div>
       <input
@@ -159,7 +196,9 @@ export default function ClientesPage() {
                 <TableHead>E-mail</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Produto</TableHead>
+                <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Pagamento</TableHead>
                 <TableHead>OS</TableHead>
                 <TableHead>Nota Fiscal</TableHead>
               </TableRow>
@@ -172,6 +211,7 @@ export default function ClientesPage() {
                   <TableCell>{c.cliente_email || '—'}</TableCell>
                   <TableCell>{c.atendimento_data ? new Date(c.atendimento_data + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
                   <TableCell className="max-w-[150px] truncate">{getProducts(c.items)}</TableCell>
+                  <TableCell className="text-xs font-medium">{fmt(c.total || 0)}</TableCell>
                   <TableCell>
                     <Select
                       value={c.order_status || 'em_producao'}
@@ -185,6 +225,24 @@ export default function ClientesPage() {
                         <SelectItem value="enviado">Enviado</SelectItem>
                       </SelectContent>
                     </Select>
+                  </TableCell>
+                  <TableCell>
+                    {c.payment_status === 'pago' ? (
+                      <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1">
+                        <CheckCircle size={12} /> Pago
+                      </Badge>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1"
+                        onClick={() => handleMarkPaid(c)}
+                        disabled={payingId === c.id}
+                      >
+                        {payingId === c.id ? <Loader2 size={14} className="animate-spin" /> : <DollarSign size={14} />}
+                        Marcar Pago
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">

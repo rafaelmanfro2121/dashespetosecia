@@ -191,7 +191,17 @@ export default function OrdemServicoPage() {
     if (!data) return;
     setCurrentOsId(data.id);
     setOsNumber(data.os_number || '');
-    // Don't overwrite empresa from loaded OS — keep the locked empresa data
+    // Load empresa data from DB if available (for PDF accuracy), otherwise keep localStorage
+    if (data.empresa_nome) {
+      const loadedEmpresa = {
+        nome: data.empresa_nome || '',
+        cnpj: data.empresa_cnpj || '',
+        telefone: data.empresa_telefone || '',
+        endereco: data.empresa_endereco || '',
+        email: data.empresa_email || '',
+      };
+      setEmpresa(loadedEmpresa);
+    }
     setCliente({ nome: data.cliente_nome || '', telefone: data.cliente_telefone || '', cpfCnpj: data.cliente_cpf_cnpj || '', contato: data.cliente_contato || '', email: (data as any).cliente_email || '' });
     setAtendimento({ vendedor: data.vendedor || '', data: data.atendimento_data || '', hora: data.atendimento_hora || '' });
     setItems((data.items as any as ServiceItem[]) || [{ id: 1, name: '', quantity: 1, price: 0 }]);
