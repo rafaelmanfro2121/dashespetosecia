@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Search, FileText, Upload, Eye, Loader2 } from 'lucide-react';
+import { Users, Search, FileText, Upload, Eye, Loader2, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface ClienteRow {
   id: string;
@@ -27,6 +28,7 @@ export default function ClientesPage() {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const fetchClientes = async () => {
     const { data } = await supabase
@@ -185,10 +187,23 @@ export default function ClientesPage() {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs font-mono text-muted-foreground flex items-center gap-1">
-                      <FileText size={14} className="text-primary" />
-                      {c.os_number || '—'}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-mono text-muted-foreground flex items-center gap-1">
+                        <FileText size={14} className="text-primary" />
+                        {c.os_number || '—'}
+                      </span>
+                      {c.os_number && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs gap-1"
+                          onClick={() => navigate(`/ordem-servico?load=${c.id}`)}
+                          title="Abrir e baixar OS"
+                        >
+                          <Download size={14} />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
