@@ -79,6 +79,8 @@ export default function OrdemServicoPage() {
   const [observacoes, setObservacoes] = useState('');
   const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([]);
   const [activeSearchId, setActiveSearchId] = useState<number | null>(null);
+  const [clienteSuggestions, setClienteSuggestions] = useState<Array<{ nome: string; telefone: string; email: string; cpfCnpj: string; contato: string }>>([]);
+  const [showClienteSuggestions, setShowClienteSuggestions] = useState(false);
   const subtotal = items.reduce((sum, i) => sum + i.quantity * i.price, 0);
   const total = Math.max(0, subtotal - desconto);
   const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -105,6 +107,32 @@ export default function OrdemServicoPage() {
     };
     fetchCatalog();
   }, []);
+
+  const searchClientes = async (term: string) => {
+    if (term.length < 2) { setClienteSuggestions([]); setShowClienteSuggestions(false); return; }
+    const { data } = await supabase
+      .from('service_orders')
+      .select('cliente_nome, cliente_telefone, cliente_email, cliente_cpf_cnpj, cliente_contato')
+      .ilike('cliente_nome', `%${term}%`)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (data) {
+      const unique = new Map<string, { nome: string; telefone: string; email: string; cpfCnpj: string; contato: string }>();
+      data.forEach(d => {
+        if (!unique.has(d.cliente_nome)) {
+          unique.set(d.cliente_nome, {
+            nome: d.cliente_nome,
+            telefone: d.cliente_telefone || '',
+            email: d.cliente_email || '',
+            cpfCnpj: d.cliente_cpf_cnpj || '',
+            contato: d.cliente_contato || '',
+          });
+        }
+      });
+      setClienteSuggestions(Array.from(unique.values()));
+      setShowClienteSuggestions(unique.size > 0);
+    }
+  };
 
   // Set auto OS number for new forms based on history
   useEffect(() => {
@@ -138,10 +166,10 @@ export default function OrdemServicoPage() {
   const removeItem = (id: number) => { if (items.length > 1) setItems(prev => prev.filter(i => i.id !== id)); };
   const updateItem = (id: number, field: keyof ServiceItem, value: string | number) => setItems(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i));
 
-  const clearForm = () => {
+  const clearForm = useCallback((orders?: SavedOS[]) => {
     setCurrentOsId(null);
-    // Auto-set next OS number
-    const next = getNextOsNumber(savedOrders);
+    const list = orders || savedOrders;
+    const next = getNextOsNumber(list);
     setOsNumber(next);
     setCliente({ nome: '', telefone: '', cpfCnpj: '', contato: '', email: '' });
     setAtendimento({ vendedor: '', data: new Date().toISOString().split('T')[0], hora: new Date().toTimeString().slice(0, 5) });
@@ -151,9 +179,8 @@ export default function OrdemServicoPage() {
     setFormaPagamento('');
     setDescricaoPagamento('');
     setObservacoes('');
-    // Keep empresa data from localStorage
     setEmpresa(loadEmpresaFromStorage());
-  };
+  }, [savedOrders]);
 
   const saveOS = async () => {
     if (!user) { toast.error('Faça login primeiro'); return; }
@@ -174,12 +201,13 @@ export default function OrdemServicoPage() {
       if (error) { toast.error('Erro ao atualizar'); return; }
       toast.success('OS atualizada');
     } else {
-      const { data: inserted, error } = await supabase.from('service_orders').insert(payload).select('id').single();
+      const { error } = await supabase.from('service_orders').insert(payload);
       if (error) { toast.error('Erro ao salvar'); return; }
-      toast.success('OS salva com sucesso! Você pode continuar editando.');
-      if (inserted) setCurrentOsId(inserted.id);
+      toast.success('OS salva com sucesso!');
     }
-    await fetchHistory();
+    const { data: freshOrders } = await supabase.from('service_orders').select('id, os_number, cliente_nome, total, created_at').order('created_at', { ascending: false });
+    if (freshOrders) setSavedOrders(freshOrders as SavedOS[]);
+    clearForm(freshOrders as SavedOS[] | undefined);
   };
 
   const loadOS = async (id: string) => {
@@ -345,7 +373,7 @@ export default function OrdemServicoPage() {
           </h1>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setView('history')} className="gap-1"><History size={14} /> Histórico</Button>
-            <Button variant="outline" size="sm" onClick={clearForm} className="gap-1"><Plus size={14} /> Nova</Button>
+            <Button variant="outline" size="sm" onClick={() => clearForm()} className="gap-1"><Plus size={14} /> Nova</Button>
             <Button variant="outline" size="sm" onClick={saveOS} className="gap-1"><Save size={14} /> Salvar</Button>
             <Button variant="outline" size="sm" onClick={generatePDF} disabled={loadingPdf} className="gap-1">
               <FileDown size={14} /> {loadingPdf ? 'Gerando...' : 'PDF'}
@@ -422,7 +450,44 @@ export default function OrdemServicoPage() {
             <div className="border border-gray-300 rounded-lg p-3 print-compact">
               <h3 className="font-bold text-xs mb-2 text-center border-b border-gray-200 pb-1">Informações do Cliente</h3>
               <div className="space-y-1 text-xs">
-                {([['nome', 'Nome'], ['telefone', 'Telefone'], ['email', 'E-mail'], ['cpfCnpj', 'CPF/CNPJ'], ['contato', 'Endereço']] as const).map(([k, l]) => (
+                {/* Nome with autocomplete */}
+                <div className="flex items-center gap-2 relative">
+                  <span className="font-semibold w-24 text-right">Nome:</span>
+                  <div className="flex-1 relative">
+                    <Input
+                      value={cliente.nome}
+                      onChange={e => {
+                        setCliente(p => ({ ...p, nome: e.target.value }));
+                        searchClientes(e.target.value);
+                      }}
+                      onFocus={() => { if (cliente.nome.length >= 2) searchClientes(cliente.nome); }}
+                      onBlur={() => setTimeout(() => setShowClienteSuggestions(false), 200)}
+                      className="h-7 text-sm border-gray-300 bg-transparent text-black"
+                      placeholder="Buscar cliente cadastrado..."
+                    />
+                    {showClienteSuggestions && clienteSuggestions.length > 0 && (
+                      <div className="absolute z-50 left-0 right-0 top-full bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto no-print">
+                        {clienteSuggestions.map((c, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 flex justify-between items-center"
+                            onMouseDown={e => {
+                              e.preventDefault();
+                              setCliente({ nome: c.nome, telefone: c.telefone, email: c.email, cpfCnpj: c.cpfCnpj, contato: c.contato });
+                              setShowClienteSuggestions(false);
+                            }}
+                          >
+                            <span className="font-medium text-black">{c.nome}</span>
+                            {c.telefone && <span className="text-gray-500">{c.telefone}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* Other client fields */}
+                {([['telefone', 'Telefone'], ['email', 'E-mail'], ['cpfCnpj', 'CPF/CNPJ'], ['contato', 'Endereço']] as const).map(([k, l]) => (
                   <div key={k} className="flex items-center gap-2">
                     <span className="font-semibold w-24 text-right">{l}:</span>
                     <Input value={cliente[k]} onChange={e => setCliente(p => ({ ...p, [k]: e.target.value }))} className="flex-1 h-7 text-sm border-gray-300 bg-transparent text-black" />
