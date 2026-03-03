@@ -328,6 +328,7 @@ export default function OrdemServicoPage() {
   return (
     <>
       <style>{`
+        #os-print [data-observacoes-print-text] { display: none; }
         @media print {
           body * { visibility: hidden; }
           #os-print, #os-print * { visibility: visible; }
@@ -336,6 +337,17 @@ export default function OrdemServicoPage() {
           #os-print .print-compact h3 { margin-bottom: 4px !important; padding-bottom: 4px !important; font-size: 11px !important; }
           #os-print input { height: 20px !important; font-size: 11px !important; padding: 1px 4px !important; }
           #os-print textarea { height: auto !important; min-height: 20px !important; max-height: none !important; overflow: visible !important; font-size: 11px !important; padding: 1px 4px !important; white-space: pre-wrap !important; word-wrap: break-word !important; display: block !important; }
+          #os-print textarea[data-observacoes-print] { display: none !important; }
+          #os-print [data-observacoes-print-text] {
+            display: block !important;
+            min-height: 20px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 6px !important;
+            padding: 1px 4px !important;
+            font-size: 11px !important;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+          }
           #os-print table td, #os-print table th { padding: 2px 4px !important; font-size: 11px !important; }
           #os-print .print-signatures { margin-top: 20px !important; gap: 2rem !important; margin-bottom: 0 !important; }
           .no-print { display: none !important; }
@@ -556,6 +568,7 @@ export default function OrdemServicoPage() {
           <div className="border border-gray-300 rounded-lg p-3 mb-3 print-compact">
             <h3 className="font-bold text-xs mb-2 text-center border-b border-gray-200 pb-1">Observações</h3>
             <Textarea
+              data-observacoes-print
               value={observacoes}
               onChange={e => {
                 setObservacoes(e.target.value);
@@ -566,8 +579,8 @@ export default function OrdemServicoPage() {
               className="min-h-[50px] text-xs border-gray-300 bg-transparent text-black resize-none overflow-hidden"
               placeholder="Observações adicionais..."
               style={{ overflow: 'hidden' }}
-              ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; } }}
             />
+            <div data-observacoes-print-text>{observacoes || '\u00A0'}</div>
           </div>
 
           {/* Authorization */}
