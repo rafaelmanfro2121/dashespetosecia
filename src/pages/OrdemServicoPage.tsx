@@ -526,11 +526,14 @@ export default function OrdemServicoPage() {
                 e.target.style.height = e.target.scrollHeight + 'px';
               }}
               onFocus={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
-              className="min-h-[50px] text-xs border-gray-300 bg-transparent text-black resize-none overflow-hidden"
+              className="min-h-[50px] text-xs border-gray-300 bg-transparent text-black resize-none overflow-hidden print:hidden"
               placeholder="Observações adicionais..."
               style={{ overflow: 'hidden' }}
-              ref={(el) => { if (el && observacoes) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+              ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; } }}
             />
+            <div className="hidden print:block text-xs whitespace-pre-wrap break-words leading-relaxed min-h-[20px]">
+              {observacoes || ' '}
+            </div>
           </div>
 
           {/* Authorization */}
