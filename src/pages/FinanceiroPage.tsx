@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus, Search, Filter, DollarSign, Sparkles, Calendar } from 'lucide-react';
+import { Trash2, Plus, Search, Filter, DollarSign, Sparkles, Calendar, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import MetricCard from '@/components/MetricCard';
 import { TrendingUp, TrendingDown } from 'lucide-react';
@@ -80,6 +80,40 @@ export default function FinanceiroPage() {
 
   const totalIn = periodTx.filter(t => t.type === 'entrada').reduce((s, t) => s + Number(t.amount), 0);
   const totalOut = periodTx.filter(t => t.type === 'saida').reduce((s, t) => s + Number(t.amount), 0);
+
+  // Material cost from sold products in service orders
+  const [materialCost, setMaterialCost] = useState(0);
+
+  useEffect(() => {
+    const calcMaterialCost = async () => {
+      const startStr = format(start, 'yyyy-MM-dd');
+      const endStr = format(end, 'yyyy-MM-dd');
+
+      const [osRes, prodRes] = await Promise.all([
+        supabase.from('service_orders').select('items').gte('atendimento_data', startStr).lte('atendimento_data', endStr),
+        supabase.from('products').select('name, material_cost'),
+      ]);
+
+      if (!osRes.data || !prodRes.data) { setMaterialCost(0); return; }
+
+      const costMap = new Map<string, number>();
+      prodRes.data.forEach(p => costMap.set(p.name.toLowerCase(), Number(p.material_cost) || 0));
+
+      let total = 0;
+      osRes.data.forEach(os => {
+        const items = os.items as Array<{ name?: string; quantity?: number }> | null;
+        if (!items || !Array.isArray(items)) return;
+        items.forEach(item => {
+          if (!item.name) return;
+          const cost = costMap.get(item.name.toLowerCase());
+          if (cost) total += cost * (Number(item.quantity) || 1);
+        });
+      });
+
+      setMaterialCost(total);
+    };
+    calcMaterialCost();
+  }, [start, end]);
 
   const [form, setForm] = useState({ transaction_date: new Date().toISOString().slice(0, 10), description: '', category_id: '', type: 'saida' as 'entrada' | 'saida', amount: '', payment_method: 'Dinheiro' });
   const [aiInput, setAiInput] = useState('');
@@ -169,9 +203,10 @@ export default function FinanceiroPage() {
 
       <div className="h-6" />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         <MetricCard label="Entradas" value={totalIn} icon={TrendingUp} variant="success" />
         <MetricCard label="Saídas" value={totalOut} icon={TrendingDown} variant="danger" />
+        <MetricCard label="Custo Matéria-Prima" value={materialCost} icon={Package} variant="warning" />
         <MetricCard label="Saldo" value={totalIn - totalOut} icon={DollarSign} variant={totalIn - totalOut >= 0 ? 'info' : 'danger'} />
       </div>
 
