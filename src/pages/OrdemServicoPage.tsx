@@ -482,7 +482,6 @@ export default function OrdemServicoPage() {
               ref={(el) => { if (el && observacoes) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
             />
           </div>
-          </div>
 
           {/* Authorization */}
           <div className="mb-4">
