@@ -234,15 +234,24 @@ export default function OrdemServicoPage() {
     fetchHistory();
   };
 
-  const expandTextareas = () => {
+  const expandTextareas = useCallback(() => {
     if (!printRef.current) return;
     const textareas = printRef.current.querySelectorAll('textarea');
+
     textareas.forEach((ta) => {
-      ta.style.height = 'auto';
-      ta.style.height = `${ta.scrollHeight}px`;
-      ta.style.overflow = 'visible';
+      const textarea = ta as HTMLTextAreaElement;
+      textarea.style.height = 'auto';
+      textarea.style.overflow = 'hidden';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+      textarea.style.overflow = 'visible';
     });
-  };
+  }, []);
+
+  useEffect(() => {
+    const handleBeforePrint = () => expandTextareas();
+    window.addEventListener('beforeprint', handleBeforePrint);
+    return () => window.removeEventListener('beforeprint', handleBeforePrint);
+  }, [expandTextareas]);
 
   const generatePDF = async () => {
     if (!printRef.current) return;
@@ -273,7 +282,11 @@ export default function OrdemServicoPage() {
 
   const handlePrint = () => {
     expandTextareas();
-    window.print();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+      });
+    });
   };
 
   // History view
