@@ -56,6 +56,8 @@ export default function ClientesPage() {
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()));
   const [selectedMonth, setSelectedMonth] = useState(String(now.getMonth() + 1));
+  const [filterPayment, setFilterPayment] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
 
   const fetchClientes = async () => {
     const { data } = await supabase
@@ -77,6 +79,19 @@ export default function ClientesPage() {
     const [year, month] = c.atendimento_data.split('-');
     if (year !== selectedYear) return false;
     if (selectedMonth !== 'all' && month !== selectedMonth.padStart(2, '0')) return false;
+    // Payment filter
+    if (filterPayment !== 'all') {
+      const paid = c.paid_amount || 0;
+      const total = c.total || 0;
+      const status = c.payment_status;
+      if (filterPayment === 'pago' && status !== 'pago' && !(total > 0 && paid >= total)) return false;
+      if (filterPayment === 'parcial' && status !== 'parcial' && !(paid > 0 && paid < total)) return false;
+      if (filterPayment === 'pendente' && (status === 'pago' || status === 'parcial' || paid > 0)) return false;
+    }
+    // Order status filter
+    if (filterStatus !== 'all') {
+      if ((c.order_status || 'em_producao') !== filterStatus) return false;
+    }
     if (!search) return true;
     const s = search.toLowerCase();
     return c.cliente_nome?.toLowerCase().includes(s) || c.cliente_telefone?.includes(s) || c.cliente_email?.toLowerCase().includes(s) || c.os_number?.includes(s);
@@ -150,9 +165,9 @@ export default function ClientesPage() {
         </div>
       </div>
 
-      {/* Year / Month filters + Legend */}
+      {/* Filters row */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <Select value={selectedYear} onValueChange={setSelectedYear}>
             <SelectTrigger className="h-9 w-[100px] text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>{availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
@@ -162,6 +177,23 @@ export default function ClientesPage() {
             <SelectContent>
               <SelectItem value="all">Todos os meses</SelectItem>
               {MONTHS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterPayment} onValueChange={setFilterPayment}>
+            <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Pagamento: Todos</SelectItem>
+              <SelectItem value="pago">Pago Total</SelectItem>
+              <SelectItem value="parcial">Parcial</SelectItem>
+              <SelectItem value="pendente">Pendente</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Pedido: Todos</SelectItem>
+              <SelectItem value="em_producao">Em Produção</SelectItem>
+              <SelectItem value="enviado">Enviado</SelectItem>
             </SelectContent>
           </Select>
           <span className="text-xs text-muted-foreground">{filtered.length} registro(s)</span>
