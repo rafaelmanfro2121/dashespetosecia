@@ -32,7 +32,7 @@ interface ClienteRow {
 
 function getPaymentColor(status: string, paid: number, total: number) {
   if (status === 'pago' || (total > 0 && paid >= total)) {
-    return { row: 'bg-emerald-700/15 hover:bg-emerald-700/25', badge: 'bg-emerald-700 text-white', label: 'Pago Total' };
+    return { row: 'bg-blue-900/15 hover:bg-blue-900/25', badge: 'bg-blue-800 text-white', label: 'Pago Total' };
   }
   if (status === 'parcial' || paid > 0) {
     return { row: 'bg-emerald-200/40 hover:bg-emerald-200/60', badge: 'bg-emerald-300 text-emerald-900', label: 'Parcial' };
@@ -167,7 +167,7 @@ export default function ClientesPage() {
           <span className="text-xs text-muted-foreground">{filtered.length} registro(s)</span>
         </div>
         <div className="flex items-center gap-3 text-xs">
-          <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-emerald-700" /> Pago Total</span>
+          <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-blue-800" /> Pago Total</span>
           <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-emerald-300" /> Parcial</span>
           <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-orange-500" /> Pendente</span>
         </div>
@@ -191,8 +191,7 @@ export default function ClientesPage() {
                 <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Pagamento</TableHead>
-                <TableHead>OS</TableHead>
-                <TableHead>Nota Fiscal</TableHead>
+                <TableHead>Documentos</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -206,12 +205,12 @@ export default function ClientesPage() {
                   <TableRow key={c.id} className={colors.row}>
                     <TableCell className="font-medium">{c.cliente_nome || '—'}</TableCell>
                     <TableCell>{c.cliente_telefone || '—'}</TableCell>
-                    <TableCell>{c.atendimento_data ? new Date(c.atendimento_data + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                    <TableCell className="whitespace-nowrap">{c.atendimento_data ? new Date(c.atendimento_data + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
                     <TableCell className="max-w-[150px] truncate">{getProducts(c.items)}</TableCell>
-                    <TableCell className="text-xs font-semibold">{fmt(total)}</TableCell>
+                    <TableCell className="text-xs font-semibold whitespace-nowrap">{fmt(total)}</TableCell>
                     <TableCell>
                       <Select value={c.order_status || 'em_producao'} onValueChange={(v) => handleStatusChange(c.id, v)}>
-                        <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="em_producao">Em Produção</SelectItem>
                           <SelectItem value="enviado">Enviado</SelectItem>
@@ -231,11 +230,7 @@ export default function ClientesPage() {
                           <PopoverTrigger asChild>
                             <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1 font-medium" disabled={payingId === c.id}>
                               {payingId === c.id ? <Loader2 size={14} className="animate-spin" /> : <DollarSign size={14} />}
-                              {c.payment_status === 'parcial' ? (
-                                <span>Resta {fmt(remaining)}</span>
-                              ) : (
-                                <span>Registrar</span>
-                              )}
+                              {c.payment_status === 'parcial' ? `Resta ${fmt(remaining)}` : 'Registrar'}
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-72 p-3" align="start">
@@ -244,8 +239,6 @@ export default function ClientesPage() {
                               <div className="text-xs text-muted-foreground">
                                 Total: {fmt(total)} {paid > 0 && <>| Pago: {fmt(paid)} | Resta: {fmt(remaining)}</>}
                               </div>
-
-                              {/* 30% option — only cash/pix */}
                               <div className="space-y-1.5">
                                 <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Entrada 30%</div>
                                 <Button size="sm" variant="outline" className="h-8 text-xs gap-1 w-full"
@@ -253,8 +246,6 @@ export default function ClientesPage() {
                                   <Banknote size={12} /> 30% Dinheiro/PIX ({fmt(remaining * 0.3)})
                                 </Button>
                               </div>
-
-                              {/* Total option */}
                               <div className="space-y-1.5">
                                 <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Valor total restante</div>
                                 <div className="flex gap-1.5">
@@ -273,8 +264,6 @@ export default function ClientesPage() {
                                   </div>
                                 )}
                               </div>
-
-                              {/* Custom amount */}
                               <div className="space-y-1.5">
                                 <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Valor personalizado</div>
                                 <Input type="number" placeholder="Valor..." className="h-8 text-xs"
@@ -304,31 +293,34 @@ export default function ClientesPage() {
                         </Popover>
                       )}
                     </TableCell>
+                    {/* Documentos: OS + NF unified */}
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs font-mono text-muted-foreground flex items-center gap-1">
-                          <FileText size={14} className="text-primary" />
-                          {c.os_number || '—'}
-                        </span>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {/* OS */}
                         {c.os_number && (
                           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1"
-                            onClick={() => navigate(`/ordem-servico?load=${c.id}`)} title="Abrir e baixar OS">
-                            <Download size={14} />
+                            onClick={() => navigate(`/ordem-servico?load=${c.id}`)} title="Baixar OS">
+                            <FileText size={14} className="text-primary" />
+                            <span className="font-mono">{c.os_number}</span>
+                            <Download size={12} />
                           </Button>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        {c.nota_fiscal_url ? (
+                        {!c.os_number && <span className="text-xs text-muted-foreground">Sem OS</span>}
+
+                        <span className="text-muted-foreground/30">|</span>
+
+                        {/* NF */}
+                        {c.nota_fiscal_url && (
                           <a href={c.nota_fiscal_url} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1"><Eye size={14} /> Ver</Button>
+                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
+                              <Eye size={14} /> NF
+                            </Button>
                           </a>
-                        ) : null}
+                        )}
                         <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1"
                           onClick={() => triggerFileUpload(c.id)} disabled={uploadingId === c.id}>
                           {uploadingId === c.id ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                          {c.nota_fiscal_url ? 'Trocar' : 'Anexar'}
+                          {c.nota_fiscal_url ? 'Trocar NF' : 'Anexar NF'}
                         </Button>
                       </div>
                     </TableCell>
