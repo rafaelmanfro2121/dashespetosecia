@@ -354,7 +354,7 @@ export default function OrdemServicoPage() {
             <div className="border border-gray-300 rounded-lg p-3 print-compact">
               <h3 className="font-bold text-xs mb-2 text-center border-b border-gray-200 pb-1">Informações do Cliente</h3>
               <div className="space-y-1 text-xs">
-                {([['nome', 'Nome'], ['telefone', 'Telefone'], ['email', 'E-mail'], ['cpfCnpj', 'CPF/CNPJ'], ['contato', 'Contato']] as const).map(([k, l]) => (
+                {([['nome', 'Nome'], ['telefone', 'Telefone'], ['email', 'E-mail'], ['cpfCnpj', 'CPF/CNPJ'], ['contato', 'Endereço']] as const).map(([k, l]) => (
                   <div key={k} className="flex items-center gap-2">
                     <span className="font-semibold w-24 text-right">{l}:</span>
                     <Input value={cliente[k]} onChange={e => setCliente(p => ({ ...p, [k]: e.target.value }))} className="flex-1 h-7 text-sm border-gray-300 bg-transparent text-black" />
