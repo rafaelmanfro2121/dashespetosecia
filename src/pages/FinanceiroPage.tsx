@@ -89,15 +89,23 @@ export default function FinanceiroPage() {
       const startStr = format(start, 'yyyy-MM-dd');
       const endStr = format(end, 'yyyy-MM-dd');
 
-      const [osRes, prodRes] = await Promise.all([
-        supabase.from('service_orders').select('items').gte('atendimento_data', startStr).lte('atendimento_data', endStr),
-        supabase.from('products').select('name, material_cost'),
+      // Fetch paid service orders in period + products with their materials
+      const [osRes, prodRes, matRes] = await Promise.all([
+        supabase.from('service_orders').select('items, payment_status').gte('atendimento_data', startStr).lte('atendimento_data', endStr).neq('payment_status', 'pendente'),
+        supabase.from('products').select('id, name'),
+        supabase.from('product_materials').select('product_id, quantity_per_unit'),
       ]);
 
-      if (!osRes.data || !prodRes.data) { setMaterialCost(0); return; }
+      if (!osRes.data || !prodRes.data || !matRes.data) { setMaterialCost(0); return; }
 
-      const costMap = new Map<string, number>();
-      prodRes.data.forEach(p => costMap.set(p.name.toLowerCase(), Number(p.material_cost) || 0));
+      // Build cost map: product name (lowercase) -> sum of material values (quantity_per_unit = R$)
+      const productIdMap = new Map<string, string>(); // name -> id
+      prodRes.data.forEach(p => productIdMap.set(p.name.toLowerCase(), p.id));
+
+      const costByProductId = new Map<string, number>();
+      matRes.data.forEach(m => {
+        costByProductId.set(m.product_id, (costByProductId.get(m.product_id) || 0) + Number(m.quantity_per_unit));
+      });
 
       let total = 0;
       osRes.data.forEach(os => {
@@ -105,8 +113,11 @@ export default function FinanceiroPage() {
         if (!items || !Array.isArray(items)) return;
         items.forEach(item => {
           if (!item.name) return;
-          const cost = costMap.get(item.name.toLowerCase());
-          if (cost) total += cost * (Number(item.quantity) || 1);
+          const prodId = productIdMap.get(item.name.toLowerCase());
+          if (prodId) {
+            const matCost = costByProductId.get(prodId) || 0;
+            total += matCost * (Number(item.quantity) || 1);
+          }
         });
       });
 
