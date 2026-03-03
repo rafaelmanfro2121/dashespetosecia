@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote, Percent } from 'lucide-react';
+import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,16 @@ interface ClienteRow {
   payment_method_client: string;
 }
 
+function getPaymentColor(status: string, paid: number, total: number) {
+  if (status === 'pago' || (total > 0 && paid >= total)) {
+    return { row: 'bg-emerald-700/15 hover:bg-emerald-700/25', badge: 'bg-emerald-700 text-white', label: 'Pago Total' };
+  }
+  if (status === 'parcial' || paid > 0) {
+    return { row: 'bg-emerald-200/40 hover:bg-emerald-200/60', badge: 'bg-emerald-300 text-emerald-900', label: 'Parcial' };
+  }
+  return { row: 'bg-orange-400/15 hover:bg-orange-400/25', badge: 'bg-orange-500 text-white', label: 'Pendente' };
+}
+
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<ClienteRow[]>([]);
   const [search, setSearch] = useState('');
@@ -58,15 +68,10 @@ export default function ClientesPage() {
 
   useEffect(() => { fetchClientes(); }, []);
 
-  // Get available years from data
-  const availableYears = [...new Set(clientes.map(c => {
-    if (!c.atendimento_data) return null;
-    return c.atendimento_data.split('-')[0];
-  }).filter(Boolean))] as string[];
+  const availableYears = [...new Set(clientes.map(c => c.atendimento_data?.split('-')[0]).filter(Boolean))] as string[];
   if (!availableYears.includes(selectedYear)) availableYears.push(selectedYear);
   availableYears.sort((a, b) => Number(b) - Number(a));
 
-  // Filter by year, month, and search
   const filtered = clientes.filter(c => {
     if (!c.atendimento_data) return false;
     const [year, month] = c.atendimento_data.split('-');
@@ -74,12 +79,7 @@ export default function ClientesPage() {
     if (selectedMonth !== 'all' && month !== selectedMonth.padStart(2, '0')) return false;
     if (!search) return true;
     const s = search.toLowerCase();
-    return (
-      c.cliente_nome?.toLowerCase().includes(s) ||
-      c.cliente_telefone?.includes(s) ||
-      c.cliente_email?.toLowerCase().includes(s) ||
-      c.os_number?.includes(s)
-    );
+    return c.cliente_nome?.toLowerCase().includes(s) || c.cliente_telefone?.includes(s) || c.cliente_email?.toLowerCase().includes(s) || c.os_number?.includes(s);
   });
 
   const getProducts = (items: any): string => {
@@ -90,71 +90,32 @@ export default function ClientesPage() {
   const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const handleStatusChange = async (id: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('service_orders')
-      .update({ order_status: newStatus })
-      .eq('id', id);
-    if (error) {
-      toast.error('Erro ao atualizar status');
-    } else {
-      setClientes(prev => prev.map(c => c.id === id ? { ...c, order_status: newStatus } : c));
-      toast.success(newStatus === 'enviado' ? 'Marcado como Enviado' : 'Marcado como Em Produção');
-    }
+    const { error } = await supabase.from('service_orders').update({ order_status: newStatus }).eq('id', id);
+    if (error) { toast.error('Erro ao atualizar status'); }
+    else { setClientes(prev => prev.map(c => c.id === id ? { ...c, order_status: newStatus } : c)); toast.success(newStatus === 'enviado' ? 'Marcado como Enviado' : 'Marcado como Em Produção'); }
   };
 
   const processPayment = async (cliente: ClienteRow, amount: number, isCard: boolean) => {
     if (!user) { toast.error('Faça login primeiro'); return; }
     setPayingId(cliente.id);
-
     const netAmount = isCard ? amount * (1 - CARD_FEE) : amount;
     const newPaidAmount = (cliente.paid_amount || 0) + amount;
     const isPaidFull = newPaidAmount >= (cliente.total || 0);
     const method = isCard ? 'Cartão de Crédito' : 'Dinheiro/PIX';
 
-    // Update payment status
-    const { error: statusError } = await supabase
-      .from('service_orders')
-      .update({
-        payment_status: isPaidFull ? 'pago' : 'parcial',
-        paid_amount: newPaidAmount,
-        payment_method_client: method,
-      })
-      .eq('id', cliente.id);
+    const { error: statusError } = await supabase.from('service_orders').update({ payment_status: isPaidFull ? 'pago' : 'parcial', paid_amount: newPaidAmount, payment_method_client: method }).eq('id', cliente.id);
+    if (statusError) { toast.error('Erro ao registrar pagamento'); setPayingId(null); return; }
 
-    if (statusError) {
-      toast.error('Erro ao registrar pagamento');
-      setPayingId(null);
-      return;
-    }
+    const feeNote = isCard ? ` (taxa cartão ${(CARD_FEE * 100).toFixed(2)}%)` : '';
+    const { error: txError } = await supabase.from('transactions').insert({ description: `Pagamento OS #${cliente.os_number} - ${cliente.cliente_nome}${feeNote}`, amount: Math.round(netAmount * 100) / 100, type: 'receita', transaction_date: new Date().toISOString().split('T')[0], user_id: user.id, payment_method: method });
 
-    // Create revenue transaction with net amount (after card fee)
-    const feeNote = isCard ? ` (taxa cartão ${(CARD_FEE * 100).toFixed(2)}% aplicada)` : '';
-    const { error: txError } = await supabase
-      .from('transactions')
-      .insert({
-        description: `Pagamento OS #${cliente.os_number} - ${cliente.cliente_nome}${feeNote}`,
-        amount: Math.round(netAmount * 100) / 100,
-        type: 'receita',
-        transaction_date: new Date().toISOString().split('T')[0],
-        user_id: user.id,
-        payment_method: method,
-      });
-
-    if (txError) {
-      toast.error('Erro ao registrar entrada no financeiro');
-    } else {
-      setClientes(prev => prev.map(c => c.id === cliente.id ? {
-        ...c,
-        payment_status: isPaidFull ? 'pago' : 'parcial',
-        paid_amount: newPaidAmount,
-        payment_method_client: method,
-      } : c));
+    if (txError) { toast.error('Erro ao registrar entrada no financeiro'); }
+    else {
+      setClientes(prev => prev.map(c => c.id === cliente.id ? { ...c, payment_status: isPaidFull ? 'pago' : 'parcial', paid_amount: newPaidAmount, payment_method_client: method } : c));
       const cardMsg = isCard ? ` | Líquido: ${fmt(netAmount)}` : '';
-      toast.success(`${fmt(amount)} registrado como entrada${cardMsg}`);
+      toast.success(`${fmt(amount)} registrado${cardMsg}`);
     }
-    setPayingId(null);
-    setCustomAmountId(null);
-    setCustomAmount('');
+    setPayingId(null); setCustomAmountId(null); setCustomAmount('');
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,13 +135,6 @@ export default function ClientesPage() {
 
   const triggerFileUpload = (id: string) => { setSelectedId(id); setTimeout(() => fileInputRef.current?.click(), 100); };
 
-  const getPaymentInfo = (c: ClienteRow) => {
-    const total = c.total || 0;
-    const paid = c.paid_amount || 0;
-    const remaining = Math.max(0, total - paid);
-    return { total, paid, remaining };
-  };
-
   return (
     <div>
       <input type="file" ref={fileInputRef} className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileUpload} />
@@ -196,26 +150,27 @@ export default function ClientesPage() {
         </div>
       </div>
 
-      {/* Year / Month filters */}
-      <div className="flex items-center gap-3 mb-4">
-        <Select value={selectedYear} onValueChange={setSelectedYear}>
-          <SelectTrigger className="h-9 w-[100px] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="h-9 w-[140px] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os meses</SelectItem>
-            {MONTHS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <span className="text-xs text-muted-foreground">{filtered.length} registro(s)</span>
+      {/* Year / Month filters + Legend */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="h-9 w-[100px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>{availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os meses</SelectItem>
+              {MONTHS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <span className="text-xs text-muted-foreground">{filtered.length} registro(s)</span>
+        </div>
+        <div className="flex items-center gap-3 text-xs">
+          <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-emerald-700" /> Pago Total</span>
+          <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-emerald-300" /> Parcial</span>
+          <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded bg-orange-500" /> Pendente</span>
+        </div>
       </div>
 
       {loading ? (
@@ -242,14 +197,18 @@ export default function ClientesPage() {
             </TableHeader>
             <TableBody>
               {filtered.map((c) => {
-                const { total, paid, remaining } = getPaymentInfo(c);
+                const total = c.total || 0;
+                const paid = c.paid_amount || 0;
+                const remaining = Math.max(0, total - paid);
+                const colors = getPaymentColor(c.payment_status, paid, total);
+
                 return (
-                  <TableRow key={c.id}>
+                  <TableRow key={c.id} className={colors.row}>
                     <TableCell className="font-medium">{c.cliente_nome || '—'}</TableCell>
                     <TableCell>{c.cliente_telefone || '—'}</TableCell>
                     <TableCell>{c.atendimento_data ? new Date(c.atendimento_data + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
                     <TableCell className="max-w-[150px] truncate">{getProducts(c.items)}</TableCell>
-                    <TableCell className="text-xs font-medium">{fmt(total)}</TableCell>
+                    <TableCell className="text-xs font-semibold">{fmt(total)}</TableCell>
                     <TableCell>
                       <Select value={c.order_status || 'em_producao'} onValueChange={(v) => handleStatusChange(c.id, v)}>
                         <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue /></SelectTrigger>
@@ -261,18 +220,22 @@ export default function ClientesPage() {
                     </TableCell>
                     <TableCell>
                       {c.payment_status === 'pago' ? (
-                        <div className="space-y-1">
-                          <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1">
-                            <CheckCircle size={12} /> Pago
+                        <div className="space-y-0.5">
+                          <Badge className={`${colors.badge} text-xs gap-1 px-3 py-1`}>
+                            <CheckCircle size={12} /> Pago Total
                           </Badge>
                           <div className="text-[10px] text-muted-foreground">{fmt(paid)}</div>
                         </div>
                       ) : (
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1" disabled={payingId === c.id}>
+                            <Button variant="outline" size="sm" className="h-8 px-3 text-xs gap-1 font-medium" disabled={payingId === c.id}>
                               {payingId === c.id ? <Loader2 size={14} className="animate-spin" /> : <DollarSign size={14} />}
-                              {c.payment_status === 'parcial' ? `Resta ${fmt(remaining)}` : 'Registrar'}
+                              {c.payment_status === 'parcial' ? (
+                                <span>Resta {fmt(remaining)}</span>
+                              ) : (
+                                <span>Registrar</span>
+                              )}
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-72 p-3" align="start">
@@ -282,19 +245,13 @@ export default function ClientesPage() {
                                 Total: {fmt(total)} {paid > 0 && <>| Pago: {fmt(paid)} | Resta: {fmt(remaining)}</>}
                               </div>
 
-                              {/* 30% option */}
+                              {/* 30% option — only cash/pix */}
                               <div className="space-y-1.5">
-                                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Valor parcial</div>
-                                <div className="flex gap-1.5">
-                                  <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                                    onClick={() => processPayment(c, remaining * 0.3, false)}>
-                                    <Banknote size={12} /> 30% ({fmt(remaining * 0.3)})
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                                    onClick={() => processPayment(c, remaining * 0.3, true)}>
-                                    <CreditCard size={12} /> 30% Cartão
-                                  </Button>
-                                </div>
+                                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Entrada 30%</div>
+                                <Button size="sm" variant="outline" className="h-8 text-xs gap-1 w-full"
+                                  onClick={() => processPayment(c, remaining * 0.3, false)}>
+                                  <Banknote size={12} /> 30% Dinheiro/PIX ({fmt(remaining * 0.3)})
+                                </Button>
                               </div>
 
                               {/* Total option */}
@@ -303,7 +260,7 @@ export default function ClientesPage() {
                                 <div className="flex gap-1.5">
                                   <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
                                     onClick={() => processPayment(c, remaining, false)}>
-                                    <Banknote size={12} /> {fmt(remaining)}
+                                    <Banknote size={12} /> Dinheiro/PIX
                                   </Button>
                                   <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
                                     onClick={() => processPayment(c, remaining, true)}>
@@ -320,31 +277,26 @@ export default function ClientesPage() {
                               {/* Custom amount */}
                               <div className="space-y-1.5">
                                 <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Valor personalizado</div>
-                                <div className="flex gap-1.5">
-                                  <Input
-                                    type="number"
-                                    placeholder="Valor..."
-                                    className="h-8 text-xs flex-1"
-                                    value={customAmountId === c.id ? customAmount : ''}
-                                    onChange={e => { setCustomAmountId(c.id); setCustomAmount(e.target.value); }}
-                                  />
-                                </div>
+                                <Input type="number" placeholder="Valor..." className="h-8 text-xs"
+                                  value={customAmountId === c.id ? customAmount : ''}
+                                  onChange={e => { setCustomAmountId(c.id); setCustomAmount(e.target.value); }}
+                                />
                                 {customAmountId === c.id && Number(customAmount) > 0 && (
-                                  <div className="flex gap-1.5">
-                                    <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                                      onClick={() => processPayment(c, Number(customAmount), false)}>
-                                      <Banknote size={12} /> Dinheiro/PIX
-                                    </Button>
-                                    <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                                      onClick={() => processPayment(c, Number(customAmount), true)}>
-                                      <CreditCard size={12} /> Cartão
-                                    </Button>
-                                  </div>
-                                )}
-                                {customAmountId === c.id && Number(customAmount) > 0 && (
-                                  <div className="text-[10px] text-muted-foreground">
-                                    Cartão: líquido {fmt(Number(customAmount) * (1 - CARD_FEE))}
-                                  </div>
+                                  <>
+                                    <div className="flex gap-1.5">
+                                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
+                                        onClick={() => processPayment(c, Number(customAmount), false)}>
+                                        <Banknote size={12} /> Dinheiro/PIX
+                                      </Button>
+                                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
+                                        onClick={() => processPayment(c, Number(customAmount), true)}>
+                                        <CreditCard size={12} /> Cartão
+                                      </Button>
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground">
+                                      Cartão: líquido {fmt(Number(customAmount) * (1 - CARD_FEE))}
+                                    </div>
+                                  </>
                                 )}
                               </div>
                             </div>
