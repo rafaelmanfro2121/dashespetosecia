@@ -234,11 +234,30 @@ export default function OrdemServicoPage() {
     fetchHistory();
   };
 
+  const expandTextareas = () => {
+    if (!printRef.current) return;
+    const textareas = printRef.current.querySelectorAll('textarea');
+    textareas.forEach((ta) => {
+      ta.style.height = 'auto';
+      ta.style.height = `${ta.scrollHeight}px`;
+      ta.style.overflow = 'visible';
+    });
+  };
+
   const generatePDF = async () => {
     if (!printRef.current) return;
     setLoadingPdf(true);
     try {
+      expandTextareas();
+      // Hide no-print elements for PDF capture
+      const noPrintEls = printRef.current.querySelectorAll('.no-print');
+      noPrintEls.forEach(el => (el as HTMLElement).style.display = 'none');
+
       const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+
+      // Restore no-print elements
+      noPrintEls.forEach(el => (el as HTMLElement).style.display = '');
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -253,12 +272,7 @@ export default function OrdemServicoPage() {
   };
 
   const handlePrint = () => {
-    const textarea = printRef.current?.querySelector('textarea') as HTMLTextAreaElement | null;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${textarea.scrollHeight}px`;
-      textarea.style.overflow = 'visible';
-    }
+    expandTextareas();
     window.print();
   };
 
