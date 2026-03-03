@@ -343,55 +343,86 @@ export default function ClientesPage() {
                               <div className="text-xs text-muted-foreground">
                                 Total: {fmt(total)} {paid > 0 && <>| Pago: {fmt(paid)} | Resta: {fmt(remaining)}</>}
                               </div>
-                              <div className="space-y-1.5">
-                                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Entrada 30%</div>
-                                <Button size="sm" variant="outline" className="h-8 text-xs gap-1 w-full"
-                                  onClick={() => processPayment(c, remaining * 0.3, false)}>
-                                  <Banknote size={12} /> 30% Dinheiro/PIX ({fmt(remaining * 0.3)})
-                                </Button>
-                              </div>
-                              <div className="space-y-1.5">
-                                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Valor total restante</div>
-                                <div className="flex gap-1.5">
-                                  <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                                    onClick={() => processPayment(c, remaining, false)}>
-                                    <Banknote size={12} /> Dinheiro/PIX
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                                    onClick={() => processPayment(c, remaining, true)}>
-                                    <CreditCard size={12} /> Cartão
-                                  </Button>
-                                </div>
-                                {remaining > 0 && (
-                                  <div className="text-[10px] text-muted-foreground">
-                                    Cartão: líquido {fmt(remaining * (1 - CARD_FEE))} (taxa {(CARD_FEE * 100).toFixed(2)}%)
-                                  </div>
-                                )}
-                              </div>
-                              <div className="space-y-1.5">
-                                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Valor personalizado</div>
-                                <Input type="number" placeholder="Valor..." className="h-8 text-xs"
-                                  value={customAmountId === c.id ? customAmount : ''}
-                                  onChange={e => { setCustomAmountId(c.id); setCustomAmount(e.target.value); }}
-                                />
-                                {customAmountId === c.id && Number(customAmount) > 0 && (
+                              {(() => {
+                                const method = c.payment_method_client || '';
+                                const isCard = method.toLowerCase().includes('cartão') || method.toLowerCase().includes('credito') || method.toLowerCase().includes('crédito');
+                                const isPix = method.toLowerCase().includes('pix') || method.toLowerCase().includes('dinheiro');
+                                // If already has a payment method, lock to the same one
+                                const lockedToCard = paid > 0 && isCard;
+                                const lockedToPix = paid > 0 && isPix;
+                                // First payment: show both options. Subsequent: only the same method
+                                return (
                                   <>
-                                    <div className="flex gap-1.5">
-                                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                                        onClick={() => processPayment(c, Number(customAmount), false)}>
-                                        <Banknote size={12} /> Dinheiro/PIX
-                                      </Button>
-                                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                                        onClick={() => processPayment(c, Number(customAmount), true)}>
-                                        <CreditCard size={12} /> Cartão
-                                      </Button>
+                                    {/* Entrada 30% - only PIX/Dinheiro */}
+                                    {!lockedToCard && (
+                                      <div className="space-y-1.5">
+                                        <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Entrada 30%</div>
+                                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1 w-full"
+                                          onClick={() => processPayment(c, remaining * 0.3, false)}>
+                                          <Banknote size={12} /> 30% Dinheiro/PIX ({fmt(remaining * 0.3)})
+                                        </Button>
+                                      </div>
+                                    )}
+                                    <div className="space-y-1.5">
+                                      <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Valor total restante</div>
+                                      <div className="flex gap-1.5">
+                                        {!lockedToCard && (
+                                          <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
+                                            onClick={() => processPayment(c, remaining, false)}>
+                                            <Banknote size={12} /> Dinheiro/PIX
+                                          </Button>
+                                        )}
+                                        {!lockedToPix && (
+                                          <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
+                                            onClick={() => processPayment(c, remaining, true)}>
+                                            <CreditCard size={12} /> Cartão
+                                          </Button>
+                                        )}
+                                      </div>
+                                      {!lockedToPix && remaining > 0 && (
+                                        <div className="text-[10px] text-muted-foreground">
+                                          Cartão: líquido {fmt(remaining * (1 - CARD_FEE))} (taxa {(CARD_FEE * 100).toFixed(2)}%)
+                                        </div>
+                                      )}
                                     </div>
-                                    <div className="text-[10px] text-muted-foreground">
-                                      Cartão: líquido {fmt(Number(customAmount) * (1 - CARD_FEE))}
+                                    <div className="space-y-1.5">
+                                      <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Valor personalizado</div>
+                                      <Input type="number" placeholder="Valor..." className="h-8 text-xs"
+                                        value={customAmountId === c.id ? customAmount : ''}
+                                        onChange={e => { setCustomAmountId(c.id); setCustomAmount(e.target.value); }}
+                                      />
+                                      {customAmountId === c.id && Number(customAmount) > 0 && (
+                                        <>
+                                          <div className="flex gap-1.5">
+                                            {!lockedToCard && (
+                                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
+                                                onClick={() => processPayment(c, Number(customAmount), false)}>
+                                                <Banknote size={12} /> Dinheiro/PIX
+                                              </Button>
+                                            )}
+                                            {!lockedToPix && (
+                                              <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
+                                                onClick={() => processPayment(c, Number(customAmount), true)}>
+                                                <CreditCard size={12} /> Cartão
+                                              </Button>
+                                            )}
+                                          </div>
+                                          {!lockedToPix && (
+                                            <div className="text-[10px] text-muted-foreground">
+                                              Cartão: líquido {fmt(Number(customAmount) * (1 - CARD_FEE))}
+                                            </div>
+                                          )}
+                                        </>
+                                      )}
                                     </div>
+                                    {(lockedToCard || lockedToPix) && (
+                                      <div className="text-[10px] text-amber-600 font-medium">
+                                        ⚠ Método travado: {lockedToCard ? 'Cartão' : 'Dinheiro/PIX'} (mesmo da 1ª parcela)
+                                      </div>
+                                    )}
                                   </>
-                                )}
-                              </div>
+                                );
+                              })()}
                             </div>
                           </PopoverContent>
                         </Popover>
