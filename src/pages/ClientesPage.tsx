@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote } from 'lucide-react';
+import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -297,6 +297,7 @@ export default function ClientesPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Pagamento</TableHead>
                 <TableHead>Documentos</TableHead>
+                <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -459,6 +460,25 @@ export default function ClientesPage() {
                           {c.nota_fiscal_url ? 'Trocar NF' : 'Anexar NF'}
                         </Button>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                        title="Excluir OS"
+                        onClick={async () => {
+                          if (!confirm(`Excluir OS #${c.os_number} de ${c.cliente_nome}?`)) return;
+                          // Also remove related transaction
+                          await supabase.from('transactions').delete().ilike('description', `%OS #${c.os_number}%`);
+                          const { error } = await supabase.from('service_orders').delete().eq('id', c.id);
+                          if (error) { toast.error('Erro ao excluir'); return; }
+                          setClientes(prev => prev.filter(x => x.id !== c.id));
+                          toast.success(`OS #${c.os_number} excluída`);
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
