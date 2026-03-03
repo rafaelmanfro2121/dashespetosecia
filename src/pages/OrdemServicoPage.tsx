@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Printer, Save, FileDown, History, ArrowLeft, Lock, Unlock, Search } from 'lucide-react';
+import { Plus, Trash2, Printer, Save, FileDown, History, ArrowLeft, Lock, Unlock, Search, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -174,31 +174,12 @@ export default function OrdemServicoPage() {
       if (error) { toast.error('Erro ao atualizar'); return; }
       toast.success('OS atualizada');
     } else {
-      const { error } = await supabase.from('service_orders').insert(payload);
+      const { data: inserted, error } = await supabase.from('service_orders').insert(payload).select('id').single();
       if (error) { toast.error('Erro ao salvar'); return; }
-      toast.success('OS salva');
+      toast.success('OS salva com sucesso! Você pode continuar editando.');
+      if (inserted) setCurrentOsId(inserted.id);
     }
     await fetchHistory();
-
-    // After saving a new OS, auto-advance to next number and clear form
-    if (!currentOsId) {
-      // Refetch to get updated list, then clear
-      const { data } = await supabase.from('service_orders').select('id, os_number, cliente_nome, total, created_at').order('created_at', { ascending: false });
-      if (data) {
-        setSavedOrders(data as SavedOS[]);
-        const next = getNextOsNumber(data as SavedOS[]);
-        setOsNumber(next);
-      }
-      setCurrentOsId(null);
-      setCliente({ nome: '', telefone: '', cpfCnpj: '', contato: '', email: '' });
-      setAtendimento({ vendedor: '', data: new Date().toISOString().split('T')[0], hora: new Date().toTimeString().slice(0, 5) });
-      setItems([{ id: 1, name: '', quantity: 1, price: 0 }]);
-      setDesconto(0);
-      setShowDesconto(false);
-      setFormaPagamento('');
-      setDescricaoPagamento('');
-      setObservacoes('');
-    }
   };
 
   const loadOS = async (id: string) => {
@@ -316,7 +297,10 @@ export default function OrdemServicoPage() {
                     <span className="font-mono font-medium text-foreground">{fmt(Number(os.total))}</span>
                   </div>
                 </div>
-                <button onClick={() => deleteOS(os.id)} className="text-muted-foreground hover:text-destructive p-2"><Trash2 size={14} /></button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => loadOS(os.id)} className="text-muted-foreground hover:text-primary p-2" title="Editar OS"><Pencil size={14} /></button>
+                  <button onClick={() => deleteOS(os.id)} className="text-muted-foreground hover:text-destructive p-2" title="Excluir OS"><Trash2 size={14} /></button>
+                </div>
               </div>
             ))}
           </div>
