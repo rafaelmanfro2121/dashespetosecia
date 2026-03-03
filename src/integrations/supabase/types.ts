@@ -374,7 +374,9 @@ export type Database = {
           forma_pagamento: string | null
           id: string
           items: Json
+          nota_fiscal_url: string | null
           observacoes: string | null
+          order_status: string
           os_number: string
           subtotal: number
           total: number
@@ -400,7 +402,9 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           items?: Json
+          nota_fiscal_url?: string | null
           observacoes?: string | null
+          order_status?: string
           os_number?: string
           subtotal?: number
           total?: number
@@ -426,7 +430,9 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           items?: Json
+          nota_fiscal_url?: string | null
           observacoes?: string | null
+          order_status?: string
           os_number?: string
           subtotal?: number
           total?: number
