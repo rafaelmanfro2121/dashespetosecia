@@ -140,10 +140,7 @@ export default function ProdutosPage() {
 
   const calcMaterialCost = (productId: string) => {
     const mats = productMaterials.filter(m => m.product_id === productId);
-    return mats.reduce((sum, m) => {
-      const price = materialPrices.find(p => p.material_name === m.material_name.toLowerCase());
-      return sum + (Number(m.quantity_per_unit) * (price?.avg_unit_price || 0));
-    }, 0);
+    return mats.reduce((sum, m) => sum + Number(m.quantity_per_unit), 0);
   };
 
   const lowMarginProducts = products.filter(p => {
@@ -354,14 +351,14 @@ export default function ProdutosPage() {
                         <Input
                           type="number"
                           step="0.01"
-                          placeholder="Qtd"
+                          placeholder="Valor (R$)"
                           value={mat.quantity}
                           onChange={e => {
                             const updated = [...newMaterials];
                             updated[idx] = { ...updated[idx], quantity: e.target.value };
                             setNewMaterials(updated);
                           }}
-                          className="h-7 text-xs rounded-lg w-20"
+                          className="h-7 text-xs rounded-lg w-24"
                         />
                       </div>
                     ))}
@@ -396,14 +393,14 @@ export default function ProdutosPage() {
                           <Input
                             type="number"
                             step="0.01"
-                            placeholder="Qtd"
+                            placeholder="Valor (R$)"
                             value={mat.quantity}
                             onChange={e => {
                               const updated = [...customMaterials];
                               updated[idx] = { ...updated[idx], quantity: e.target.value };
                               setCustomMaterials(updated);
                             }}
-                            className="h-7 text-xs rounded-lg w-20"
+                            className="h-7 text-xs rounded-lg w-24"
                           />
                           <button onClick={() => setCustomMaterials(prev => prev.filter((_, i) => i !== idx))} className="text-muted-foreground hover:text-destructive shrink-0">
                             <Trash2 size={12} />
@@ -526,7 +523,7 @@ export default function ProdutosPage() {
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {pMats.map(m => (
                         <span key={m.id} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                          {m.material_name} ×{Number(m.quantity_per_unit)}
+                          {m.material_name} {formatCurrency(Number(m.quantity_per_unit))}
                         </span>
                       ))}
                     </div>
@@ -566,33 +563,23 @@ export default function ProdutosPage() {
                             <table className="w-full text-sm">
                               <thead>
                                 <tr className="bg-muted/40 text-xs">
-                                  <th className="text-left py-2 px-3 font-medium text-muted-foreground">Material</th>
-                                  <th className="text-center py-2 px-3 font-medium text-muted-foreground">Qtd/Un</th>
-                                  <th className="text-right py-2 px-3 font-medium text-muted-foreground">Preço Médio</th>
-                                  <th className="text-right py-2 px-3 font-medium text-muted-foreground">Subtotal</th>
-                                  <th className="py-2 px-3 w-8"></th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {pMats.map(m => {
-                                  const price = materialPrices.find(mp => mp.material_name === m.material_name.toLowerCase());
-                                  const lineCost = Number(m.quantity_per_unit) * (price?.avg_unit_price || 0);
-                                  return (
+                                   <th className="text-left py-2 px-3 font-medium text-muted-foreground">Material</th>
+                                   <th className="text-right py-2 px-3 font-medium text-muted-foreground">Valor (R$)</th>
+                                   <th className="py-2 px-3 w-8"></th>
+                                 </tr>
+                               </thead>
+                               <tbody>
+                                {pMats.map(m => (
                                     <tr key={m.id} className="border-t border-muted/30 hover:bg-muted/20">
                                       <td className="py-2 px-3 font-medium">{m.material_name}</td>
-                                      <td className="py-2 px-3 text-center font-mono">{Number(m.quantity_per_unit)}</td>
-                                      <td className="py-2 px-3 text-right font-mono text-muted-foreground">
-                                        {price ? formatCurrency(price.avg_unit_price) : <span className="text-warning text-xs">Sem compra</span>}
-                                      </td>
-                                      <td className="py-2 px-3 text-right font-mono font-semibold">{formatCurrency(lineCost)}</td>
+                                      <td className="py-2 px-3 text-right font-mono font-semibold">{formatCurrency(Number(m.quantity_per_unit))}</td>
                                       <td className="py-2 px-3 text-right">
                                         <button onClick={() => removeMaterial(m.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={12} /></button>
                                       </td>
                                     </tr>
-                                  );
-                                })}
+                                ))}
                                 <tr className="border-t-2 border-muted bg-muted/20">
-                                  <td colSpan={3} className="py-2 px-3 text-right text-xs font-semibold uppercase text-muted-foreground">Total Material</td>
+                                  <td className="py-2 px-3 text-right text-xs font-semibold uppercase text-muted-foreground">Total Material</td>
                                   <td className="py-2 px-3 text-right font-mono font-bold">{formatCurrency(matCost)}</td>
                                   <td></td>
                                 </tr>
@@ -646,9 +633,9 @@ export default function ProdutosPage() {
                             </div>
                           )}
                           <div>
-                            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Qtd/un</label>
+                            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Valor (R$)</label>
                             <Input
-                              type="number" step="0.01" placeholder="Qtd"
+                              type="number" step="0.01" placeholder="Valor"
                               value={matForm.quantity_per_unit}
                               onChange={e => setMatForm({ ...matForm, quantity_per_unit: e.target.value })}
                               className="w-24 rounded-xl"
