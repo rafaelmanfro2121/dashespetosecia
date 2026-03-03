@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Trash2, Printer, Save, FileDown, History, ArrowLeft, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,7 @@ function getNextOsNumber(orders: SavedOS[]): string {
 
 export default function OrdemServicoPage() {
   const printRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [view, setView] = useState<'form' | 'history'>('form');
   const [savedOrders, setSavedOrders] = useState<SavedOS[]>([]);
@@ -78,6 +80,14 @@ export default function OrdemServicoPage() {
     const { data } = await supabase.from('service_orders').select('id, os_number, cliente_nome, total, created_at').order('created_at', { ascending: false });
     if (data) setSavedOrders(data as SavedOS[]);
   }, []);
+
+  // Auto-load OS from query param (e.g., from Clientes page)
+  useEffect(() => {
+    const loadId = searchParams.get('load');
+    if (loadId) {
+      loadOS(loadId);
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
