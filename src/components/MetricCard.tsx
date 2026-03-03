@@ -7,7 +7,7 @@ interface MetricCardProps {
   icon: LucideIcon;
   isCurrency?: boolean;
   isPercent?: boolean;
-  variant?: 'default' | 'success' | 'danger' | 'info';
+  variant?: 'default' | 'success' | 'danger' | 'info' | 'warning';
   subtitle?: string;
 }
 
@@ -35,6 +35,12 @@ const variantConfig = {
     iconBg: 'bg-info/10',
     iconColor: 'text-info',
     border: 'border-l-4 border-l-info',
+  },
+  warning: {
+    gradient: 'from-amber-500/10 to-amber-500/5',
+    iconBg: 'bg-amber-500/10',
+    iconColor: 'text-amber-600',
+    border: 'border-l-4 border-l-amber-500',
   },
 };
 
