@@ -427,7 +427,7 @@ export default function OrdemServicoTecnicaPage() {
                   <CheckboxGroup options={churrasqueira} onChange={i => setChurrasqueira(prev => toggleMulti(prev, i))} columns={2} />
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] font-semibold whitespace-nowrap">QTD. ESPETOS:</span>
-                    <Input value={qtdEspetos} onChange={e => setQtdEspetos(e.target.value)} className="w-16 h-6 text-xs border-muted" />
+                    <Input value={qtdEspetos} onChange={e => setQtdEspetos(e.target.value)} className="w-20 h-8 text-base font-bold text-center border-muted" />
                   </div>
                 </div>
               </div>
@@ -488,7 +488,7 @@ export default function OrdemServicoTecnicaPage() {
                   ESPAÇO PARA ENGRENAGEM
                 </div>
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded mt-5 mx-4 flex items-center justify-center" style={{ height: 80 }}>
-                  <span className="text-[10px] text-muted-foreground">FOSSO</span>
+                  <span className="text-[10px] text-muted-foreground">FOSSO / TUBO</span>
                 </div>
                 <div className="flex items-center gap-1 mx-4 mt-1">
                   <span className="text-muted-foreground text-[10px]">◄</span>
@@ -498,21 +498,21 @@ export default function OrdemServicoTecnicaPage() {
                   <span className="text-muted-foreground text-[10px]">►</span>
                 </div>
               </div>
-              <div className="space-y-2 min-w-[180px]">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="font-semibold w-24">LARGURA:</span>
-                  <Input value={medidaLargura} onChange={e => setMedidaLargura(e.target.value)} placeholder="cm" className="h-7 text-xs border-muted w-20" />
-                  <span className="text-muted-foreground">cm</span>
+              <div className="space-y-3 min-w-[200px]">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold w-24">LARGURA:</span>
+                  <Input value={medidaLargura} onChange={e => setMedidaLargura(e.target.value)} placeholder="cm" className="h-9 text-base font-bold text-center border-muted w-24" />
+                  <span className="text-sm font-medium text-muted-foreground">cm</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="font-semibold w-24">ALTURA:</span>
-                  <Input value={medidaAltura} onChange={e => setMedidaAltura(e.target.value)} placeholder="cm" className="h-7 text-xs border-muted w-20" />
-                  <span className="text-muted-foreground">cm</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold w-24">ALTURA:</span>
+                  <Input value={medidaAltura} onChange={e => setMedidaAltura(e.target.value)} placeholder="cm" className="h-9 text-base font-bold text-center border-muted w-24" />
+                  <span className="text-sm font-medium text-muted-foreground">cm</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="font-semibold w-24">FOSSO:</span>
-                  <Input value={medidaFosso} onChange={e => setMedidaFosso(e.target.value)} placeholder="cm" className="h-7 text-xs border-muted w-20" />
-                  <span className="text-muted-foreground">cm</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold w-24">FOSSO / TUBO:</span>
+                  <Input value={medidaFosso} onChange={e => setMedidaFosso(e.target.value)} placeholder="cm" className="h-9 text-base font-bold text-center border-muted w-24" />
+                  <span className="text-sm font-medium text-muted-foreground">cm</span>
                 </div>
               </div>
             </div>
