@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { getBusinessDaysInMonth } from '@/lib/formatters';
 
 // Types matching Supabase schema
 export interface Transaction {
@@ -249,8 +250,9 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         absenceDiscount = 0;
         finalSalary = Math.max(0, earned - valesTotal);
       } else {
-        // Monthly: fixed salary minus absences
-        const dailyRate = baseSalary / 30;
+        // Monthly: fixed salary minus absences based on business days
+        const businessDays = getBusinessDaysInMonth(month, year);
+        const dailyRate = baseSalary / businessDays;
         absenceDiscount = (absences * dailyRate) + (halfDays * dailyRate * 0.5);
         finalSalary = Math.max(0, baseSalary - absenceDiscount - valesTotal);
       }

@@ -25,3 +25,13 @@ export function getMonthName(month: number): string {
 export function getDaysInMonth(month: number, year: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
+
+export function getBusinessDaysInMonth(month: number, year: number): number {
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  let businessDays = 0;
+  for (let day = 1; day <= totalDays; day++) {
+    const dayOfWeek = new Date(year, month, day).getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDays++;
+  }
+  return businessDays;
+}
