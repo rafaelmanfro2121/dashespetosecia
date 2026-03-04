@@ -387,7 +387,7 @@ export default function OrdemServicoPage() {
           {/* OS Number */}
           <div className="text-center mb-3">
             <div className="inline-flex items-center gap-2 text-base font-bold">
-              Ordem de Serviço nº
+              Pedido nº
               <Input value={osNumber} onChange={e => setOsNumber(e.target.value)} className="w-28 text-center font-bold border-b-2 border-t-0 border-x-0 rounded-none bg-transparent h-7 text-sm text-black" placeholder="00001" />
             </div>
           </div>
