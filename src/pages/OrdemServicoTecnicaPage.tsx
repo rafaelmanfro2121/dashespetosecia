@@ -1,8 +1,9 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { Printer, FileDown, Save, Plus } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Printer, FileDown, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import logoBlack from '@/assets/logo-black.png';
 import html2canvas from 'html2canvas';
@@ -13,17 +14,21 @@ interface CheckOption {
   checked: boolean;
 }
 
+interface PedidoOS {
+  id: string;
+  os_number: string;
+  cliente_nome: string;
+  atendimento_data: string;
+  items: any[];
+  total: number;
+}
+
 function CheckboxGroup({ options, onChange, columns = 4 }: { options: CheckOption[]; onChange: (idx: number) => void; columns?: number }) {
   return (
     <div className={`grid gap-x-4 gap-y-1`} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
       {options.map((opt, i) => (
         <label key={i} className="flex items-center gap-2 text-xs cursor-pointer select-none py-0.5">
-          <input
-            type="checkbox"
-            checked={opt.checked}
-            onChange={() => onChange(i)}
-            className="w-3.5 h-3.5 rounded border-muted-foreground/40 accent-primary"
-          />
+          <input type="checkbox" checked={opt.checked} onChange={() => onChange(i)} className="w-3.5 h-3.5 rounded border-muted-foreground/40 accent-primary" />
           <span>{opt.label}</span>
         </label>
       ))}
@@ -49,98 +54,148 @@ function RadioGroup({ options, onChange, columns = 4 }: { options: CheckOption[]
 function toggleOne(options: CheckOption[], idx: number): CheckOption[] {
   return options.map((o, i) => ({ ...o, checked: i === idx ? !o.checked : false }));
 }
-
 function toggleMulti(options: CheckOption[], idx: number): CheckOption[] {
   return options.map((o, i) => ({ ...o, checked: i === idx ? !o.checked : o.checked }));
+}
+
+// Detect model from item names
+function detectModelFromItems(items: any[]): string | null {
+  const allNames = items.map((it: any) => (it.name || '').toUpperCase()).join(' ');
+  if (allNames.includes('FAZE')) return 'FAZE';
+  if (allNames.includes('LEGACY')) return 'LEGACY';
+  if (allNames.includes('IMPERIAL')) return 'IMPERIAL';
+  return null;
+}
+
+// Detect espetos quantity from item names
+function detectEspetosFromItems(items: any[]): string {
+  for (const item of items) {
+    const name = (item.name || '').toUpperCase();
+    const match = name.match(/(\d+)\s*ESPETO/);
+    if (match) return match[1];
+  }
+  return '';
 }
 
 export default function OrdemServicoTecnicaPage() {
   const printRef = useRef<HTMLDivElement>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
 
+  // Pedido selection
+  const [pedidos, setPedidos] = useState<PedidoOS[]>([]);
+  const [selectedPedido, setSelectedPedido] = useState<PedidoOS | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSelector, setShowSelector] = useState(true);
+
   const [osNumber, setOsNumber] = useState('');
   const [dataPedido, setDataPedido] = useState(new Date().toISOString().split('T')[0]);
   const [clienteNome, setClienteNome] = useState('');
+  const [produtosTexto, setProdutosTexto] = useState('');
 
-  // Material
   const [material, setMaterial] = useState<CheckOption[]>([
     { label: 'INOX POLIDO', checked: false },
     { label: 'INOX ESCOVADO', checked: false },
   ]);
-
-  // Churrasqueira
   const [churrasqueira, setChurrasqueira] = useState<CheckOption[]>([
     { label: 'SIM', checked: false },
     { label: 'NÃO', checked: false },
   ]);
-
   const [qtdEspetos, setQtdEspetos] = useState('');
-
-  // Modelo
   const [modelo, setModelo] = useState<CheckOption[]>([
     { label: 'CLASSIC', checked: false },
     { label: 'ELEVAÇÃO', checked: false },
     { label: 'SEMI SUSPENSA', checked: false },
     { label: 'SUSPENSA S/GRELHA', checked: false },
   ]);
-
-  // Cabos
   const [cabos, setCabos] = useState<CheckOption[]>([
     { label: 'INOX', checked: false },
     { label: 'ALUMÍNIO TÉRMICO', checked: false },
     { label: 'MADEIRA', checked: false },
   ]);
-
-  // Voltagem
   const [voltagem, setVoltagem] = useState<CheckOption[]>([
     { label: '110 VOLTS', checked: false },
     { label: '220 VOLTS', checked: false },
   ]);
-
   const [extras, setExtras] = useState<CheckOption[]>([
     { label: 'CONTROLE REMOTO', checked: false },
     { label: 'FONTE CHAVEADA', checked: false },
     { label: 'DIMER EMBUTIDO', checked: false },
   ]);
-
-  // Fechamento lateral
   const [fechamento, setFechamento] = useState<CheckOption[]>([
     { label: '06 CM', checked: false },
     { label: '12 CM', checked: false },
     { label: '15 CM', checked: false },
   ]);
-
-  // Grelha modelo classic
   const [grelhaClassic, setGrelhaClassic] = useState<CheckOption[]>([
     { label: 'GRELHA EMBUTIDA', checked: false },
     { label: 'GRELHA LATERAL SIMPLES', checked: false },
     { label: 'GRELHA LATERAL DUPLA', checked: false },
   ]);
-
   const [grelhaLado, setGrelhaLado] = useState<CheckOption[]>([
     { label: 'ESQUERDA', checked: false },
     { label: 'DIREITA', checked: false },
   ]);
-
-  // Modelo grelha
   const [modeloGrelha, setModeloGrelha] = useState<CheckOption[]>([
     { label: 'ARGENTINA', checked: false },
     { label: 'URUGUAIA', checked: false },
     { label: 'DESCANSO URUGUAIA', checked: false },
   ]);
-
   const [obs, setObs] = useState('');
-
-  // Medidas do diagrama
   const [medidaLargura, setMedidaLargura] = useState('');
   const [medidaProfundidade, setMedidaProfundidade] = useState('');
   const [medidaAltura, setMedidaAltura] = useState('');
   const [obsMedidas, setObsMedidas] = useState('');
 
+  // Fetch pedidos
+  useEffect(() => {
+    const fetchPedidos = async () => {
+      const { data } = await supabase
+        .from('service_orders')
+        .select('id, os_number, cliente_nome, atendimento_data, items, total')
+        .order('created_at', { ascending: false });
+      if (data) setPedidos(data as PedidoOS[]);
+    };
+    fetchPedidos();
+  }, []);
+
+  const selectPedido = (pedido: PedidoOS) => {
+    setSelectedPedido(pedido);
+    setOsNumber(pedido.os_number);
+    setDataPedido(pedido.atendimento_data);
+    setClienteNome(pedido.cliente_nome);
+
+    const items = pedido.items || [];
+    // Build produtos text
+    const prodText = items.map((it: any) => `${it.quantity || 1}x ${it.name}`).join('\n');
+    setProdutosTexto(prodText);
+
+    // Auto-detect churrasqueira
+    const hasChurrasqueira = items.some((it: any) => (it.name || '').toUpperCase().includes('CHURRASQUEIRA'));
+    setChurrasqueira([
+      { label: 'SIM', checked: hasChurrasqueira },
+      { label: 'NÃO', checked: !hasChurrasqueira },
+    ]);
+
+    // Auto-detect espetos
+    const espetos = detectEspetosFromItems(items);
+    setQtdEspetos(espetos);
+
+    // Auto-detect model line (FAZE/LEGACY/IMPERIAL) - map to CLASSIC/ELEVAÇÃO etc won't match exactly, 
+    // but we can try to detect known patterns
+    // For now reset modelo and let user pick
+    setModelo(m => m.map(o => ({ ...o, checked: false })));
+
+    setShowSelector(false);
+    toast.success(`Pedido #${pedido.os_number} carregado`);
+  };
+
   const clearForm = () => {
+    setSelectedPedido(null);
+    setShowSelector(true);
     setOsNumber('');
     setDataPedido(new Date().toISOString().split('T')[0]);
     setClienteNome('');
+    setProdutosTexto('');
     setMaterial(m => m.map(o => ({ ...o, checked: false })));
     setChurrasqueira(c => c.map(o => ({ ...o, checked: false })));
     setQtdEspetos('');
@@ -165,10 +220,8 @@ export default function OrdemServicoTecnicaPage() {
     try {
       const noPrintEls = printRef.current.querySelectorAll('.no-print');
       noPrintEls.forEach(el => (el as HTMLElement).style.display = 'none');
-
       const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
       noPrintEls.forEach(el => (el as HTMLElement).style.display = '');
-
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -182,9 +235,14 @@ export default function OrdemServicoTecnicaPage() {
     setLoadingPdf(false);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
+
+  const filteredPedidos = pedidos.filter(p => {
+    const term = searchTerm.toLowerCase();
+    return p.os_number.toLowerCase().includes(term) || p.cliente_nome.toLowerCase().includes(term);
+  });
+
+  const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div className="border border-muted rounded-lg p-3 mb-3">
@@ -192,6 +250,57 @@ export default function OrdemServicoTecnicaPage() {
       {children}
     </div>
   );
+
+  // Show pedido selector if no pedido selected
+  if (showSelector) {
+    return (
+      <div className="p-6 max-w-3xl mx-auto">
+        <h1 className="text-lg font-bold text-foreground mb-4">Selecione o Pedido para gerar a Ordem de Serviço</h1>
+        <div className="relative mb-4">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nº do pedido ou nome do cliente..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        {filteredPedidos.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">Nenhum pedido encontrado</div>
+        ) : (
+          <div className="space-y-2 max-h-[60vh] overflow-auto">
+            {filteredPedidos.map(p => {
+              const items = (p.items || []) as any[];
+              const prodNames = items.map((it: any) => it.name).filter(Boolean).join(', ');
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => selectPedido(p)}
+                  className="metric-card cursor-pointer hover:border-primary/50 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        Pedido #{p.os_number}
+                      </span>
+                      <span className="font-semibold text-sm">{p.cliente_nome}</span>
+                    </div>
+                    <span className="font-mono text-sm font-medium">{fmt(Number(p.total))}</span>
+                  </div>
+                  {prodNames && (
+                    <p className="text-xs text-muted-foreground mt-1 truncate">{prodNames}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {new Date(p.atendimento_data).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -208,9 +317,14 @@ export default function OrdemServicoTecnicaPage() {
 
       <div className="min-h-screen bg-white">
         <div className="no-print bg-muted/30 border-b px-6 py-3 flex items-center justify-between sticky top-0 z-10">
-          <h1 className="text-lg font-bold text-foreground">Ordem de Serviço Técnica</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-bold text-foreground">
+              OS Técnica — Pedido #{osNumber}
+            </h1>
+            <span className="text-sm text-muted-foreground">• {clienteNome}</span>
+          </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={clearForm} className="gap-1"><Plus size={14} /> Nova</Button>
+            <Button variant="outline" size="sm" onClick={clearForm} className="gap-1"><Plus size={14} /> Trocar Pedido</Button>
             <Button variant="outline" size="sm" onClick={generatePDF} disabled={loadingPdf} className="gap-1">
               <FileDown size={14} /> {loadingPdf ? 'Gerando...' : 'PDF'}
             </Button>
@@ -227,12 +341,12 @@ export default function OrdemServicoTecnicaPage() {
             </div>
             <div className="text-right space-y-1">
               <div className="flex items-center gap-2 text-xs">
-                <span className="font-semibold">Nº</span>
-                <Input value={osNumber} onChange={e => setOsNumber(e.target.value)} className="w-24 h-7 text-xs text-center font-mono border-muted" />
+                <span className="font-semibold">Nº PEDIDO:</span>
+                <span className="font-mono font-bold text-sm">{osNumber}</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <span className="font-semibold whitespace-nowrap">DATA DO PEDIDO:</span>
-                <Input type="date" value={dataPedido} onChange={e => setDataPedido(e.target.value)} className="w-32 h-7 text-xs border-muted" />
+                <span className="font-semibold whitespace-nowrap">DATA:</span>
+                <span className="text-sm">{new Date(dataPedido).toLocaleDateString('pt-BR')}</span>
               </div>
             </div>
           </div>
@@ -241,20 +355,23 @@ export default function OrdemServicoTecnicaPage() {
           <Section title="Dados do Cliente">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold whitespace-nowrap">NOME DO CLIENTE:</span>
-              <Input value={clienteNome} onChange={e => setClienteNome(e.target.value)} className="h-7 text-xs flex-1 border-muted" />
+              <span className="text-xs font-medium">{clienteNome}</span>
             </div>
           </Section>
 
+          {/* Produtos do Pedido */}
+          <Section title="Produtos do Pedido">
+            <p className="text-xs whitespace-pre-line">{produtosTexto}</p>
+          </Section>
+
           {/* Dados dos Produtos */}
-          <Section title="Dados dos Produtos">
+          <Section title="Especificações Técnicas">
             <div className="space-y-3">
-              {/* Material */}
               <div>
                 <span className="text-xs font-semibold block mb-1">MATERIAL:</span>
                 <RadioGroup options={material} onChange={i => setMaterial(prev => toggleOne(prev, i))} columns={2} />
               </div>
 
-              {/* Churrasqueira */}
               <div className="flex items-center gap-6">
                 <div>
                   <span className="text-xs font-semibold block mb-1">CHURRASQUEIRA:</span>
@@ -266,19 +383,16 @@ export default function OrdemServicoTecnicaPage() {
                 </div>
               </div>
 
-              {/* Modelo */}
               <div>
                 <span className="text-xs font-semibold block mb-1">MODELO:</span>
                 <RadioGroup options={modelo} onChange={i => setModelo(prev => toggleOne(prev, i))} columns={4} />
               </div>
 
-              {/* Cabos */}
               <div>
                 <span className="text-xs font-semibold block mb-1">CABOS:</span>
                 <RadioGroup options={cabos} onChange={i => setCabos(prev => toggleOne(prev, i))} columns={3} />
               </div>
 
-              {/* Voltagem */}
               <div>
                 <span className="text-xs font-semibold block mb-1">VOLTAGEM:</span>
                 <div className="flex items-start gap-8">
@@ -287,13 +401,11 @@ export default function OrdemServicoTecnicaPage() {
                 </div>
               </div>
 
-              {/* Fechamento Lateral */}
               <div>
                 <span className="text-xs font-semibold block mb-1">FECHAMENTO LATERAL:</span>
                 <RadioGroup options={fechamento} onChange={i => setFechamento(prev => toggleOne(prev, i))} columns={3} />
               </div>
 
-              {/* Grelha - Modelo Classic */}
               <div>
                 <span className="text-xs font-semibold block mb-1">MODELO CLASSIC - GRELHA:</span>
                 <div className="flex items-start gap-6">
@@ -302,7 +414,6 @@ export default function OrdemServicoTecnicaPage() {
                 </div>
               </div>
 
-              {/* Modelo da Grelha */}
               <div>
                 <span className="text-xs font-semibold block mb-1">MODELO DA GRELHA:</span>
                 <RadioGroup options={modeloGrelha} onChange={i => setModeloGrelha(prev => toggleOne(prev, i))} columns={3} />
@@ -310,15 +421,12 @@ export default function OrdemServicoTecnicaPage() {
             </div>
           </Section>
 
-          {/* OBS */}
           <Section title="Observações">
             <Textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Observações gerais..." className="text-xs border-muted min-h-[60px]" />
           </Section>
 
-          {/* Medidas do Vão */}
           <Section title="Desenho - Especificar as Medidas do Vão">
             <div className="flex gap-6">
-              {/* Diagram visual */}
               <div className="border-2 border-muted-foreground/30 rounded-md p-3 flex-1 relative" style={{ minHeight: 180 }}>
                 <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground font-medium">
                   ESPAÇO PARA ENGRENAGEM — 6cm
@@ -330,8 +438,6 @@ export default function OrdemServicoTecnicaPage() {
                   SOLEIRA — 20cm
                 </div>
               </div>
-
-              {/* Medidas */}
               <div className="space-y-2 min-w-[180px]">
                 <div className="flex items-center gap-2 text-xs">
                   <span className="font-semibold w-24">LARGURA:</span>
