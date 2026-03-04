@@ -103,10 +103,10 @@ export default function OrdemServicoTecnicaPage() {
   ]);
   const [qtdEspetos, setQtdEspetos] = useState('');
   const [modelo, setModelo] = useState<CheckOption[]>([
-    { label: 'CLASSIC', checked: false },
-    { label: 'ELEVAÇÃO', checked: false },
-    { label: 'SEMI SUSPENSA', checked: false },
-    { label: 'SUSPENSA S/GRELHA', checked: false },
+    { label: 'LEGACY', checked: false },
+    { label: 'IMPERIAL', checked: false },
+    { label: 'FAZE', checked: false },
+    { label: 'IMPERIAL/GMANUAL', checked: false },
   ]);
   const [cabos, setCabos] = useState<CheckOption[]>([
     { label: 'INOX', checked: false },
@@ -467,7 +467,7 @@ export default function OrdemServicoTecnicaPage() {
 
               {/* Grelha Classic + Lado */}
               <div className="bg-muted/30 rounded-md p-2.5 border border-muted col-span-2">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Modelo Classic — Grelha</span>
+                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Modelo e Posição da Grelha</span>
                 <div className="flex items-start gap-8">
                   <CheckboxGroup options={grelhaClassic} onChange={i => setGrelhaClassic(prev => toggleMulti(prev, i))} columns={3} />
                   <CheckboxGroup options={grelhaLado} onChange={i => setGrelhaLado(prev => toggleMulti(prev, i))} columns={2} />
