@@ -44,6 +44,10 @@ interface WarrantyCost {
   notes: string | null;
 }
 
+// Desconto da taxa de cartão de crédito (11,77%)
+const CARD_FEE_DISCOUNT = 0.1177;
+const applyCardDiscount = (price: number) => price * (1 - CARD_FEE_DISCOUNT);
+
 const COMMON_MATERIALS = [
   'Parafuso', 'Engrenagem', 'Chapa de Inox', 'Rolamento', 'Fuso',
   'Tubos', 'Barras', 'Rebites', 'Graxa', 'Módulo', 'Fonte', 'Trafo',
@@ -145,9 +149,10 @@ export default function ProdutosPage() {
 
   const lowMarginProducts = products.filter(p => {
     if (!p.is_active || Number(p.sale_price) <= 0) return false;
+    const netPrice = applyCardDiscount(Number(p.sale_price));
     const matCost = calcMaterialCost(p.id);
     const totalCost = matCost + Number(p.labor_cost) + Number(p.other_costs);
-    return ((Number(p.sale_price) - totalCost) / Number(p.sale_price)) * 100 < 30;
+    return ((netPrice - totalCost) / netPrice) * 100 < 30;
   });
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -295,10 +300,11 @@ export default function ProdutosPage() {
                 <h3 className="font-semibold text-sm text-warning">⚠️ Margem Abaixo de 30%</h3>
               </div>
               {lowMarginProducts.map(p => {
+                const netPrice = applyCardDiscount(Number(p.sale_price));
                 const matCost = calcMaterialCost(p.id);
                 const totalCost = matCost + Number(p.labor_cost) + Number(p.other_costs);
-                const margin = ((Number(p.sale_price) - totalCost) / Number(p.sale_price)) * 100;
-                const targetPrice = totalCost / 0.7;
+                const margin = ((netPrice - totalCost) / netPrice) * 100;
+                const targetPrice = totalCost / 0.7 / (1 - CARD_FEE_DISCOUNT);
                 return (
                   <p key={p.id} className="text-sm text-foreground">
                     <strong>{p.name}</strong>: margem <span className="text-destructive font-bold">{formatPercent(margin)}</span> — recomendado <span className="text-success font-bold">{formatCurrency(targetPrice)}</span>
@@ -440,9 +446,10 @@ export default function ProdutosPage() {
                 <p className="text-2xl font-bold mt-1">
                   {formatPercent(
                     products.filter(p => p.is_active && Number(p.sale_price) > 0).reduce((acc, p) => {
+                      const netPrice = applyCardDiscount(Number(p.sale_price));
                       const matCost = calcMaterialCost(p.id);
                       const totalCost = matCost + Number(p.labor_cost) + Number(p.other_costs);
-                      return acc + ((Number(p.sale_price) - totalCost) / Number(p.sale_price) * 100);
+                      return acc + ((netPrice - totalCost) / netPrice * 100);
                     }, 0) / Math.max(1, products.filter(p => p.is_active && Number(p.sale_price) > 0).length)
                   )}
                 </p>
@@ -458,10 +465,11 @@ export default function ProdutosPage() {
           <div className="space-y-4">
             {products.length === 0 && <div className="metric-card text-center py-8 text-muted-foreground">Nenhum produto cadastrado</div>}
             {products.map(p => {
+              const netPrice = applyCardDiscount(Number(p.sale_price));
               const matCost = calcMaterialCost(p.id);
               const totalCost = matCost + Number(p.labor_cost) + Number(p.other_costs);
-              const profit = Number(p.sale_price) - totalCost;
-              const margin = Number(p.sale_price) > 0 ? (profit / Number(p.sale_price)) * 100 : 0;
+              const profit = netPrice - totalCost;
+              const margin = netPrice > 0 ? (profit / netPrice) * 100 : 0;
               const isEditing = editingId === p.id;
               const isExpanded = expandedProduct === p.id;
               const pMats = productMaterials.filter(m => m.product_id === p.id);
@@ -485,8 +493,8 @@ export default function ProdutosPage() {
                     </div>
                     <div className="flex items-center gap-4 text-sm shrink-0" onClick={e => e.stopPropagation()}>
                       <div className="text-right hidden md:block">
-                        <span className="text-[10px] text-muted-foreground block">Venda</span>
-                        {isEditing ? <Input type="number" step="0.01" value={editForm.sale_price ?? ''} onChange={e => setEditForm({ ...editForm, sale_price: parseFloat(e.target.value) })} className="h-7 text-sm w-24" /> : <span className="font-mono font-medium">{formatCurrency(Number(p.sale_price))}</span>}
+                        <span className="text-[10px] text-muted-foreground block">Venda (-11,77%)</span>
+                        {isEditing ? <Input type="number" step="0.01" value={editForm.sale_price ?? ''} onChange={e => setEditForm({ ...editForm, sale_price: parseFloat(e.target.value) })} className="h-7 text-sm w-24" /> : <span className="font-mono font-medium">{formatCurrency(netPrice)}</span>}
                       </div>
                       <div className="text-right hidden md:block">
                         <span className="text-[10px] text-muted-foreground block">Custo</span>
