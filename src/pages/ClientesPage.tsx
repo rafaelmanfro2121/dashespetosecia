@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote, Trash2 } from 'lucide-react';
+import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote, Trash2, Wrench } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -443,6 +443,17 @@ export default function ClientesPage() {
                           </Button>
                         )}
                         {!c.os_number && <span className="text-xs text-muted-foreground">Sem OS</span>}
+
+                        <span className="text-muted-foreground/30">|</span>
+
+                        {/* OS Técnica */}
+                        {c.os_number && (
+                          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1"
+                            onClick={() => navigate(`/ordem-servico-tecnica?load=${c.id}`)} title="OS Técnica">
+                            <Wrench size={14} className="text-orange-500" />
+                            <span className="text-[10px]">Técnica</span>
+                          </Button>
+                        )}
 
                         <span className="text-muted-foreground/30">|</span>
 
