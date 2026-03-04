@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatCurrency, getCurrentMonth, getCurrentYear, getMonthName, getDaysInMonth } from '@/lib/formatters';
+import { formatCurrency, getCurrentMonth, getCurrentYear, getMonthName, getDaysInMonth, getBusinessDaysInMonth } from '@/lib/formatters';
 import { Plus, Trash2, UserCheck, UserX, Users, Upload, Download, ClipboardCheck, Banknote, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -36,8 +36,15 @@ export default function FuncionariosPage() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentYear());
   const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
+  const businessDaysInMonth = getBusinessDaysInMonth(selectedMonth, selectedYear);
   const activeEmployees = employees.filter(e => e.status === 'ativo');
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  // Check if a day is a weekend (Saturday=6, Sunday=0)
+  const isWeekend = (day: number) => {
+    const d = new Date(selectedYear, selectedMonth, day).getDay();
+    return d === 0 || d === 6;
+  };
   const months = Array.from({ length: 12 }, (_, i) => i);
   const years = [getCurrentYear() - 2, getCurrentYear() - 1, getCurrentYear(), getCurrentYear() + 1];
 
@@ -166,7 +173,7 @@ export default function FuncionariosPage() {
         const earned = (presences + halfDays * 0.5) * salaryValue;
         finalSalary = Math.max(0, earned - valesTotal);
       } else {
-        const dailyRate = salaryValue / 30;
+        const dailyRate = salaryValue / businessDaysInMonth;
         absenceDiscount = (absences * dailyRate) + (halfDays * dailyRate * 0.5);
         finalSalary = Math.max(0, salaryValue - absenceDiscount - valesTotal);
       }
@@ -218,6 +225,7 @@ export default function FuncionariosPage() {
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
       const attInfo = [
+        ['Dias Úteis no Mês:', String(businessDaysInMonth)],
         ['Dias Presentes:', String(presences)],
         ['Meio Período:', String(halfDays)],
         ['Faltas:', String(absences)],
@@ -227,7 +235,8 @@ export default function FuncionariosPage() {
         attInfo.push(['Valor da Diária:', formatCurrencySimple(salaryValue)]);
         attInfo.push(['Total Bruto (dias):', formatCurrencySimple((presences + halfDays * 0.5) * salaryValue)]);
       } else {
-        const hourlyRate = (salaryValue / 30) / 8;
+        const hourlyRate = (salaryValue / businessDaysInMonth) / 8;
+        attInfo.push(['Valor Dia (útil):', formatCurrencySimple(salaryValue / businessDaysInMonth)]);
         attInfo.push(['Valor Hora:', formatCurrencySimple(hourlyRate)]);
       }
       attInfo.forEach(([label, val]) => {
@@ -460,7 +469,7 @@ export default function FuncionariosPage() {
               <SelectTrigger className="w-24 rounded-xl"><SelectValue /></SelectTrigger>
               <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
             </Select>
-            <p className="text-muted-foreground text-xs">Clique para alternar: P / F / ½</p>
+            <p className="text-muted-foreground text-xs">Clique para alternar: P / F / ½ — <strong>{businessDaysInMonth} dias úteis</strong> em {getMonthName(selectedMonth)}</p>
           </div>
           {activeEmployees.length === 0 ? (
             <div className="metric-card text-center py-12 text-muted-foreground">Cadastre funcionários primeiro</div>
@@ -470,7 +479,7 @@ export default function FuncionariosPage() {
                 <thead>
                   <tr className="border-b">
                     <th className="pb-3 text-left font-medium text-muted-foreground sticky left-0 bg-card min-w-[130px] text-xs">Funcionário</th>
-                    {days.map(d => <th key={d} className="pb-3 text-center font-medium text-muted-foreground w-8">{d}</th>)}
+                    {days.map(d => <th key={d} className={`pb-3 text-center font-medium w-8 ${isWeekend(d) ? 'text-muted-foreground/30' : 'text-muted-foreground'}`}>{d}</th>)}
                   </tr>
                 </thead>
                 <tbody>
@@ -478,15 +487,20 @@ export default function FuncionariosPage() {
                     <tr key={emp.id} className="border-b border-muted/40">
                       <td className="py-2 font-medium sticky left-0 bg-card">{emp.name}</td>
                       {days.map(d => {
+                        const weekend = isWeekend(d);
                         const status = getStatus(emp.id, d);
                         return (
-                          <td key={d} className="py-2 text-center">
-                            <button
-                              onClick={() => cycleStatus(emp.id, d)}
-                              className={`w-7 h-7 rounded-lg text-[10px] font-bold border transition-all duration-150 hover:scale-110 ${status ? statusColors[status] : 'bg-muted/20 text-muted-foreground/30 border-transparent hover:bg-muted/50'}`}
-                            >
-                              {status ? statusLabels[status] : '·'}
-                            </button>
+                          <td key={d} className={`py-2 text-center ${weekend ? 'bg-muted/10' : ''}`}>
+                            {weekend ? (
+                              <span className="w-7 h-7 rounded-lg text-[10px] font-bold inline-flex items-center justify-center text-muted-foreground/20">—</span>
+                            ) : (
+                              <button
+                                onClick={() => cycleStatus(emp.id, d)}
+                                className={`w-7 h-7 rounded-lg text-[10px] font-bold border transition-all duration-150 hover:scale-110 ${status ? statusColors[status] : 'bg-muted/20 text-muted-foreground/30 border-transparent hover:bg-muted/50'}`}
+                              >
+                                {status ? statusLabels[status] : '·'}
+                              </button>
+                            )}
                           </td>
                         );
                       })}
