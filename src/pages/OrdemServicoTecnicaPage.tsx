@@ -144,6 +144,7 @@ export default function OrdemServicoTecnicaPage() {
   const [medidaLargura, setMedidaLargura] = useState('');
   const [medidaProfundidade, setMedidaProfundidade] = useState('');
   const [medidaAltura, setMedidaAltura] = useState('');
+  const [medidaFosso, setMedidaFosso] = useState('');
   const [obsMedidas, setObsMedidas] = useState('');
 
   // Fetch pedidos
@@ -211,6 +212,7 @@ export default function OrdemServicoTecnicaPage() {
     setMedidaLargura('');
     setMedidaProfundidade('');
     setMedidaAltura('');
+    setMedidaFosso('');
     setObsMedidas('');
   };
 
@@ -369,13 +371,13 @@ export default function OrdemServicoTecnicaPage() {
             <div className="space-y-3">
               <div>
                 <span className="text-xs font-semibold block mb-1">MATERIAL:</span>
-                <RadioGroup options={material} onChange={i => setMaterial(prev => toggleOne(prev, i))} columns={2} />
+                <CheckboxGroup options={material} onChange={i => setMaterial(prev => toggleMulti(prev, i))} columns={2} />
               </div>
 
               <div className="flex items-center gap-6">
                 <div>
                   <span className="text-xs font-semibold block mb-1">CHURRASQUEIRA:</span>
-                  <RadioGroup options={churrasqueira} onChange={i => setChurrasqueira(prev => toggleOne(prev, i))} columns={2} />
+                  <CheckboxGroup options={churrasqueira} onChange={i => setChurrasqueira(prev => toggleMulti(prev, i))} columns={2} />
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold whitespace-nowrap">QTD. ESPETOS:</span>
@@ -385,38 +387,38 @@ export default function OrdemServicoTecnicaPage() {
 
               <div>
                 <span className="text-xs font-semibold block mb-1">MODELO:</span>
-                <RadioGroup options={modelo} onChange={i => setModelo(prev => toggleOne(prev, i))} columns={4} />
+                <CheckboxGroup options={modelo} onChange={i => setModelo(prev => toggleMulti(prev, i))} columns={4} />
               </div>
 
               <div>
                 <span className="text-xs font-semibold block mb-1">CABOS:</span>
-                <RadioGroup options={cabos} onChange={i => setCabos(prev => toggleOne(prev, i))} columns={3} />
+                <CheckboxGroup options={cabos} onChange={i => setCabos(prev => toggleMulti(prev, i))} columns={3} />
               </div>
 
               <div>
                 <span className="text-xs font-semibold block mb-1">VOLTAGEM:</span>
                 <div className="flex items-start gap-8">
-                  <RadioGroup options={voltagem} onChange={i => setVoltagem(prev => toggleOne(prev, i))} columns={2} />
+                  <CheckboxGroup options={voltagem} onChange={i => setVoltagem(prev => toggleMulti(prev, i))} columns={2} />
                   <CheckboxGroup options={extras} onChange={i => setExtras(prev => toggleMulti(prev, i))} columns={3} />
                 </div>
               </div>
 
               <div>
                 <span className="text-xs font-semibold block mb-1">FECHAMENTO LATERAL:</span>
-                <RadioGroup options={fechamento} onChange={i => setFechamento(prev => toggleOne(prev, i))} columns={3} />
+                <CheckboxGroup options={fechamento} onChange={i => setFechamento(prev => toggleMulti(prev, i))} columns={3} />
               </div>
 
               <div>
                 <span className="text-xs font-semibold block mb-1">MODELO CLASSIC - GRELHA:</span>
                 <div className="flex items-start gap-6">
-                  <RadioGroup options={grelhaClassic} onChange={i => setGrelhaClassic(prev => toggleOne(prev, i))} columns={3} />
-                  <RadioGroup options={grelhaLado} onChange={i => setGrelhaLado(prev => toggleOne(prev, i))} columns={2} />
+                  <CheckboxGroup options={grelhaClassic} onChange={i => setGrelhaClassic(prev => toggleMulti(prev, i))} columns={3} />
+                  <CheckboxGroup options={grelhaLado} onChange={i => setGrelhaLado(prev => toggleMulti(prev, i))} columns={2} />
                 </div>
               </div>
 
               <div>
                 <span className="text-xs font-semibold block mb-1">MODELO DA GRELHA:</span>
-                <RadioGroup options={modeloGrelha} onChange={i => setModeloGrelha(prev => toggleOne(prev, i))} columns={3} />
+                <CheckboxGroup options={modeloGrelha} onChange={i => setModeloGrelha(prev => toggleMulti(prev, i))} columns={3} />
               </div>
             </div>
           </Section>
@@ -426,16 +428,17 @@ export default function OrdemServicoTecnicaPage() {
           </Section>
 
           <Section title="Desenho - Especificar as Medidas do Vão">
+
             <div className="flex gap-6">
               <div className="border-2 border-muted-foreground/30 rounded-md p-3 flex-1 relative" style={{ minHeight: 180 }}>
                 <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground font-medium">
-                  ESPAÇO PARA ENGRENAGEM — 6cm
+                  ESPAÇO PARA ENGRENAGEM
                 </div>
                 <div className="border-2 border-dashed border-muted-foreground/20 rounded mt-5 mx-4 flex items-center justify-center" style={{ height: 80 }}>
                   <span className="text-[10px] text-muted-foreground">(tubo) ESPAÇO PARA FOGO</span>
                 </div>
                 <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground font-medium">
-                  SOLEIRA — 20cm
+                  SOLEIRA
                 </div>
               </div>
               <div className="space-y-2 min-w-[180px]">
@@ -454,11 +457,12 @@ export default function OrdemServicoTecnicaPage() {
                   <Input value={medidaAltura} onChange={e => setMedidaAltura(e.target.value)} placeholder="cm" className="h-7 text-xs border-muted w-20" />
                   <span className="text-muted-foreground">cm</span>
                 </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="font-semibold w-24">FOSSO:</span>
+                  <Input value={medidaFosso} onChange={e => setMedidaFosso(e.target.value)} placeholder="cm" className="h-7 text-xs border-muted w-20" />
+                  <span className="text-muted-foreground">cm</span>
+                </div>
               </div>
-            </div>
-            <div className="mt-3">
-              <span className="text-xs font-semibold block mb-1">OBS:</span>
-              <Textarea value={obsMedidas} onChange={e => setObsMedidas(e.target.value)} placeholder="Observações sobre medidas..." className="text-xs border-muted min-h-[40px]" />
             </div>
           </Section>
         </div>
