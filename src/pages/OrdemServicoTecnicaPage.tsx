@@ -413,57 +413,65 @@ export default function OrdemServicoTecnicaPage() {
 
           {/* Dados dos Produtos */}
           <Section title="Especificações Técnicas">
-            <div className="space-y-3">
-              <div>
-                <span className="text-xs font-semibold block mb-1">MATERIAL:</span>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Material */}
+              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Material</span>
                 <CheckboxGroup options={material} onChange={i => setMaterial(prev => toggleMulti(prev, i))} columns={2} />
               </div>
 
-              <div className="flex items-center gap-6">
-                <div>
-                  <span className="text-xs font-semibold block mb-1">CHURRASQUEIRA:</span>
+              {/* Churrasqueira + Espetos */}
+              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Churrasqueira</span>
+                <div className="flex items-center gap-4">
                   <CheckboxGroup options={churrasqueira} onChange={i => setChurrasqueira(prev => toggleMulti(prev, i))} columns={2} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold whitespace-nowrap">QTD. ESPETOS:</span>
-                  <Input value={qtdEspetos} onChange={e => setQtdEspetos(e.target.value)} className="w-20 h-7 text-xs border-muted" />
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-semibold whitespace-nowrap">QTD. ESPETOS:</span>
+                    <Input value={qtdEspetos} onChange={e => setQtdEspetos(e.target.value)} className="w-16 h-6 text-xs border-muted" />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <span className="text-xs font-semibold block mb-1">MODELO:</span>
+              {/* Modelo */}
+              <div className="bg-muted/30 rounded-md p-2.5 border border-muted col-span-2">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Modelo</span>
                 <CheckboxGroup options={modelo} onChange={i => setModelo(prev => toggleMulti(prev, i))} columns={4} />
               </div>
 
-              <div>
-                <span className="text-xs font-semibold block mb-1">CABOS:</span>
-                <CheckboxGroup options={cabos} onChange={i => setCabos(prev => toggleMulti(prev, i))} columns={3} />
+              {/* Cabos */}
+              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Cabos</span>
+                <CheckboxGroup options={cabos} onChange={i => setCabos(prev => toggleMulti(prev, i))} columns={1} />
               </div>
 
-              <div>
-                <span className="text-xs font-semibold block mb-1">VOLTAGEM:</span>
-                <div className="flex items-start gap-8">
-                  <CheckboxGroup options={voltagem} onChange={i => setVoltagem(prev => toggleMulti(prev, i))} columns={2} />
-                  <CheckboxGroup options={extras} onChange={i => setExtras(prev => toggleMulti(prev, i))} columns={3} />
+              {/* Voltagem + Extras */}
+              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Voltagem / Extras</span>
+                <div className="flex items-start gap-6">
+                  <CheckboxGroup options={voltagem} onChange={i => setVoltagem(prev => toggleMulti(prev, i))} columns={1} />
+                  <CheckboxGroup options={extras} onChange={i => setExtras(prev => toggleMulti(prev, i))} columns={1} />
                 </div>
               </div>
 
-              <div>
-                <span className="text-xs font-semibold block mb-1">FECHAMENTO LATERAL:</span>
+              {/* Fechamento Lateral */}
+              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Fechamento Lateral</span>
                 <CheckboxGroup options={fechamento} onChange={i => setFechamento(prev => toggleMulti(prev, i))} columns={3} />
               </div>
 
-              <div>
-                <span className="text-xs font-semibold block mb-1">MODELO CLASSIC - GRELHA:</span>
-                <div className="flex items-start gap-6">
+              {/* Modelo da Grelha */}
+              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Modelo da Grelha</span>
+                <CheckboxGroup options={modeloGrelha} onChange={i => setModeloGrelha(prev => toggleMulti(prev, i))} columns={3} />
+              </div>
+
+              {/* Grelha Classic + Lado */}
+              <div className="bg-muted/30 rounded-md p-2.5 border border-muted col-span-2">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Modelo Classic — Grelha</span>
+                <div className="flex items-start gap-8">
                   <CheckboxGroup options={grelhaClassic} onChange={i => setGrelhaClassic(prev => toggleMulti(prev, i))} columns={3} />
                   <CheckboxGroup options={grelhaLado} onChange={i => setGrelhaLado(prev => toggleMulti(prev, i))} columns={2} />
                 </div>
-              </div>
-
-              <div>
-                <span className="text-xs font-semibold block mb-1">MODELO DA GRELHA:</span>
-                <CheckboxGroup options={modeloGrelha} onChange={i => setModeloGrelha(prev => toggleMulti(prev, i))} columns={3} />
               </div>
             </div>
           </Section>
