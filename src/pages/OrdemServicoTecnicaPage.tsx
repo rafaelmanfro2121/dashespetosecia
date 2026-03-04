@@ -332,11 +332,31 @@ export default function OrdemServicoTecnicaPage() {
     <>
       <style>{`
         @media print {
+          @page { size: A4; margin: 6mm; }
+          html, body { margin: 0 !important; padding: 0 !important; }
           body * { visibility: hidden; }
           #os-tecnica-print, #os-tecnica-print * { visibility: visible; }
-          #os-tecnica-print { position: absolute; left: 0; top: 0; width: 100%; padding: 8mm !important; font-size: 11px !important; }
-          #os-tecnica-print input { height: 20px !important; font-size: 11px !important; padding: 1px 4px !important; }
-          #os-tecnica-print textarea { font-size: 11px !important; padding: 1px 4px !important; }
+          #os-tecnica-print { 
+            position: absolute; left: 0; top: 0; width: 100%; 
+            padding: 4mm !important; margin: 0 !important;
+            font-size: 9px !important; 
+            box-sizing: border-box;
+          }
+          #os-tecnica-print h1 { font-size: 13px !important; }
+          #os-tecnica-print h3 { font-size: 8px !important; margin-bottom: 2px !important; padding-bottom: 1px !important; }
+          #os-tecnica-print .border { border-width: 1px !important; }
+          #os-tecnica-print .rounded-lg { border-radius: 4px !important; }
+          #os-tecnica-print .p-3 { padding: 4px 6px !important; }
+          #os-tecnica-print .mb-3 { margin-bottom: 4px !important; }
+          #os-tecnica-print .mb-4 { margin-bottom: 6px !important; }
+          #os-tecnica-print .space-y-3 > * + * { margin-top: 4px !important; }
+          #os-tecnica-print .space-y-2 > * + * { margin-top: 3px !important; }
+          #os-tecnica-print input { height: 16px !important; font-size: 9px !important; padding: 0 3px !important; }
+          #os-tecnica-print textarea { font-size: 9px !important; padding: 2px 3px !important; min-height: 36px !important; }
+          #os-tecnica-print img { height: 32px !important; }
+          #os-tecnica-print .gap-x-4 { gap: 6px !important; }
+          #os-tecnica-print .gap-y-1 { gap: 1px !important; }
+          #os-tecnica-print .py-0\\.5 { padding-top: 0 !important; padding-bottom: 0 !important; }
           .no-print { display: none !important; }
         }
       `}</style>
