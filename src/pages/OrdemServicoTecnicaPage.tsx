@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Printer, FileDown, Plus, Search } from 'lucide-react';
+import { Printer, FileDown, Plus, Search, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,6 +21,7 @@ interface PedidoOS {
   atendimento_data: string;
   items: any[];
   total: number;
+  os_tecnica_salva: boolean;
 }
 
 function CheckboxGroup({ options, onChange, columns = 4 }: { options: CheckOption[]; onChange: (idx: number) => void; columns?: number }) {
@@ -152,7 +153,7 @@ export default function OrdemServicoTecnicaPage() {
     const fetchPedidos = async () => {
       const { data } = await supabase
         .from('service_orders')
-        .select('id, os_number, cliente_nome, atendimento_data, items, total')
+        .select('id, os_number, cliente_nome, atendimento_data, items, total, os_tecnica_salva')
         .order('created_at', { ascending: false });
       if (data) setPedidos(data as PedidoOS[]);
     };
@@ -239,6 +240,19 @@ export default function OrdemServicoTecnicaPage() {
 
   const handlePrint = () => window.print();
 
+  const saveOsTecnica = async () => {
+    if (!selectedPedido) return;
+    const { error } = await supabase
+      .from('service_orders')
+      .update({ os_tecnica_salva: true } as any)
+      .eq('id', selectedPedido.id);
+    if (error) { toast.error('Erro ao salvar'); return; }
+    // Update local state
+    setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, os_tecnica_salva: true } : p));
+    setSelectedPedido({ ...selectedPedido, os_tecnica_salva: true });
+    toast.success('OS Técnica salva com sucesso!');
+  };
+
   const filteredPedidos = pedidos.filter(p => {
     const term = searchTerm.toLowerCase();
     return p.os_number.toLowerCase().includes(term) || p.cliente_nome.toLowerCase().includes(term);
@@ -278,16 +292,26 @@ export default function OrdemServicoTecnicaPage() {
                 <div
                   key={p.id}
                   onClick={() => selectPedido(p)}
-                  className="metric-card cursor-pointer hover:border-primary/50 transition-colors"
+                  className={`metric-card cursor-pointer hover:border-primary/50 transition-colors ${p.os_tecnica_salva ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
+                      {p.os_tecnica_salva ? (
+                        <CheckCircle size={16} className="text-green-500 shrink-0" />
+                      ) : (
+                        <AlertCircle size={16} className="text-red-500 shrink-0" />
+                      )}
                       <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                         Pedido #{p.os_number}
                       </span>
                       <span className="font-semibold text-sm">{p.cliente_nome}</span>
                     </div>
-                    <span className="font-mono text-sm font-medium">{fmt(Number(p.total))}</span>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${p.os_tecnica_salva ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {p.os_tecnica_salva ? 'OS Gerada' : 'Pendente'}
+                      </span>
+                      <span className="font-mono text-sm font-medium">{fmt(Number(p.total))}</span>
+                    </div>
                   </div>
                   {prodNames && (
                     <p className="text-xs text-muted-foreground mt-1 truncate">{prodNames}</p>
@@ -327,6 +351,7 @@ export default function OrdemServicoTecnicaPage() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={clearForm} className="gap-1"><Plus size={14} /> Trocar Pedido</Button>
+            <Button variant="outline" size="sm" onClick={saveOsTecnica} className="gap-1 text-green-600 border-green-300 hover:bg-green-50"><Save size={14} /> Salvar</Button>
             <Button variant="outline" size="sm" onClick={generatePDF} disabled={loadingPdf} className="gap-1">
               <FileDown size={14} /> {loadingPdf ? 'Gerando...' : 'PDF'}
             </Button>

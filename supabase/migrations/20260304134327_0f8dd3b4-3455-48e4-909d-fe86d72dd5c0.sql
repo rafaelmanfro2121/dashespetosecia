@@ -1,0 +1,1 @@
+ALTER TABLE public.service_orders ADD COLUMN os_tecnica_salva boolean NOT NULL DEFAULT false;
