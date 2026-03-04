@@ -351,8 +351,9 @@ export default function OrdemServicoTecnicaPage() {
           #os-tecnica-print .mb-4 { margin-bottom: 6px !important; }
           #os-tecnica-print .space-y-3 > * + * { margin-top: 4px !important; }
           #os-tecnica-print .space-y-2 > * + * { margin-top: 3px !important; }
-          #os-tecnica-print input { height: 16px !important; font-size: 9px !important; padding: 0 3px !important; }
-          #os-tecnica-print textarea { font-size: 9px !important; padding: 2px 3px !important; min-height: 36px !important; }
+          #os-tecnica-print input { height: 22px !important; font-size: 13px !important; font-weight: 700 !important; padding: 0 4px !important; text-align: center !important; }
+          #os-tecnica-print textarea { font-size: 10px !important; padding: 4px 6px !important; min-height: auto !important; height: auto !important; white-space: pre-wrap !important; overflow: visible !important; }
+          #os-tecnica-print .print-textarea { overflow: visible !important; height: auto !important; max-height: none !important; }
           #os-tecnica-print img { height: 32px !important; }
           #os-tecnica-print .gap-x-4 { gap: 6px !important; }
           #os-tecnica-print .gap-y-1 { gap: 1px !important; }
@@ -477,7 +478,7 @@ export default function OrdemServicoTecnicaPage() {
           </Section>
 
           <Section title="Observações">
-            <Textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Observações gerais..." className="text-xs border-muted min-h-[60px]" />
+            <Textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Observações gerais... (Enter para novo parágrafo)" className="print-textarea text-xs border-muted min-h-[80px] resize-y" style={{ whiteSpace: 'pre-wrap' }} />
           </Section>
 
           <Section title="Desenho - Especificar as Medidas do Vão">
