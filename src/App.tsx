@@ -15,6 +15,7 @@ import RelatorioIAPage from "@/pages/RelatorioIAPage";
 import ProdutosPage from "@/pages/ProdutosPage";
 import MateriaisPage from "@/pages/MateriaisPage";
 import OrdemServicoPage from "@/pages/OrdemServicoPage";
+import OrdemServicoTecnicaPage from "@/pages/OrdemServicoTecnicaPage";
 import ClientesPage from "@/pages/ClientesPage";
 import NotFound from "@/pages/NotFound";
 
@@ -48,6 +49,7 @@ function ProtectedRoutes() {
           <Route path="/fechamento" element={<FechamentoPage />} />
           <Route path="/relatorio-ia" element={<RelatorioIAPage />} />
           <Route path="/ordem-servico" element={<OrdemServicoPage />} />
+          <Route path="/ordem-servico-tecnica" element={<OrdemServicoTecnicaPage />} />
           <Route path="/clientes" element={<ClientesPage />} />
           {/* Redirect old routes */}
           <Route path="/presenca" element={<Navigate to="/funcionarios" replace />} />
