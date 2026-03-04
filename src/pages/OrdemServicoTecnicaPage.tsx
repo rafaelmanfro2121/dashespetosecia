@@ -479,29 +479,21 @@ export default function OrdemServicoTecnicaPage() {
                 <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground font-medium">
                   ESPAÇO PARA ENGRENAGEM
                 </div>
-                <div className="border-2 border-dashed border-muted-foreground/20 rounded mt-5 mx-4 flex items-center justify-center" style={{ height: 80 }}>
-                  <span className="text-[10px] text-muted-foreground">FOSSO</span>
+                <div className="flex items-center gap-1 mt-5 mx-4 mb-1">
+                  <span className="text-muted-foreground text-[10px]">◄</span>
+                  <div className="flex-1 border-t border-muted-foreground/40" />
+                  <span className="text-[9px] text-muted-foreground font-medium">LARGURA</span>
+                  <div className="flex-1 border-t border-muted-foreground/40" />
+                  <span className="text-muted-foreground text-[10px]">►</span>
                 </div>
-                <div className="absolute bottom-1 left-0 right-0 px-4">
-                  <div className="text-[10px] text-muted-foreground font-medium text-center mb-0.5">SOLEIRA</div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground text-[10px]">◄</span>
-                    <div className="flex-1 border-t border-muted-foreground/40" />
-                    <span className="text-[9px] text-muted-foreground">LARGURA</span>
-                    <div className="flex-1 border-t border-muted-foreground/40" />
-                    <span className="text-muted-foreground text-[10px]">►</span>
-                  </div>
+                <div className="border-2 border-dashed border-muted-foreground/20 rounded mx-4 flex items-center justify-center" style={{ height: 80 }}>
+                  <span className="text-[10px] text-muted-foreground">FOSSO</span>
                 </div>
               </div>
               <div className="space-y-2 min-w-[180px]">
                 <div className="flex items-center gap-2 text-xs">
                   <span className="font-semibold w-24">LARGURA:</span>
                   <Input value={medidaLargura} onChange={e => setMedidaLargura(e.target.value)} placeholder="cm" className="h-7 text-xs border-muted w-20" />
-                  <span className="text-muted-foreground">cm</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="font-semibold w-24">PROFUNDIDADE:</span>
-                  <Input value={medidaProfundidade} onChange={e => setMedidaProfundidade(e.target.value)} placeholder="cm" className="h-7 text-xs border-muted w-20" />
                   <span className="text-muted-foreground">cm</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
