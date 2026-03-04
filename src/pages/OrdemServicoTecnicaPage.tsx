@@ -479,8 +479,15 @@ export default function OrdemServicoTecnicaPage() {
                 <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground font-medium">
                   ESPAÇO PARA ENGRENAGEM
                 </div>
-                <div className="border-2 border-dashed border-muted-foreground/20 rounded mt-5 mx-4 flex items-center justify-center" style={{ height: 80 }}>
-                  <span className="text-[10px] text-muted-foreground">(tubo) ESPAÇO PARA FOGO</span>
+                <div className="border-2 border-dashed border-muted-foreground/20 rounded mt-5 mx-4 flex flex-col items-center justify-center" style={{ height: 80 }}>
+                  <span className="text-[10px] text-muted-foreground">FOSSO</span>
+                  <div className="flex items-center gap-1 mt-1 w-3/4">
+                    <span className="text-muted-foreground text-[10px]">◄</span>
+                    <div className="flex-1 border-t border-muted-foreground/40" />
+                    <span className="text-[9px] text-muted-foreground">LARGURA</span>
+                    <div className="flex-1 border-t border-muted-foreground/40" />
+                    <span className="text-muted-foreground text-[10px]">►</span>
+                  </div>
                 </div>
                 <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground font-medium">
                   SOLEIRA
