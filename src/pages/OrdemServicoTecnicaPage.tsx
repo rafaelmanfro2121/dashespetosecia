@@ -478,7 +478,18 @@ export default function OrdemServicoTecnicaPage() {
           </Section>
 
           <Section title="Observações">
-            <Textarea value={obs} onChange={e => setObs(e.target.value)} placeholder="Observações gerais... (Enter para novo parágrafo)" className="print-textarea text-xs border-muted min-h-[80px] resize-y" style={{ whiteSpace: 'pre-wrap' }} />
+            <Textarea
+              value={obs}
+              onChange={e => setObs(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.stopPropagation();
+                }
+              }}
+              placeholder="Observações gerais... (Enter para novo parágrafo)"
+              className="print-textarea text-xs border-muted min-h-[80px] resize-y"
+              style={{ whiteSpace: 'pre-wrap' }}
+            />
           </Section>
 
           <Section title="Desenho - Especificar as Medidas do Vão">
