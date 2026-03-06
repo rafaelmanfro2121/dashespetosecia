@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Printer, FileDown, Plus, Search, Save, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,8 +22,10 @@ interface PedidoOS {
   items: any[];
   total: number;
   os_tecnica_salva: boolean;
+  os_tecnica_data?: any;
 }
 
+// MOVED OUTSIDE component to prevent re-mount on state changes
 function CheckboxGroup({ options, onChange, columns = 4 }: { options: CheckOption[]; onChange: (idx: number) => void; columns?: number }) {
   return (
     <div className={`grid gap-x-4 gap-y-1`} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
@@ -52,6 +54,16 @@ function RadioGroup({ options, onChange, columns = 4 }: { options: CheckOption[]
   );
 }
 
+// MOVED OUTSIDE component
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="border border-muted rounded-lg p-3 mb-3">
+      <h3 className="text-xs font-bold uppercase text-muted-foreground mb-2 border-b border-muted pb-1">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
 function toggleOne(options: CheckOption[], idx: number): CheckOption[] {
   return options.map((o, i) => ({ ...o, checked: i === idx ? !o.checked : false }));
 }
@@ -59,16 +71,6 @@ function toggleMulti(options: CheckOption[], idx: number): CheckOption[] {
   return options.map((o, i) => ({ ...o, checked: i === idx ? !o.checked : o.checked }));
 }
 
-// Detect model from item names
-function detectModelFromItems(items: any[]): string | null {
-  const allNames = items.map((it: any) => (it.name || '').toUpperCase()).join(' ');
-  if (allNames.includes('FAZE')) return 'FAZE';
-  if (allNames.includes('LEGACY')) return 'LEGACY';
-  if (allNames.includes('IMPERIAL')) return 'IMPERIAL';
-  return null;
-}
-
-// Detect espetos quantity from item names
 function detectEspetosFromItems(items: any[]): string {
   for (const item of items) {
     const name = (item.name || '').toUpperCase();
@@ -82,7 +84,6 @@ export default function OrdemServicoTecnicaPage() {
   const printRef = useRef<HTMLDivElement>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
 
-  // Pedido selection
   const [pedidos, setPedidos] = useState<PedidoOS[]>([]);
   const [selectedPedido, setSelectedPedido] = useState<PedidoOS | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -148,16 +149,34 @@ export default function OrdemServicoTecnicaPage() {
   const [medidaFosso, setMedidaFosso] = useState('');
   const [obsMedidas, setObsMedidas] = useState('');
 
-  // Fetch pedidos
   useEffect(() => {
     const fetchPedidos = async () => {
       const { data } = await supabase
         .from('service_orders')
-        .select('id, os_number, cliente_nome, atendimento_data, items, total, os_tecnica_salva')
+        .select('id, os_number, cliente_nome, atendimento_data, items, total, os_tecnica_salva, os_tecnica_data')
         .order('created_at', { ascending: false });
-      if (data) setPedidos(data as PedidoOS[]);
+      if (data) setPedidos(data as any as PedidoOS[]);
     };
     fetchPedidos();
+  }, []);
+
+  const restoreOsData = useCallback((data: any) => {
+    if (!data) return;
+    if (data.material) setMaterial(data.material);
+    if (data.churrasqueira) setChurrasqueira(data.churrasqueira);
+    if (data.qtdEspetos !== undefined) setQtdEspetos(data.qtdEspetos);
+    if (data.modelo) setModelo(data.modelo);
+    if (data.cabos) setCabos(data.cabos);
+    if (data.voltagem) setVoltagem(data.voltagem);
+    if (data.extras) setExtras(data.extras);
+    if (data.fechamento) setFechamento(data.fechamento);
+    if (data.grelhaClassic) setGrelhaClassic(data.grelhaClassic);
+    if (data.grelhaLado) setGrelhaLado(data.grelhaLado);
+    if (data.modeloGrelha) setModeloGrelha(data.modeloGrelha);
+    if (data.obs !== undefined) setObs(data.obs);
+    if (data.medidaLargura !== undefined) setMedidaLargura(data.medidaLargura);
+    if (data.medidaAltura !== undefined) setMedidaAltura(data.medidaAltura);
+    if (data.medidaFosso !== undefined) setMedidaFosso(data.medidaFosso);
   }, []);
 
   const selectPedido = (pedido: PedidoOS) => {
@@ -167,25 +186,27 @@ export default function OrdemServicoTecnicaPage() {
     setClienteNome(pedido.cliente_nome);
 
     const items = pedido.items || [];
-    // Build produtos text
     const prodText = items.map((it: any) => `${it.quantity || 1}x ${it.name}`).join('\n');
     setProdutosTexto(prodText);
 
-    // Auto-detect churrasqueira
-    const hasChurrasqueira = items.some((it: any) => (it.name || '').toUpperCase().includes('CHURRASQUEIRA'));
-    setChurrasqueira([
-      { label: 'SIM', checked: hasChurrasqueira },
-      { label: 'NÃO', checked: !hasChurrasqueira },
-    ]);
-
-    // Auto-detect espetos
-    const espetos = detectEspetosFromItems(items);
-    setQtdEspetos(espetos);
-
-    // Auto-detect model line (FAZE/LEGACY/IMPERIAL) - map to CLASSIC/ELEVAÇÃO etc won't match exactly, 
-    // but we can try to detect known patterns
-    // For now reset modelo and let user pick
-    setModelo(m => m.map(o => ({ ...o, checked: false })));
+    // If OS was previously saved, restore all data
+    if (pedido.os_tecnica_salva && pedido.os_tecnica_data) {
+      restoreOsData(pedido.os_tecnica_data);
+    } else {
+      // Auto-detect from items
+      const hasChurrasqueira = items.some((it: any) => (it.name || '').toUpperCase().includes('CHURRASQUEIRA'));
+      setChurrasqueira([
+        { label: 'SIM', checked: hasChurrasqueira },
+        { label: 'NÃO', checked: !hasChurrasqueira },
+      ]);
+      const espetos = detectEspetosFromItems(items);
+      setQtdEspetos(espetos);
+      setModelo(m => m.map(o => ({ ...o, checked: false })));
+      setObs('');
+      setMedidaLargura('');
+      setMedidaAltura('');
+      setMedidaFosso('');
+    }
 
     setShowSelector(false);
     toast.success(`Pedido #${pedido.os_number} carregado`);
@@ -217,14 +238,40 @@ export default function OrdemServicoTecnicaPage() {
     setObsMedidas('');
   };
 
+  const getOsTecnicaData = () => ({
+    material, churrasqueira, qtdEspetos, modelo, cabos, voltagem, extras,
+    fechamento, grelhaClassic, grelhaLado, modeloGrelha, obs,
+    medidaLargura, medidaAltura, medidaFosso,
+  });
+
   const generatePDF = async () => {
     if (!printRef.current) return;
     setLoadingPdf(true);
     try {
       const noPrintEls = printRef.current.querySelectorAll('.no-print');
       noPrintEls.forEach(el => (el as HTMLElement).style.display = 'none');
+
+      // Replace textareas with divs for PDF
+      const textareas = printRef.current.querySelectorAll('textarea');
+      const replacements: { ta: HTMLTextAreaElement; div: HTMLDivElement }[] = [];
+      textareas.forEach(ta => {
+        const div = document.createElement('div');
+        div.style.cssText = 'white-space: pre-wrap; font-size: 10px; padding: 4px 6px; min-height: 20px; width: 100%;';
+        div.textContent = ta.value;
+        ta.parentNode?.insertBefore(div, ta);
+        ta.style.display = 'none';
+        replacements.push({ ta, div });
+      });
+
       const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      
+      // Restore textareas
+      replacements.forEach(({ ta, div }) => {
+        div.remove();
+        ta.style.display = '';
+      });
       noPrintEls.forEach(el => (el as HTMLElement).style.display = '');
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -242,14 +289,14 @@ export default function OrdemServicoTecnicaPage() {
 
   const saveOsTecnica = async () => {
     if (!selectedPedido) return;
+    const osData = getOsTecnicaData();
     const { error } = await supabase
       .from('service_orders')
-      .update({ os_tecnica_salva: true } as any)
+      .update({ os_tecnica_salva: true, os_tecnica_data: osData } as any)
       .eq('id', selectedPedido.id);
     if (error) { toast.error('Erro ao salvar'); return; }
-    // Update local state
-    setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, os_tecnica_salva: true } : p));
-    setSelectedPedido({ ...selectedPedido, os_tecnica_salva: true });
+    setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, os_tecnica_salva: true, os_tecnica_data: osData } : p));
+    setSelectedPedido({ ...selectedPedido, os_tecnica_salva: true, os_tecnica_data: osData });
     toast.success('OS Técnica salva com sucesso!');
   };
 
@@ -260,14 +307,6 @@ export default function OrdemServicoTecnicaPage() {
 
   const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <div className="border border-muted rounded-lg p-3 mb-3">
-      <h3 className="text-xs font-bold uppercase text-muted-foreground mb-2 border-b border-muted pb-1">{title}</h3>
-      {children}
-    </div>
-  );
-
-  // Show pedido selector if no pedido selected
   if (showSelector) {
     return (
       <div className="p-6 max-w-3xl mx-auto">
@@ -352,8 +391,8 @@ export default function OrdemServicoTecnicaPage() {
           #os-tecnica-print .space-y-3 > * + * { margin-top: 4px !important; }
           #os-tecnica-print .space-y-2 > * + * { margin-top: 3px !important; }
           #os-tecnica-print input { height: 22px !important; font-size: 13px !important; font-weight: 700 !important; padding: 0 4px !important; text-align: center !important; }
-          #os-tecnica-print textarea { font-size: 10px !important; padding: 4px 6px !important; min-height: auto !important; height: auto !important; white-space: pre-wrap !important; overflow: visible !important; }
-          #os-tecnica-print .print-textarea { overflow: visible !important; height: auto !important; max-height: none !important; }
+          #os-tecnica-print textarea { display: none !important; }
+          #os-tecnica-print .print-obs-mirror { display: block !important; white-space: pre-wrap !important; font-size: 10px !important; padding: 4px 6px !important; overflow: visible !important; }
           #os-tecnica-print img { height: 32px !important; }
           #os-tecnica-print .gap-x-4 { gap: 6px !important; }
           #os-tecnica-print .gap-y-1 { gap: 1px !important; }
@@ -399,7 +438,6 @@ export default function OrdemServicoTecnicaPage() {
             </div>
           </div>
 
-          {/* Dados do Cliente */}
           <Section title="Dados do Cliente">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold whitespace-nowrap">NOME DO CLIENTE:</span>
@@ -407,21 +445,17 @@ export default function OrdemServicoTecnicaPage() {
             </div>
           </Section>
 
-          {/* Produtos do Pedido */}
           <Section title="Produtos do Pedido">
             <p className="text-xs whitespace-pre-line">{produtosTexto}</p>
           </Section>
 
-          {/* Dados dos Produtos */}
           <Section title="Especificações Técnicas">
             <div className="grid grid-cols-2 gap-2">
-              {/* Material */}
               <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Material</span>
                 <CheckboxGroup options={material} onChange={i => setMaterial(prev => toggleMulti(prev, i))} columns={2} />
               </div>
 
-              {/* Churrasqueira + Espetos */}
               <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Churrasqueira</span>
                 <div className="flex items-center gap-4">
@@ -433,19 +467,16 @@ export default function OrdemServicoTecnicaPage() {
                 </div>
               </div>
 
-              {/* Modelo */}
               <div className="bg-muted/30 rounded-md p-2.5 border border-muted col-span-2">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Modelo</span>
                 <CheckboxGroup options={modelo} onChange={i => setModelo(prev => toggleMulti(prev, i))} columns={4} />
               </div>
 
-              {/* Cabos */}
               <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Cabos</span>
                 <CheckboxGroup options={cabos} onChange={i => setCabos(prev => toggleMulti(prev, i))} columns={1} />
               </div>
 
-              {/* Voltagem + Extras */}
               <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Voltagem / Extras</span>
                 <div className="flex items-start gap-6">
@@ -454,19 +485,16 @@ export default function OrdemServicoTecnicaPage() {
                 </div>
               </div>
 
-              {/* Fechamento Lateral */}
               <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Fechamento Lateral</span>
                 <CheckboxGroup options={fechamento} onChange={i => setFechamento(prev => toggleMulti(prev, i))} columns={3} />
               </div>
 
-              {/* Modelo da Grelha */}
               <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Modelo da Grelha</span>
                 <CheckboxGroup options={modeloGrelha} onChange={i => setModeloGrelha(prev => toggleMulti(prev, i))} columns={3} />
               </div>
 
-              {/* Grelha Classic + Lado */}
               <div className="bg-muted/30 rounded-md p-2.5 border border-muted col-span-2">
                 <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Modelo e Posição da Grelha</span>
                 <div className="flex items-start gap-8">
@@ -490,10 +518,16 @@ export default function OrdemServicoTecnicaPage() {
               className="print-textarea text-xs border-muted min-h-[80px] resize-y"
               style={{ whiteSpace: 'pre-wrap' }}
             />
+            {/* Mirror div for print - shows full content */}
+            <div
+              className="print-obs-mirror hidden text-xs border border-muted rounded-md bg-white"
+              style={{ whiteSpace: 'pre-wrap' }}
+            >
+              {obs || ' '}
+            </div>
           </Section>
 
           <Section title="Desenho - Especificar as Medidas do Vão">
-
             <div className="flex gap-6">
               <div className="border-2 border-muted-foreground/30 rounded-md p-3 flex-1 relative" style={{ minHeight: 180 }}>
                 <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground font-medium">
