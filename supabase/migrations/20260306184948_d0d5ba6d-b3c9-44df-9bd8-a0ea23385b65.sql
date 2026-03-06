@@ -1,0 +1,1 @@
+ALTER TABLE public.service_orders ADD COLUMN IF NOT EXISTS os_tecnica_data jsonb DEFAULT NULL;
