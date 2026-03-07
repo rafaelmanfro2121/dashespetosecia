@@ -542,17 +542,6 @@ export default function OrdemServicoTecnicaPage() {
                 <CheckboxGroup options={modelo} onChange={i => setModelo(prev => toggleMulti(prev, i))} columns={4} />
               </div>
 
-              {/* Modelo dos Espetos */}
-              <div className="spec-box rounded-md p-2 border-2 border-foreground/30 col-span-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Modelo dos Espetos</span>
-                <Input
-                  value={modeloEspetos}
-                  onChange={e => setModeloEspetos(e.target.value)}
-                  placeholder="Descreva o modelo dos espetos..."
-                  className="h-7 text-xs border-foreground/30"
-                />
-              </div>
-
               {/* Cabos */}
               <div className="spec-box rounded-md p-2 border-2 border-foreground/30">
                 <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Cabos</span>
@@ -574,19 +563,13 @@ export default function OrdemServicoTecnicaPage() {
                 <CheckboxGroup options={fechamento} onChange={i => setFechamento(prev => toggleMulti(prev, i))} columns={3} />
               </div>
 
-              {/* Grelha Acoplada (GA) */}
-              <div className="spec-box rounded-md p-2 border-2 border-foreground/30">
-                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Grelha Acoplada (GA)</span>
-                <CheckboxGroup options={grelhaAcoplada} onChange={i => setGrelhaAcoplada(prev => toggleMulti(prev, i))} columns={2} />
-              </div>
-
               {/* Modelo da Grelha */}
-              <div className="spec-box rounded-md p-2 border-2 border-foreground/30 col-span-2">
+              <div className="spec-box rounded-md p-2 border-2 border-foreground/30">
                 <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Modelo da Grelha</span>
                 <CheckboxGroup options={modeloGrelha} onChange={i => setModeloGrelha(prev => toggleMulti(prev, i))} columns={3} />
               </div>
 
-              {/* Modelo e Posição da Grelha */}
+              {/* Posição da Grelha */}
               <div className="spec-box rounded-md p-2 border-2 border-foreground/30 col-span-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Posição da Grelha</span>
                 <div className="flex items-start gap-6">
@@ -595,6 +578,15 @@ export default function OrdemServicoTecnicaPage() {
                 </div>
               </div>
             </div>
+          </Section>
+
+          <Section title="Modelo dos Espetos">
+            <Input
+              value={modeloEspetos}
+              onChange={e => setModeloEspetos(e.target.value)}
+              placeholder="Descreva o modelo dos espetos..."
+              className="h-7 text-xs border-foreground/30"
+            />
           </Section>
 
           <Section title="Observações">
