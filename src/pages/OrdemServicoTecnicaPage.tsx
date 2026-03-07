@@ -54,11 +54,11 @@ function RadioGroup({ options, onChange, columns = 4 }: { options: CheckOption[]
   );
 }
 
-// MOVED OUTSIDE component
+// MOVED OUTSIDE component — stronger border for B&W print
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border border-muted rounded-lg p-3 mb-3">
-      <h3 className="text-xs font-bold uppercase text-muted-foreground mb-2 border-b border-muted pb-1">{title}</h3>
+    <div className="os-section border-2 border-foreground/40 rounded-lg p-3 mb-3">
+      <h3 className="text-xs font-bold uppercase text-foreground mb-2 border-b-2 border-foreground/30 pb-1">{title}</h3>
       {children}
     </div>
   );
@@ -78,6 +78,35 @@ function detectEspetosFromItems(items: any[]): string {
     if (match) return match[1];
   }
   return '';
+}
+
+/** Auto-detect model, cabo, grelha acoplada from item names */
+function detectFromItems(items: any[]) {
+  let detectedModelo = { legacy: false, imperial: false, faze: false, imperialGManual: false };
+  let hasGA = false;
+  let hasChurrasqueira = false;
+
+  for (const item of items) {
+    const name = (item.name || '').toUpperCase();
+
+    if (name.includes('IMPERIAL')) detectedModelo.imperial = true;
+    if (name.includes('LEGACY')) detectedModelo.legacy = true;
+    if (name.includes('FAZE')) detectedModelo.faze = true;
+    if (name.includes('GMANUAL') || name.includes('G MANUAL') || name.includes('G/MANUAL')) {
+      detectedModelo.imperialGManual = true;
+    }
+    // GA = Grelha Acoplada
+    if (/\bGA\b/.test(name) || name.includes('GRELHA ACOPLADA')) hasGA = true;
+    if (name.includes('CHURRASQUEIRA')) hasChurrasqueira = true;
+  }
+
+  // Determine cabo: Imperial → INOX, Faze/Legacy → ALUMÍNIO TÉRMICO
+  let caboInox = false;
+  let caboAluminio = false;
+  if (detectedModelo.imperial || detectedModelo.imperialGManual) caboInox = true;
+  if (detectedModelo.legacy || detectedModelo.faze) caboAluminio = true;
+
+  return { detectedModelo, hasGA, hasChurrasqueira, caboInox, caboAluminio };
 }
 
 export default function OrdemServicoTecnicaPage() {
@@ -103,6 +132,7 @@ export default function OrdemServicoTecnicaPage() {
     { label: 'NÃO', checked: false },
   ]);
   const [qtdEspetos, setQtdEspetos] = useState('');
+  const [modeloEspetos, setModeloEspetos] = useState('');
   const [modelo, setModelo] = useState<CheckOption[]>([
     { label: 'LEGACY', checked: false },
     { label: 'IMPERIAL', checked: false },
@@ -142,6 +172,10 @@ export default function OrdemServicoTecnicaPage() {
     { label: 'URUGUAIA', checked: false },
     { label: 'DESCANSO URUGUAIA', checked: false },
   ]);
+  const [grelhaAcoplada, setGrelhaAcoplada] = useState<CheckOption[]>([
+    { label: 'SIM', checked: false },
+    { label: 'NÃO', checked: false },
+  ]);
   const [obs, setObs] = useState('');
   const [medidaLargura, setMedidaLargura] = useState('');
   const [medidaProfundidade, setMedidaProfundidade] = useState('');
@@ -165,6 +199,7 @@ export default function OrdemServicoTecnicaPage() {
     if (data.material) setMaterial(data.material);
     if (data.churrasqueira) setChurrasqueira(data.churrasqueira);
     if (data.qtdEspetos !== undefined) setQtdEspetos(data.qtdEspetos);
+    if (data.modeloEspetos !== undefined) setModeloEspetos(data.modeloEspetos);
     if (data.modelo) setModelo(data.modelo);
     if (data.cabos) setCabos(data.cabos);
     if (data.voltagem) setVoltagem(data.voltagem);
@@ -173,6 +208,7 @@ export default function OrdemServicoTecnicaPage() {
     if (data.grelhaClassic) setGrelhaClassic(data.grelhaClassic);
     if (data.grelhaLado) setGrelhaLado(data.grelhaLado);
     if (data.modeloGrelha) setModeloGrelha(data.modeloGrelha);
+    if (data.grelhaAcoplada) setGrelhaAcoplada(data.grelhaAcoplada);
     if (data.obs !== undefined) setObs(data.obs);
     if (data.medidaLargura !== undefined) setMedidaLargura(data.medidaLargura);
     if (data.medidaAltura !== undefined) setMedidaAltura(data.medidaAltura);
@@ -194,14 +230,46 @@ export default function OrdemServicoTecnicaPage() {
       restoreOsData(pedido.os_tecnica_data);
     } else {
       // Auto-detect from items
-      const hasChurrasqueira = items.some((it: any) => (it.name || '').toUpperCase().includes('CHURRASQUEIRA'));
+      const { detectedModelo, hasGA, hasChurrasqueira, caboInox, caboAluminio } = detectFromItems(items);
+
       setChurrasqueira([
         { label: 'SIM', checked: hasChurrasqueira },
         { label: 'NÃO', checked: !hasChurrasqueira },
       ]);
+
       const espetos = detectEspetosFromItems(items);
       setQtdEspetos(espetos);
-      setModelo(m => m.map(o => ({ ...o, checked: false })));
+      setModeloEspetos('');
+
+      // Auto-fill modelo
+      setModelo([
+        { label: 'LEGACY', checked: detectedModelo.legacy },
+        { label: 'IMPERIAL', checked: detectedModelo.imperial },
+        { label: 'FAZE', checked: detectedModelo.faze },
+        { label: 'IMPERIAL/GMANUAL', checked: detectedModelo.imperialGManual },
+      ]);
+
+      // Auto-fill cabos based on model
+      setCabos([
+        { label: 'INOX', checked: caboInox },
+        { label: 'ALUMÍNIO TÉRMICO', checked: caboAluminio },
+        { label: 'MADEIRA', checked: false },
+      ]);
+
+      // Auto-fill grelha acoplada (GA)
+      setGrelhaAcoplada([
+        { label: 'SIM', checked: hasGA },
+        { label: 'NÃO', checked: !hasGA },
+      ]);
+
+      // Reset remaining fields
+      setMaterial(m => m.map(o => ({ ...o, checked: false })));
+      setVoltagem(v => v.map(o => ({ ...o, checked: false })));
+      setExtras(e => e.map(o => ({ ...o, checked: false })));
+      setFechamento(f => f.map(o => ({ ...o, checked: false })));
+      setGrelhaClassic(g => g.map(o => ({ ...o, checked: false })));
+      setGrelhaLado(g => g.map(o => ({ ...o, checked: false })));
+      setModeloGrelha(g => g.map(o => ({ ...o, checked: false })));
       setObs('');
       setMedidaLargura('');
       setMedidaAltura('');
@@ -222,6 +290,7 @@ export default function OrdemServicoTecnicaPage() {
     setMaterial(m => m.map(o => ({ ...o, checked: false })));
     setChurrasqueira(c => c.map(o => ({ ...o, checked: false })));
     setQtdEspetos('');
+    setModeloEspetos('');
     setModelo(m => m.map(o => ({ ...o, checked: false })));
     setCabos(c => c.map(o => ({ ...o, checked: false })));
     setVoltagem(v => v.map(o => ({ ...o, checked: false })));
@@ -230,6 +299,7 @@ export default function OrdemServicoTecnicaPage() {
     setGrelhaClassic(g => g.map(o => ({ ...o, checked: false })));
     setGrelhaLado(g => g.map(o => ({ ...o, checked: false })));
     setModeloGrelha(g => g.map(o => ({ ...o, checked: false })));
+    setGrelhaAcoplada(g => g.map(o => ({ ...o, checked: false })));
     setObs('');
     setMedidaLargura('');
     setMedidaProfundidade('');
@@ -239,8 +309,8 @@ export default function OrdemServicoTecnicaPage() {
   };
 
   const getOsTecnicaData = () => ({
-    material, churrasqueira, qtdEspetos, modelo, cabos, voltagem, extras,
-    fechamento, grelhaClassic, grelhaLado, modeloGrelha, obs,
+    material, churrasqueira, qtdEspetos, modeloEspetos, modelo, cabos, voltagem, extras,
+    fechamento, grelhaClassic, grelhaLado, modeloGrelha, grelhaAcoplada, obs,
     medidaLargura, medidaAltura, medidaFosso,
   });
 
@@ -371,32 +441,31 @@ export default function OrdemServicoTecnicaPage() {
     <>
       <style>{`
         @media print {
-          @page { size: A4; margin: 6mm; }
+          @page { size: A4; margin: 5mm; }
           html, body { margin: 0 !important; padding: 0 !important; }
           body * { visibility: hidden; }
           #os-tecnica-print, #os-tecnica-print * { visibility: visible; }
           #os-tecnica-print { 
             position: absolute; left: 0; top: 0; width: 100%; 
-            padding: 4mm !important; margin: 0 !important;
-            font-size: 9px !important; 
+            padding: 3mm !important; margin: 0 !important;
+            font-size: 8px !important; 
             box-sizing: border-box;
           }
-          #os-tecnica-print h1 { font-size: 13px !important; }
-          #os-tecnica-print h3 { font-size: 8px !important; margin-bottom: 2px !important; padding-bottom: 1px !important; }
-          #os-tecnica-print .border { border-width: 1px !important; }
-          #os-tecnica-print .rounded-lg { border-radius: 4px !important; }
-          #os-tecnica-print .p-3 { padding: 4px 6px !important; }
-          #os-tecnica-print .mb-3 { margin-bottom: 4px !important; }
-          #os-tecnica-print .mb-4 { margin-bottom: 6px !important; }
-          #os-tecnica-print .space-y-3 > * + * { margin-top: 4px !important; }
-          #os-tecnica-print .space-y-2 > * + * { margin-top: 3px !important; }
-          #os-tecnica-print input { height: 22px !important; font-size: 13px !important; font-weight: 700 !important; padding: 0 4px !important; text-align: center !important; }
+          #os-tecnica-print h1 { font-size: 12px !important; }
+          #os-tecnica-print h3 { font-size: 8px !important; margin-bottom: 1px !important; padding-bottom: 1px !important; }
+          #os-tecnica-print .os-section { border: 2px solid #333 !important; margin-bottom: 3px !important; padding: 3px 5px !important; }
+          #os-tecnica-print .os-section h3 { border-bottom: 2px solid #555 !important; }
+          #os-tecnica-print .spec-box { border: 1.5px solid #555 !important; padding: 3px 5px !important; }
+          #os-tecnica-print .rounded-lg { border-radius: 3px !important; }
+          #os-tecnica-print .mb-3 { margin-bottom: 3px !important; }
+          #os-tecnica-print .mb-2 { margin-bottom: 2px !important; }
+          #os-tecnica-print .gap-2 { gap: 3px !important; }
+          #os-tecnica-print input { height: 20px !important; font-size: 12px !important; font-weight: 700 !important; padding: 0 3px !important; text-align: center !important; }
           #os-tecnica-print textarea { display: none !important; }
-          #os-tecnica-print .print-obs-mirror { display: block !important; white-space: pre-wrap !important; font-size: 10px !important; padding: 4px 6px !important; overflow: visible !important; }
-          #os-tecnica-print img { height: 32px !important; }
-          #os-tecnica-print .gap-x-4 { gap: 6px !important; }
-          #os-tecnica-print .gap-y-1 { gap: 1px !important; }
-          #os-tecnica-print .py-0\\.5 { padding-top: 0 !important; padding-bottom: 0 !important; }
+          #os-tecnica-print .print-obs-mirror { display: block !important; white-space: pre-wrap !important; font-size: 9px !important; padding: 3px 5px !important; overflow: visible !important; }
+          #os-tecnica-print img { height: 28px !important; }
+          #os-tecnica-print .gap-x-4 { gap: 4px !important; }
+          #os-tecnica-print .gap-y-1 { gap: 0px !important; }
           .no-print { display: none !important; }
         }
       `}</style>
@@ -421,12 +490,12 @@ export default function OrdemServicoTecnicaPage() {
 
         <div id="os-tecnica-print" ref={printRef} className="max-w-3xl mx-auto p-6 bg-white text-black">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4 border-b pb-3">
-            <img src={logoBlack} alt="Logo" className="h-12 object-contain" />
+          <div className="flex items-center justify-between mb-3 border-b-2 border-black pb-2">
+            <img src={logoBlack} alt="Logo" className="h-10 object-contain" />
             <div className="text-center flex-1">
-              <h1 className="text-lg font-bold tracking-wide">ORDEM DE SERVIÇO</h1>
+              <h1 className="text-base font-bold tracking-wide">ORDEM DE SERVIÇO TÉCNICA</h1>
             </div>
-            <div className="text-right space-y-1">
+            <div className="text-right space-y-0.5">
               <div className="flex items-center gap-2 text-xs">
                 <span className="font-semibold">Nº PEDIDO:</span>
                 <span className="font-mono font-bold text-sm">{osNumber}</span>
@@ -451,53 +520,78 @@ export default function OrdemServicoTecnicaPage() {
 
           <Section title="Especificações Técnicas">
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Material</span>
+              {/* Material */}
+              <div className="spec-box rounded-md p-2 border-2 border-foreground/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Material</span>
                 <CheckboxGroup options={material} onChange={i => setMaterial(prev => toggleMulti(prev, i))} columns={2} />
               </div>
 
-              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Churrasqueira</span>
-                <div className="flex items-center gap-4">
+              {/* Churrasqueira + Espetos */}
+              <div className="spec-box rounded-md p-2 border-2 border-foreground/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Churrasqueira</span>
+                <div className="flex items-center gap-3">
                   <CheckboxGroup options={churrasqueira} onChange={i => setChurrasqueira(prev => toggleMulti(prev, i))} columns={2} />
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-semibold whitespace-nowrap">QTD. ESPETOS:</span>
-                    <Input value={qtdEspetos} onChange={e => setQtdEspetos(e.target.value)} className="w-20 h-8 text-base font-bold text-center border-muted" />
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] font-semibold whitespace-nowrap">QTD:</span>
+                    <Input value={qtdEspetos} onChange={e => setQtdEspetos(e.target.value)} className="w-14 h-7 text-sm font-bold text-center border-foreground/30" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-muted/30 rounded-md p-2.5 border border-muted col-span-2">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Modelo</span>
+              {/* Modelo */}
+              <div className="spec-box rounded-md p-2 border-2 border-foreground/30 col-span-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Modelo</span>
                 <CheckboxGroup options={modelo} onChange={i => setModelo(prev => toggleMulti(prev, i))} columns={4} />
               </div>
 
-              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Cabos</span>
+              {/* Modelo dos Espetos */}
+              <div className="spec-box rounded-md p-2 border-2 border-foreground/30 col-span-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Modelo dos Espetos</span>
+                <Input
+                  value={modeloEspetos}
+                  onChange={e => setModeloEspetos(e.target.value)}
+                  placeholder="Descreva o modelo dos espetos..."
+                  className="h-7 text-xs border-foreground/30"
+                />
+              </div>
+
+              {/* Cabos */}
+              <div className="spec-box rounded-md p-2 border-2 border-foreground/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Cabos</span>
                 <CheckboxGroup options={cabos} onChange={i => setCabos(prev => toggleMulti(prev, i))} columns={1} />
               </div>
 
-              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Voltagem / Extras</span>
-                <div className="flex items-start gap-6">
+              {/* Voltagem / Extras */}
+              <div className="spec-box rounded-md p-2 border-2 border-foreground/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Voltagem / Extras</span>
+                <div className="flex items-start gap-4">
                   <CheckboxGroup options={voltagem} onChange={i => setVoltagem(prev => toggleMulti(prev, i))} columns={1} />
                   <CheckboxGroup options={extras} onChange={i => setExtras(prev => toggleMulti(prev, i))} columns={1} />
                 </div>
               </div>
 
-              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Fechamento Lateral</span>
+              {/* Fechamento */}
+              <div className="spec-box rounded-md p-2 border-2 border-foreground/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Fechamento Lateral</span>
                 <CheckboxGroup options={fechamento} onChange={i => setFechamento(prev => toggleMulti(prev, i))} columns={3} />
               </div>
 
-              <div className="bg-muted/30 rounded-md p-2.5 border border-muted">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Modelo da Grelha</span>
+              {/* Grelha Acoplada (GA) */}
+              <div className="spec-box rounded-md p-2 border-2 border-foreground/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Grelha Acoplada (GA)</span>
+                <CheckboxGroup options={grelhaAcoplada} onChange={i => setGrelhaAcoplada(prev => toggleMulti(prev, i))} columns={2} />
+              </div>
+
+              {/* Modelo da Grelha */}
+              <div className="spec-box rounded-md p-2 border-2 border-foreground/30 col-span-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Modelo da Grelha</span>
                 <CheckboxGroup options={modeloGrelha} onChange={i => setModeloGrelha(prev => toggleMulti(prev, i))} columns={3} />
               </div>
 
-              <div className="bg-muted/30 rounded-md p-2.5 border border-muted col-span-2">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider block mb-1.5">Modelo e Posição da Grelha</span>
-                <div className="flex items-start gap-8">
+              {/* Modelo e Posição da Grelha */}
+              <div className="spec-box rounded-md p-2 border-2 border-foreground/30 col-span-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider block mb-1">Posição da Grelha</span>
+                <div className="flex items-start gap-6">
                   <CheckboxGroup options={grelhaClassic} onChange={i => setGrelhaClassic(prev => toggleMulti(prev, i))} columns={3} />
                   <CheckboxGroup options={grelhaLado} onChange={i => setGrelhaLado(prev => toggleMulti(prev, i))} columns={2} />
                 </div>
@@ -515,50 +609,49 @@ export default function OrdemServicoTecnicaPage() {
                 }
               }}
               placeholder="Observações gerais... (Enter para novo parágrafo)"
-              className="print-textarea text-xs border-muted min-h-[80px] resize-y"
+              className="print-textarea text-xs border-foreground/30 min-h-[60px] resize-y"
               style={{ whiteSpace: 'pre-wrap' }}
             />
-            {/* Mirror div for print - shows full content */}
             <div
-              className="print-obs-mirror hidden text-xs border border-muted rounded-md bg-white"
+              className="print-obs-mirror hidden text-xs border-2 border-foreground/30 rounded-md bg-white"
               style={{ whiteSpace: 'pre-wrap' }}
             >
               {obs || ' '}
             </div>
           </Section>
 
-          <Section title="Desenho - Especificar as Medidas do Vão">
-            <div className="flex gap-6">
-              <div className="border-2 border-muted-foreground/30 rounded-md p-3 flex-1 relative" style={{ minHeight: 180 }}>
-                <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground font-medium">
+          <Section title="Medidas do Vão">
+            <div className="flex gap-4">
+              <div className="border-2 border-foreground/40 rounded-md p-2 flex-1 relative" style={{ minHeight: 140 }}>
+                <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[9px] text-foreground/60 font-medium">
                   ESPAÇO PARA ENGRENAGEM
                 </div>
-                <div className="border-2 border-dashed border-muted-foreground/20 rounded mt-5 mx-4 flex items-center justify-center" style={{ height: 80 }}>
-                  <span className="text-[10px] text-muted-foreground">FOSSO / TUBO</span>
+                <div className="border-2 border-dashed border-foreground/30 rounded mt-4 mx-3 flex items-center justify-center" style={{ height: 60 }}>
+                  <span className="text-[9px] text-foreground/60">FOSSO / TUBO</span>
                 </div>
-                <div className="flex items-center gap-1 mx-4 mt-1">
-                  <span className="text-muted-foreground text-[10px]">◄</span>
-                  <div className="flex-1 border-t border-muted-foreground/40" />
-                  <span className="text-[9px] text-muted-foreground font-medium">LARGURA</span>
-                  <div className="flex-1 border-t border-muted-foreground/40" />
-                  <span className="text-muted-foreground text-[10px]">►</span>
+                <div className="flex items-center gap-1 mx-3 mt-1">
+                  <span className="text-foreground/50 text-[9px]">◄</span>
+                  <div className="flex-1 border-t border-foreground/40" />
+                  <span className="text-[8px] text-foreground/60 font-medium">LARGURA</span>
+                  <div className="flex-1 border-t border-foreground/40" />
+                  <span className="text-foreground/50 text-[9px]">►</span>
                 </div>
               </div>
-              <div className="space-y-3 min-w-[200px]">
+              <div className="space-y-2 min-w-[180px]">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold w-24">LARGURA:</span>
-                  <Input value={medidaLargura} onChange={e => setMedidaLargura(e.target.value)} placeholder="cm" className="h-9 text-base font-bold text-center border-muted w-24" />
-                  <span className="text-sm font-medium text-muted-foreground">cm</span>
+                  <Input value={medidaLargura} onChange={e => setMedidaLargura(e.target.value)} placeholder="cm" className="h-8 text-sm font-bold text-center border-foreground/30 w-20" />
+                  <span className="text-xs font-medium text-foreground/60">cm</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold w-24">ALTURA:</span>
-                  <Input value={medidaAltura} onChange={e => setMedidaAltura(e.target.value)} placeholder="cm" className="h-9 text-base font-bold text-center border-muted w-24" />
-                  <span className="text-sm font-medium text-muted-foreground">cm</span>
+                  <Input value={medidaAltura} onChange={e => setMedidaAltura(e.target.value)} placeholder="cm" className="h-8 text-sm font-bold text-center border-foreground/30 w-20" />
+                  <span className="text-xs font-medium text-foreground/60">cm</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold w-24">FOSSO / TUBO:</span>
-                  <Input value={medidaFosso} onChange={e => setMedidaFosso(e.target.value)} placeholder="cm" className="h-9 text-base font-bold text-center border-muted w-24" />
-                  <span className="text-sm font-medium text-muted-foreground">cm</span>
+                  <Input value={medidaFosso} onChange={e => setMedidaFosso(e.target.value)} placeholder="cm" className="h-8 text-sm font-bold text-center border-foreground/30 w-20" />
+                  <span className="text-xs font-medium text-foreground/60">cm</span>
                 </div>
               </div>
             </div>
