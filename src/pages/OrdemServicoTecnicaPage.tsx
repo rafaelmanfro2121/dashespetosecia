@@ -80,10 +80,11 @@ function detectEspetosFromItems(items: any[]): string {
   return '';
 }
 
-/** Auto-detect model, cabo, grelha acoplada from item names */
+/** Auto-detect model, cabo, posição da grelha from item names */
 function detectFromItems(items: any[]) {
   let detectedModelo = { legacy: false, imperial: false, faze: false, imperialGManual: false };
   let hasGA = false;
+  let hasGL = false;
   let hasChurrasqueira = false;
 
   for (const item of items) {
@@ -95,8 +96,9 @@ function detectFromItems(items: any[]) {
     if (name.includes('GMANUAL') || name.includes('G MANUAL') || name.includes('G/MANUAL')) {
       detectedModelo.imperialGManual = true;
     }
-    // GA = Grelha Acoplada
+    // GA = Grelha Embutida, GL = Grelha Lateral Dupla
     if (/\bGA\b/.test(name) || name.includes('GRELHA ACOPLADA')) hasGA = true;
+    if (/\bGL\b/.test(name) || name.includes('GRELHA LATERAL')) hasGL = true;
     if (name.includes('CHURRASQUEIRA')) hasChurrasqueira = true;
   }
 
@@ -106,7 +108,7 @@ function detectFromItems(items: any[]) {
   if (detectedModelo.imperial || detectedModelo.imperialGManual) caboInox = true;
   if (detectedModelo.legacy || detectedModelo.faze) caboAluminio = true;
 
-  return { detectedModelo, hasGA, hasChurrasqueira, caboInox, caboAluminio };
+  return { detectedModelo, hasGA, hasGL, hasChurrasqueira, caboInox, caboAluminio };
 }
 
 export default function OrdemServicoTecnicaPage() {
@@ -172,10 +174,6 @@ export default function OrdemServicoTecnicaPage() {
     { label: 'URUGUAIA', checked: false },
     { label: 'DESCANSO URUGUAIA', checked: false },
   ]);
-  const [grelhaAcoplada, setGrelhaAcoplada] = useState<CheckOption[]>([
-    { label: 'SIM', checked: false },
-    { label: 'NÃO', checked: false },
-  ]);
   const [obs, setObs] = useState('');
   const [medidaLargura, setMedidaLargura] = useState('');
   const [medidaProfundidade, setMedidaProfundidade] = useState('');
@@ -208,7 +206,7 @@ export default function OrdemServicoTecnicaPage() {
     if (data.grelhaClassic) setGrelhaClassic(data.grelhaClassic);
     if (data.grelhaLado) setGrelhaLado(data.grelhaLado);
     if (data.modeloGrelha) setModeloGrelha(data.modeloGrelha);
-    if (data.grelhaAcoplada) setGrelhaAcoplada(data.grelhaAcoplada);
+    
     if (data.obs !== undefined) setObs(data.obs);
     if (data.medidaLargura !== undefined) setMedidaLargura(data.medidaLargura);
     if (data.medidaAltura !== undefined) setMedidaAltura(data.medidaAltura);
@@ -230,7 +228,7 @@ export default function OrdemServicoTecnicaPage() {
       restoreOsData(pedido.os_tecnica_data);
     } else {
       // Auto-detect from items
-      const { detectedModelo, hasGA, hasChurrasqueira, caboInox, caboAluminio } = detectFromItems(items);
+      const { detectedModelo, hasGA, hasGL, hasChurrasqueira, caboInox, caboAluminio } = detectFromItems(items);
 
       setChurrasqueira([
         { label: 'SIM', checked: hasChurrasqueira },
@@ -256,10 +254,11 @@ export default function OrdemServicoTecnicaPage() {
         { label: 'MADEIRA', checked: false },
       ]);
 
-      // Auto-fill grelha acoplada (GA)
-      setGrelhaAcoplada([
-        { label: 'SIM', checked: hasGA },
-        { label: 'NÃO', checked: !hasGA },
+      // Auto-fill posição da grelha: GA → Embutida, GL → Lateral Dupla
+      setGrelhaClassic([
+        { label: 'GRELHA EMBUTIDA', checked: hasGA },
+        { label: 'GRELHA LATERAL SIMPLES', checked: false },
+        { label: 'GRELHA LATERAL DUPLA', checked: hasGL },
       ]);
 
       // Reset remaining fields
@@ -267,7 +266,6 @@ export default function OrdemServicoTecnicaPage() {
       setVoltagem(v => v.map(o => ({ ...o, checked: false })));
       setExtras(e => e.map(o => ({ ...o, checked: false })));
       setFechamento(f => f.map(o => ({ ...o, checked: false })));
-      setGrelhaClassic(g => g.map(o => ({ ...o, checked: false })));
       setGrelhaLado(g => g.map(o => ({ ...o, checked: false })));
       setModeloGrelha(g => g.map(o => ({ ...o, checked: false })));
       setObs('');
@@ -299,7 +297,7 @@ export default function OrdemServicoTecnicaPage() {
     setGrelhaClassic(g => g.map(o => ({ ...o, checked: false })));
     setGrelhaLado(g => g.map(o => ({ ...o, checked: false })));
     setModeloGrelha(g => g.map(o => ({ ...o, checked: false })));
-    setGrelhaAcoplada(g => g.map(o => ({ ...o, checked: false })));
+    
     setObs('');
     setMedidaLargura('');
     setMedidaProfundidade('');
@@ -310,7 +308,7 @@ export default function OrdemServicoTecnicaPage() {
 
   const getOsTecnicaData = () => ({
     material, churrasqueira, qtdEspetos, modeloEspetos, modelo, cabos, voltagem, extras,
-    fechamento, grelhaClassic, grelhaLado, modeloGrelha, grelhaAcoplada, obs,
+    fechamento, grelhaClassic, grelhaLado, modeloGrelha, obs,
     medidaLargura, medidaAltura, medidaFosso,
   });
 
