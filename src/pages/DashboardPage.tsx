@@ -237,35 +237,35 @@ export default function DashboardPage() {
 
       {/* ============ INFOGRÁFICO ============ */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mb-8">
-        <div className="metric-card text-center">
-          <Flame size={20} className="text-primary mx-auto mb-2" />
-          <p className="text-2xl font-bold text-foreground">{totalChurrasqueirasMonth}</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Churrasqueiras vendidas</p>
-          <p className="text-[10px] text-muted-foreground">este mês</p>
+        <div className="metric-card text-center p-3 sm:p-4">
+          <Flame size={18} className="text-primary mx-auto mb-1.5" />
+          <p className="text-xl sm:text-2xl font-bold text-foreground">{totalChurrasqueirasMonth}</p>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-1">Churrasqueiras</p>
+          <p className="text-[9px] sm:text-[10px] text-muted-foreground">este mês</p>
         </div>
-        <div className="metric-card text-center">
-          <CalendarDays size={20} className="text-secondary mx-auto mb-2" />
-          <p className="text-2xl font-bold text-foreground">{uniqueWorkDays}</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Dias trabalhados</p>
-          <p className="text-[10px] text-muted-foreground">este mês</p>
+        <div className="metric-card text-center p-3 sm:p-4">
+          <CalendarDays size={18} className="text-secondary mx-auto mb-1.5" />
+          <p className="text-xl sm:text-2xl font-bold text-foreground">{uniqueWorkDays}</p>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-1">Dias trabalhados</p>
+          <p className="text-[9px] sm:text-[10px] text-muted-foreground">este mês</p>
         </div>
-        <div className="metric-card text-center">
-          <BarChart3 size={20} className="text-info mx-auto mb-2" />
-          <p className="text-2xl font-bold text-foreground">{formatCurrency(avgDailyRevenue)}</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Média/dia</p>
-          <p className="text-[10px] text-muted-foreground">faturamento</p>
+        <div className="metric-card text-center p-3 sm:p-4">
+          <BarChart3 size={18} className="text-info mx-auto mb-1.5" />
+          <p className="text-base sm:text-2xl font-bold text-foreground">{formatCurrency(avgDailyRevenue)}</p>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-1">Média/dia</p>
+          <p className="text-[9px] sm:text-[10px] text-muted-foreground">faturamento</p>
         </div>
-        <div className="metric-card text-center">
-          <Percent size={20} className={`mx-auto mb-2 ${profitMargin >= 30 ? 'text-success' : profitMargin >= 15 ? 'text-warning' : 'text-destructive'}`} />
-          <p className={`text-2xl font-bold ${profitMargin >= 30 ? 'text-success' : profitMargin >= 15 ? 'text-warning' : 'text-destructive'}`}>{profitMargin.toFixed(1)}%</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Margem de lucro</p>
-          <p className="text-[10px] text-muted-foreground">líquida</p>
+        <div className="metric-card text-center p-3 sm:p-4">
+          <Percent size={18} className={`mx-auto mb-1.5 ${profitMargin >= 30 ? 'text-success' : profitMargin >= 15 ? 'text-warning' : 'text-destructive'}`} />
+          <p className={`text-xl sm:text-2xl font-bold ${profitMargin >= 30 ? 'text-success' : profitMargin >= 15 ? 'text-warning' : 'text-destructive'}`}>{profitMargin.toFixed(1)}%</p>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-1">Margem</p>
+          <p className="text-[9px] sm:text-[10px] text-muted-foreground">líquida</p>
         </div>
-        <div className="metric-card text-center col-span-2 sm:col-span-3 lg:col-span-1">
-          <Forecast size={20} className="text-primary mx-auto mb-2" />
-          <p className="text-lg font-bold text-foreground">{formatCurrency(annualForecastRevenue)}</p>
-          <p className="text-xs font-semibold text-success">{formatCurrency(annualForecastProfit)} lucro</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Previsão anual</p>
+        <div className="metric-card text-center col-span-2 sm:col-span-3 lg:col-span-1 p-3 sm:p-4">
+          <Forecast size={18} className="text-primary mx-auto mb-1.5" />
+          <p className="text-base sm:text-lg font-bold text-foreground">{formatCurrency(annualForecastRevenue)}</p>
+          <p className="text-[10px] sm:text-xs font-semibold text-success">{formatCurrency(annualForecastProfit)} lucro</p>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-1">Previsão anual</p>
         </div>
       </div>
 
