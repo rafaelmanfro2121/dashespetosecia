@@ -338,39 +338,41 @@ export default function DashboardPage() {
 
       {/* Product Charts */}
       {productMarginData.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="metric-card">
-            <h3 className="text-sm font-bold mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Margem por Produto</h3>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={productMarginData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(225,15%,92%)" />
-                <XAxis type="number" fontSize={11} tickFormatter={v => `${v}%`} domain={[0, 100]} />
-                <YAxis type="category" dataKey="name" fontSize={11} width={110} />
-                <Tooltip formatter={(v: number) => `${v}%`} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)' }} />
-                <Bar dataKey="margem" radius={[0, 8, 8, 0]}>
-                  {productMarginData.map((entry, i) => (
-                    <Cell key={i} fill={entry.margem >= 30 ? 'hsl(155,55%,42%)' : entry.margem >= 15 ? 'hsl(38,90%,50%)' : 'hsl(0,75%,55%)'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+          <div className="metric-card overflow-hidden">
+            <h3 className="text-xs sm:text-sm font-bold mb-3 sm:mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Margem por Produto</h3>
+            <div className="w-full overflow-x-auto -mx-2 px-2">
+              <ResponsiveContainer width="100%" height={Math.max(200, productMarginData.length * 36)}>
+                <BarChart data={productMarginData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(225,15%,92%)" />
+                  <XAxis type="number" fontSize={10} tickFormatter={v => `${v}%`} domain={[0, 100]} />
+                  <YAxis type="category" dataKey="name" fontSize={9} width={90} />
+                  <Tooltip formatter={(v: number) => `${v}%`} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)', fontSize: '11px' }} />
+                  <Bar dataKey="margem" radius={[0, 8, 8, 0]}>
+                    {productMarginData.map((entry, i) => (
+                      <Cell key={i} fill={entry.margem >= 30 ? 'hsl(155,55%,42%)' : entry.margem >= 15 ? 'hsl(38,90%,50%)' : 'hsl(0,75%,55%)'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="metric-card">
-            <h3 className="text-sm font-bold mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Gastos por Categoria</h3>
+          <div className="metric-card overflow-hidden">
+            <h3 className="text-xs sm:text-sm font-bold mb-3 sm:mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Gastos por Categoria</h3>
             {categoryData.length === 0 ? (
-              <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">
+              <div className="flex items-center justify-center h-[200px] sm:h-[280px] text-muted-foreground text-sm">
                 Sem dados de saídas este mês
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
-                  <Pie data={categoryData} cx="50%" cy="50%" innerRadius={65} outerRadius={105} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={11}>
+                  <Pie data={categoryData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
                     {categoryData.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)' }} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)', fontSize: '11px' }} />
                 </PieChart>
               </ResponsiveContainer>
             )}
