@@ -264,6 +264,7 @@ export default function ClientesPage() {
   const triggerFileUpload = (id: string) => { setSelectedId(id); setTimeout(() => fileInputRef.current?.click(), 100); };
 
   const totalFiltered = filtered.reduce((s, c) => s + (c.total || 0), 0);
+  const totalReceived = filtered.reduce((s, c) => s + (c.paid_amount || 0), 0);
 
   const renderPaymentPopover = (c: ClienteRow) => {
     const total = c.total || 0;
@@ -443,6 +444,12 @@ export default function ClientesPage() {
           <DollarSign size={16} className="text-secondary" />
           <span className="font-semibold">{fmt(totalFiltered)}</span>
           <span className="text-muted-foreground">em vendas</span>
+        </div>
+        <div className="h-4 w-px bg-border" />
+        <div className="flex items-center gap-2">
+          <CheckCircle size={16} className="text-blue-700" />
+          <span className="font-semibold">{fmt(totalReceived)}</span>
+          <span className="text-muted-foreground">recebido</span>
         </div>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2">
