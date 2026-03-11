@@ -214,7 +214,7 @@ export default function FinanceiroPage() {
 
       <div className="h-6" />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6">
         <MetricCard label="Entradas" value={totalIn} icon={TrendingUp} variant="success" />
         <MetricCard label="Saídas" value={totalOut} icon={TrendingDown} variant="danger" />
         <MetricCard label="Custo Matéria-Prima" value={materialCost} icon={Package} variant="warning" />
