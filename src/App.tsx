@@ -13,7 +13,7 @@ import FuncionariosPage from "@/pages/FuncionariosPage";
 import FechamentoPage from "@/pages/FechamentoPage";
 import RelatorioIAPage from "@/pages/RelatorioIAPage";
 import ProdutosPage from "@/pages/ProdutosPage";
-import MateriaisPage from "@/pages/MateriaisPage";
+
 import OrdemServicoPage from "@/pages/OrdemServicoPage";
 import OrdemServicoTecnicaPage from "@/pages/OrdemServicoTecnicaPage";
 import ClientesPage from "@/pages/ClientesPage";
