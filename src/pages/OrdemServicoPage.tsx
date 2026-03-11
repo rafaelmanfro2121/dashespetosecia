@@ -341,6 +341,7 @@ export default function OrdemServicoPage() {
   return (
     <>
       <style>{`
+        #os-print [data-print-mirror] { display: none; }
         #os-print [data-observacoes-print-text] { display: none; }
         @media print {
           body * { visibility: hidden; }
@@ -360,6 +361,19 @@ export default function OrdemServicoPage() {
             font-size: 11px !important;
             white-space: pre-wrap !important;
             word-wrap: break-word !important;
+          }
+          #os-print [data-expandable] { display: none !important; }
+          #os-print [data-print-mirror] {
+            display: block !important;
+            min-height: 18px !important;
+            padding: 1px 4px !important;
+            font-size: 11px !important;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            overflow: visible !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 4px !important;
+            line-height: 1.4 !important;
           }
           #os-print table td, #os-print table th { padding: 2px 4px !important; font-size: 11px !important; }
           #os-print .print-signatures { margin-top: 20px !important; gap: 2rem !important; margin-bottom: 0 !important; }
@@ -452,10 +466,11 @@ export default function OrdemServicoPage() {
               <h3 className="font-bold text-xs mb-2 text-center border-b border-gray-200 pb-1">Informações do Cliente</h3>
               <div className="space-y-1 text-xs">
                 {/* Nome with autocomplete */}
-                <div className="flex items-center gap-2 relative">
-                  <span className="font-semibold w-24 text-right">Nome:</span>
+                <div className="flex items-start gap-2 relative">
+                  <span className="font-semibold w-24 text-right mt-1">Nome:</span>
                   <div className="flex-1 relative">
                     <Input
+                      data-expandable
                       value={cliente.nome}
                       onChange={e => {
                         setCliente(p => ({ ...p, nome: e.target.value }));
@@ -466,6 +481,7 @@ export default function OrdemServicoPage() {
                       className="h-7 text-sm border-gray-300 bg-transparent text-black"
                       placeholder="Buscar cliente cadastrado..."
                     />
+                    <div data-print-mirror>{cliente.nome || '\u00A0'}</div>
                     {showClienteSuggestions && clienteSuggestions.length > 0 && (
                       <div className="absolute z-50 left-0 right-0 top-full bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto no-print">
                         {clienteSuggestions.map((c, idx) => (
@@ -489,9 +505,12 @@ export default function OrdemServicoPage() {
                 </div>
                 {/* Other client fields */}
                 {([['telefone', 'Telefone'], ['email', 'E-mail'], ['cpfCnpj', 'CPF/CNPJ'], ['contato', 'Endereço']] as const).map(([k, l]) => (
-                  <div key={k} className="flex items-center gap-2">
-                    <span className="font-semibold w-24 text-right">{l}:</span>
-                    <Input value={cliente[k]} onChange={e => setCliente(p => ({ ...p, [k]: e.target.value }))} className="flex-1 h-7 text-sm border-gray-300 bg-transparent text-black" />
+                  <div key={k} className="flex items-start gap-2">
+                    <span className="font-semibold w-24 text-right mt-1">{l}:</span>
+                    <div className="flex-1">
+                      <Input data-expandable value={cliente[k]} onChange={e => setCliente(p => ({ ...p, [k]: e.target.value }))} className="h-7 text-sm border-gray-300 bg-transparent text-black" />
+                      <div data-print-mirror>{cliente[k] || '\u00A0'}</div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -542,6 +561,7 @@ export default function OrdemServicoPage() {
                       <td className="py-1.5 text-gray-500">{idx + 1}</td>
                       <td className="py-1.5 relative">
                         <Input
+                          data-expandable
                           value={item.name}
                           onChange={e => { updateItem(item.id, 'name', e.target.value); setActiveSearchId(item.id); }}
                           onFocus={() => setActiveSearchId(item.id)}
@@ -549,6 +569,7 @@ export default function OrdemServicoPage() {
                           className="h-7 text-sm border-gray-300 bg-transparent text-black"
                           placeholder="Buscar produto ou digitar..."
                         />
+                        <div data-print-mirror>{item.name || '\u00A0'}</div>
                         {suggestions.length > 0 && (
                           <div className="absolute z-50 left-0 right-0 top-full bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto no-print">
                             {suggestions.map(p => (
