@@ -466,10 +466,11 @@ export default function OrdemServicoPage() {
               <h3 className="font-bold text-xs mb-2 text-center border-b border-gray-200 pb-1">Informações do Cliente</h3>
               <div className="space-y-1 text-xs">
                 {/* Nome with autocomplete */}
-                <div className="flex items-center gap-2 relative">
-                  <span className="font-semibold w-24 text-right">Nome:</span>
+                <div className="flex items-start gap-2 relative">
+                  <span className="font-semibold w-24 text-right mt-1">Nome:</span>
                   <div className="flex-1 relative">
                     <Input
+                      data-expandable
                       value={cliente.nome}
                       onChange={e => {
                         setCliente(p => ({ ...p, nome: e.target.value }));
@@ -480,6 +481,7 @@ export default function OrdemServicoPage() {
                       className="h-7 text-sm border-gray-300 bg-transparent text-black"
                       placeholder="Buscar cliente cadastrado..."
                     />
+                    <div data-print-mirror>{cliente.nome || '\u00A0'}</div>
                     {showClienteSuggestions && clienteSuggestions.length > 0 && (
                       <div className="absolute z-50 left-0 right-0 top-full bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto no-print">
                         {clienteSuggestions.map((c, idx) => (
@@ -503,9 +505,12 @@ export default function OrdemServicoPage() {
                 </div>
                 {/* Other client fields */}
                 {([['telefone', 'Telefone'], ['email', 'E-mail'], ['cpfCnpj', 'CPF/CNPJ'], ['contato', 'Endereço']] as const).map(([k, l]) => (
-                  <div key={k} className="flex items-center gap-2">
-                    <span className="font-semibold w-24 text-right">{l}:</span>
-                    <Input value={cliente[k]} onChange={e => setCliente(p => ({ ...p, [k]: e.target.value }))} className="flex-1 h-7 text-sm border-gray-300 bg-transparent text-black" />
+                  <div key={k} className="flex items-start gap-2">
+                    <span className="font-semibold w-24 text-right mt-1">{l}:</span>
+                    <div className="flex-1">
+                      <Input data-expandable value={cliente[k]} onChange={e => setCliente(p => ({ ...p, [k]: e.target.value }))} className="h-7 text-sm border-gray-300 bg-transparent text-black" />
+                      <div data-print-mirror>{cliente[k] || '\u00A0'}</div>
+                    </div>
                   </div>
                 ))}
               </div>
