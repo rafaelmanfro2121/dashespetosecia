@@ -102,7 +102,7 @@ export default function FechamentoPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-8">
           <MetricCard label="Faturamento" value={closing.totalRevenue} icon={TrendingUp} variant="success" />
           <MetricCard label="Despesas" value={closing.totalExpenses} icon={TrendingDown} variant="danger" />
           <MetricCard label="Salários" value={closing.totalSalaries} icon={Users} />
