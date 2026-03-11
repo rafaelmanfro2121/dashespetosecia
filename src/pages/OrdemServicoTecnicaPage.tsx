@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Printer, FileDown, Plus, Search, Save, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Printer, FileDown, Plus, Search, Save, CheckCircle, AlertCircle, Calendar, Filter, X, Wrench, Users, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -118,6 +118,9 @@ export default function OrdemServicoTecnicaPage() {
   const [pedidos, setPedidos] = useState<PedidoOS[]>([]);
   const [selectedPedido, setSelectedPedido] = useState<PedidoOS | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [showSelector, setShowSelector] = useState(true);
 
   const [osNumber, setOsNumber] = useState('');
@@ -368,30 +371,118 @@ export default function OrdemServicoTecnicaPage() {
     toast.success('OS Técnica salva com sucesso!');
   };
 
-  const filteredPedidos = pedidos.filter(p => {
-    const term = searchTerm.toLowerCase();
-    return p.os_number.toLowerCase().includes(term) || p.cliente_nome.toLowerCase().includes(term);
-  });
+  const filteredPedidos = useMemo(() => {
+    return pedidos.filter(p => {
+      const term = searchTerm.toLowerCase().trim();
+      if (term) {
+        const matchName = p.cliente_nome?.toLowerCase().includes(term);
+        const matchOs = p.os_number?.toLowerCase().includes(term);
+        if (!matchName && !matchOs) return false;
+      }
+      if (dateFrom) {
+        if (p.atendimento_data < dateFrom) return false;
+      }
+      if (dateTo) {
+        if (p.atendimento_data > dateTo) return false;
+      }
+      if (statusFilter === 'gerada' && !p.os_tecnica_salva) return false;
+      if (statusFilter === 'pendente' && p.os_tecnica_salva) return false;
+      return true;
+    });
+  }, [pedidos, searchTerm, dateFrom, dateTo, statusFilter]);
+
+  const totalGeradas = pedidos.filter(p => p.os_tecnica_salva).length;
+  const totalPendentes = pedidos.filter(p => !p.os_tecnica_salva).length;
+  const hasActiveFilters = searchTerm || dateFrom || dateTo || statusFilter !== 'todos';
+  const clearFilters = () => { setSearchTerm(''); setDateFrom(''); setDateTo(''); setStatusFilter('todos'); };
 
   const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   if (showSelector) {
     return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <h1 className="text-lg font-bold text-foreground mb-4">Selecione o Pedido para gerar a Ordem de Serviço</h1>
-        <div className="relative mb-4">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nº do pedido ou nome do cliente..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <Wrench size={20} className="text-primary" />
+            Ordem de Serviço Técnica
+          </h1>
         </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="metric-card flex items-center gap-3 p-3">
+            <div className="p-2 rounded-lg bg-primary/10"><Users size={16} className="text-primary" /></div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">Total de Pedidos</p>
+              <p className="font-bold text-foreground">{pedidos.length}</p>
+            </div>
+          </div>
+          <div className="metric-card flex items-center gap-3 p-3">
+            <div className="p-2 rounded-lg bg-emerald-500/10"><CheckCircle size={16} className="text-emerald-500" /></div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">OS Geradas</p>
+              <p className="font-bold text-emerald-500">{totalGeradas}</p>
+            </div>
+          </div>
+          <div className="metric-card flex items-center gap-3 p-3">
+            <div className="p-2 rounded-lg bg-destructive/10"><AlertCircle size={16} className="text-destructive" /></div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">Pendentes</p>
+              <p className="font-bold text-destructive">{totalPendentes}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="metric-card p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Filter size={12} /> Filtros</span>
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="text-xs text-destructive hover:underline flex items-center gap-1"><X size={12} /> Limpar</button>
+            )}
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nº do pedido ou nome do cliente..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {/* Date range */}
+            <div className="flex items-center gap-1.5">
+              <Calendar size={12} className="text-muted-foreground" />
+              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-8 text-xs w-[130px]" />
+              <span className="text-xs text-muted-foreground">até</span>
+              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-8 text-xs w-[130px]" />
+            </div>
+
+            {/* Status filter */}
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="h-8 text-xs rounded-md border border-border bg-background px-2 text-foreground"
+            >
+              <option value="todos">Todos</option>
+              <option value="gerada">OS Gerada</option>
+              <option value="pendente">Pendente</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Orders list */}
         {filteredPedidos.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">Nenhum pedido encontrado</div>
+          <div className="metric-card text-center py-12 text-muted-foreground text-sm">
+            {hasActiveFilters ? 'Nenhum pedido encontrado com esses filtros' : 'Nenhum pedido encontrado'}
+          </div>
         ) : (
-          <div className="space-y-2 max-h-[60vh] overflow-auto">
+          <div className="space-y-2">
             {filteredPedidos.map(p => {
               const items = (p.items || []) as any[];
               const prodNames = items.map((it: any) => it.name).filter(Boolean).join(', ');
@@ -399,14 +490,14 @@ export default function OrdemServicoTecnicaPage() {
                 <div
                   key={p.id}
                   onClick={() => selectPedido(p)}
-                  className={`metric-card cursor-pointer hover:border-primary/50 transition-colors ${p.os_tecnica_salva ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}`}
+                  className={`metric-card cursor-pointer hover:border-primary/50 transition-colors ${p.os_tecnica_salva ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-destructive'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {p.os_tecnica_salva ? (
-                        <CheckCircle size={16} className="text-green-500 shrink-0" />
+                        <CheckCircle size={16} className="text-emerald-500 shrink-0" />
                       ) : (
-                        <AlertCircle size={16} className="text-red-500 shrink-0" />
+                        <AlertCircle size={16} className="text-destructive shrink-0" />
                       )}
                       <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                         Pedido #{p.os_number}
@@ -414,17 +505,17 @@ export default function OrdemServicoTecnicaPage() {
                       <span className="font-semibold text-sm">{p.cliente_nome}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${p.os_tecnica_salva ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${p.os_tecnica_salva ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-destructive/10 text-destructive border-destructive/30'}`}>
                         {p.os_tecnica_salva ? 'OS Gerada' : 'Pendente'}
                       </span>
                       <span className="font-mono text-sm font-medium">{fmt(Number(p.total))}</span>
                     </div>
                   </div>
                   {prodNames && (
-                    <p className="text-xs text-muted-foreground mt-1 truncate">{prodNames}</p>
+                    <p className="text-xs text-muted-foreground mt-1 truncate ml-9">{prodNames}</p>
                   )}
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {new Date(p.atendimento_data).toLocaleDateString('pt-BR')}
+                  <p className="text-xs text-muted-foreground mt-0.5 ml-9">
+                    {new Date(p.atendimento_data + 'T12:00:00').toLocaleDateString('pt-BR')}
                   </p>
                 </div>
               );
