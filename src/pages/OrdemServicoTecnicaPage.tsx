@@ -118,6 +118,9 @@ export default function OrdemServicoTecnicaPage() {
   const [pedidos, setPedidos] = useState<PedidoOS[]>([]);
   const [selectedPedido, setSelectedPedido] = useState<PedidoOS | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [showSelector, setShowSelector] = useState(true);
 
   const [osNumber, setOsNumber] = useState('');
