@@ -300,7 +300,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Existing metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-8">
         <MetricCard label="Entradas" value={closing.totalRevenue} icon={TrendingUp} variant="success" />
         <MetricCard label="Saídas" value={closing.totalExpenses} icon={TrendingDown} variant="danger" />
         <MetricCard label="Lucro Bruto" value={closing.totalRevenue - closing.totalExpenses} icon={DollarSign} variant="info" />
