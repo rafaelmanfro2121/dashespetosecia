@@ -268,14 +268,51 @@ export default function OrdemServicoPage() {
     setLoadingPdf(true);
     try {
       expandTextareas();
-      // Hide no-print elements for PDF capture
+      // Hide no-print elements
       const noPrintEls = printRef.current.querySelectorAll('.no-print');
       noPrintEls.forEach(el => (el as HTMLElement).style.display = 'none');
 
+      // Show print mirrors, hide expandable inputs for PDF
+      const expandableEls = printRef.current.querySelectorAll('[data-expandable]');
+      const mirrorEls = printRef.current.querySelectorAll('[data-print-mirror]');
+      const obsPrintTextEls = printRef.current.querySelectorAll('[data-observacoes-print-text]');
+      const obsPrintEls = printRef.current.querySelectorAll('[data-observacoes-print]');
+
+      expandableEls.forEach(el => (el as HTMLElement).style.display = 'none');
+      mirrorEls.forEach(el => {
+        const h = el as HTMLElement;
+        h.style.display = 'block';
+        h.style.minHeight = '18px';
+        h.style.padding = '1px 4px';
+        h.style.fontSize = '11px';
+        h.style.whiteSpace = 'pre-wrap';
+        h.style.wordBreak = 'break-word';
+        h.style.overflowWrap = 'break-word';
+        h.style.overflow = 'visible';
+        h.style.border = '1px solid #d1d5db';
+        h.style.borderRadius = '4px';
+        h.style.lineHeight = '1.4';
+      });
+      obsPrintEls.forEach(el => (el as HTMLElement).style.display = 'none');
+      obsPrintTextEls.forEach(el => {
+        const h = el as HTMLElement;
+        h.style.display = 'block';
+        h.style.whiteSpace = 'pre-wrap';
+        h.style.wordBreak = 'break-word';
+        h.style.padding = '1px 4px';
+        h.style.fontSize = '11px';
+        h.style.border = '1px solid #d1d5db';
+        h.style.borderRadius = '6px';
+      });
+
       const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
 
-      // Restore no-print elements
+      // Restore all elements
       noPrintEls.forEach(el => (el as HTMLElement).style.display = '');
+      expandableEls.forEach(el => (el as HTMLElement).style.display = '');
+      mirrorEls.forEach(el => { (el as HTMLElement).style.cssText = ''; });
+      obsPrintEls.forEach(el => (el as HTMLElement).style.display = '');
+      obsPrintTextEls.forEach(el => { (el as HTMLElement).style.cssText = ''; });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -370,10 +407,14 @@ export default function OrdemServicoPage() {
             font-size: 11px !important;
             white-space: pre-wrap !important;
             word-wrap: break-word !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
             overflow: visible !important;
             border: 1px solid #d1d5db !important;
             border-radius: 4px !important;
             line-height: 1.4 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
           }
           #os-print table td, #os-print table th { padding: 2px 4px !important; font-size: 11px !important; }
           #os-print .print-signatures { margin-top: 20px !important; gap: 2rem !important; margin-bottom: 0 !important; }
