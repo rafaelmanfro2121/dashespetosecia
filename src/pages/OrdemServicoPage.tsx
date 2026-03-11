@@ -394,10 +394,10 @@ export default function OrdemServicoPage() {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => setView('form')} className="gap-1"><ArrowLeft size={14} /> Voltar</Button>
-            <h1 className="text-lg font-bold text-foreground">Histórico de OS</h1>
-          </div>
+          <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <FileDown size={20} className="text-primary" />
+            Ordens de Serviço
+          </h1>
           <Button onClick={() => { clearForm(); setView('form'); }} size="sm" className="gap-1"><Plus size={14} /> Nova OS</Button>
         </div>
 
