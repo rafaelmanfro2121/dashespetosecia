@@ -30,6 +30,9 @@ interface SavedOS {
   cliente_nome: string;
   total: number;
   created_at: string;
+  atendimento_data: string;
+  payment_status: string;
+  order_status: string;
 }
 
 const EMPRESA_STORAGE_KEY = 'os_empresa_data';
