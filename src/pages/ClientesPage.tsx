@@ -604,7 +604,7 @@ export default function ClientesPage() {
                           {/* Expanded details */}
                           {isExpanded && (
                             <div className="px-4 pb-4 border-t border-border/50 pt-3">
-                              <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mb-4">
                                 <div className="flex items-center gap-2 text-sm">
                                   <User size={14} className="text-muted-foreground flex-shrink-0" />
                                   <span className="text-muted-foreground">Nome:</span>
