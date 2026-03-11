@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Printer, Save, FileDown, History, ArrowLeft, Lock, Unlock, Search, Pencil, Calendar, Filter, X, Users, DollarSign } from 'lucide-react';
+import { Plus, Trash2, Printer, Save, FileDown, History, ArrowLeft, Lock, Unlock, Search, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
