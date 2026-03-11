@@ -318,21 +318,22 @@ export default function DashboardPage() {
         <MetricCard label="Margem" value={closing.margin} icon={Percent} isCurrency={false} isPercent />
       </div>
 
-      {/* Evolution Chart */}
-      <div className="metric-card mb-6">
-        <h3 className="text-sm font-bold mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Evolução Financeira — 6 meses</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={profitEvolution}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(225,15%,92%)" />
-            <XAxis dataKey="name" fontSize={12} fontWeight={500} />
-            <YAxis fontSize={11} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-            <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)', fontSize: '12px' }} />
-            <Legend wrapperStyle={{ fontSize: '12px' }} />
-            <Line type="monotone" dataKey="receita" name="Receita" stroke="hsl(155,55%,42%)" strokeWidth={2.5} dot={{ r: 4, fill: 'hsl(155,55%,42%)' }} />
-            <Line type="monotone" dataKey="despesas" name="Despesas" stroke="hsl(0,75%,55%)" strokeWidth={2} dot={{ r: 3 }} />
-            <Line type="monotone" dataKey="lucro" name="Lucro" stroke="hsl(225,65%,48%)" strokeWidth={3} dot={{ r: 5, fill: 'hsl(225,65%,48%)' }} />
-          </LineChart>
-        </ResponsiveContainer>
+      <div className="metric-card mb-6 overflow-hidden">
+        <h3 className="text-xs sm:text-sm font-bold mb-3 sm:mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Evolução Financeira — 6 meses</h3>
+        <div className="w-full overflow-x-auto -mx-2 px-2">
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={profitEvolution}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(225,15%,92%)" />
+              <XAxis dataKey="name" fontSize={10} fontWeight={500} />
+              <YAxis fontSize={10} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} width={50} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)', fontSize: '11px' }} />
+              <Legend wrapperStyle={{ fontSize: '10px' }} />
+              <Line type="monotone" dataKey="receita" name="Receita" stroke="hsl(155,55%,42%)" strokeWidth={2.5} dot={{ r: 3, fill: 'hsl(155,55%,42%)' }} />
+              <Line type="monotone" dataKey="despesas" name="Despesas" stroke="hsl(0,75%,55%)" strokeWidth={2} dot={{ r: 2 }} />
+              <Line type="monotone" dataKey="lucro" name="Lucro" stroke="hsl(225,65%,48%)" strokeWidth={3} dot={{ r: 4, fill: 'hsl(225,65%,48%)' }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Product Charts */}
