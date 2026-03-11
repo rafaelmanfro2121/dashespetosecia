@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Printer, FileDown, Plus, Search, Save, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Printer, FileDown, Plus, Search, Save, CheckCircle, AlertCircle, Calendar, Filter, X, Wrench, Users, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
