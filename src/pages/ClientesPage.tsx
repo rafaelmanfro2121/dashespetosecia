@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote, Trash2, Wrench, ChevronDown, ChevronUp, Calendar, MapPin, Phone, Mail, User, Package, CalendarDays } from 'lucide-react';
+import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote, Trash2, Wrench, ChevronDown, ChevronUp, Calendar, MapPin, Phone, Mail, User, Package, CalendarDays, TrendingDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
