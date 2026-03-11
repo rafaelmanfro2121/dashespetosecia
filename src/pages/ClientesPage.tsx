@@ -572,10 +572,10 @@ export default function ClientesPage() {
                         <div key={c.id} className={`rounded-xl border ${colors.row} transition-all duration-200`}>
                           {/* Main row - always visible */}
                           <div
-                            className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                            className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 cursor-pointer"
                             onClick={() => setExpandedId(isExpanded ? null : c.id)}
                           >
-                            <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colors.dot}`} />
+                            <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colors.dot} hidden sm:block`} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-sm text-foreground truncate">{c.cliente_nome || '—'}</span>
@@ -585,11 +585,11 @@ export default function ClientesPage() {
                                 {getProducts(c.items)}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 flex-shrink-0">
+                            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
                               <span className="font-bold text-sm">{fmt(c.total || 0)}</span>
                               <Badge className={`${colors.badge} text-[10px] px-2 py-0.5`}>{colors.label}</Badge>
                               <Select value={c.order_status || 'em_producao'} onValueChange={(v) => { handleStatusChange(c.id, v); }}>
-                                <SelectTrigger className="h-7 w-[120px] text-[10px]" onClick={e => e.stopPropagation()}>
+                                <SelectTrigger className="h-7 w-[100px] sm:w-[120px] text-[10px]" onClick={e => e.stopPropagation()}>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
