@@ -225,11 +225,13 @@ export default function ClientesPage() {
         .limit(1)
         .maybeSingle();
 
+      const txAmount = isCard ? (cliente.total || 0) * (1 - CARD_FEE) : (cliente.total || 0);
+
       if (existingSaleTx?.id) {
         await supabase
           .from('transactions')
           .update({
-            amount: cliente.total || 0,
+            amount: txAmount,
             category_id: vendaCategoryId,
             payment_method: method,
           })
@@ -237,7 +239,7 @@ export default function ClientesPage() {
       } else {
         const { error: txInsertError } = await supabase.from('transactions').insert({
           description: vendaDescription,
-          amount: cliente.total || 0,
+          amount: txAmount,
           type: 'entrada',
           category_id: vendaCategoryId,
           transaction_date: new Date().toISOString().split('T')[0],
