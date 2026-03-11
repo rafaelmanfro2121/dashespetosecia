@@ -205,9 +205,9 @@ export default function DashboardPage() {
 
       {/* AI Alerts */}
       {lowMarginProducts.length > 0 && (
-        <div className="bg-warning/5 border border-warning/20 rounded-2xl p-5 mb-8 animate-fade-in">
+        <div className="bg-warning/5 border border-warning/20 rounded-2xl p-3 sm:p-5 mb-8 animate-fade-in">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-xl bg-warning/15 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-warning/15 flex items-center justify-center shrink-0">
               <AlertTriangle size={16} className="text-warning" />
             </div>
             <div>
@@ -215,17 +215,17 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground">Produtos com margem abaixo de 30%</p>
             </div>
           </div>
-          <div className="space-y-2 ml-10">
+          <div className="space-y-2 sm:ml-10">
             {lowMarginProducts.map(p => {
               const totalCost = Number(p.material_cost) + Number(p.labor_cost) + Number(p.other_costs);
               const margin = ((Number(p.sale_price) - totalCost) / Number(p.sale_price)) * 100;
               const targetPrice = totalCost / 0.7;
               return (
-                <div key={p.id} className="flex items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-card">
-                  <span className="font-medium">{p.name}</span>
-                  <div className="flex items-center gap-4">
+                <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between text-sm py-1.5 px-3 rounded-lg bg-card gap-1">
+                  <span className="font-medium truncate">{p.name}</span>
+                  <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm">
                     <span className="badge-danger">{formatPercent(margin)}</span>
-                    <span className="text-xs text-muted-foreground">→ Ajustar para</span>
+                    <span className="text-xs text-muted-foreground">→</span>
                     <span className="badge-success">{formatCurrency(targetPrice)}</span>
                   </div>
                 </div>
@@ -236,7 +236,7 @@ export default function DashboardPage() {
       )}
 
       {/* ============ INFOGRÁFICO ============ */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mb-8">
         <div className="metric-card text-center">
           <Flame size={20} className="text-primary mx-auto mb-2" />
           <p className="text-2xl font-bold text-foreground">{totalChurrasqueirasMonth}</p>
