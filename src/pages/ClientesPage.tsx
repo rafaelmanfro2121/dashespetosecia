@@ -518,6 +518,12 @@ export default function ClientesPage() {
         </div>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2">
+          <TrendingUp size={16} className={totalNetRevenue - totalCost >= 0 ? 'text-emerald-500' : 'text-destructive'} />
+          <span className="font-semibold">{fmt(totalNetRevenue - totalCost)}</span>
+          <span className="text-muted-foreground">lucro líq.</span>
+        </div>
+        <div className="h-4 w-px bg-border" />
+        <div className="flex items-center gap-2">
           <CalendarDays size={16} className="text-muted-foreground" />
           <span className="text-muted-foreground">{groupedByWeek.length} semana(s)</span>
         </div>
