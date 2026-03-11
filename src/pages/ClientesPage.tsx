@@ -264,6 +264,7 @@ export default function ClientesPage() {
   const triggerFileUpload = (id: string) => { setSelectedId(id); setTimeout(() => fileInputRef.current?.click(), 100); };
 
   const totalFiltered = filtered.reduce((s, c) => s + (c.total || 0), 0);
+  const totalReceived = filtered.reduce((s, c) => s + (c.paid_amount || 0), 0);
 
   const renderPaymentPopover = (c: ClienteRow) => {
     const total = c.total || 0;
