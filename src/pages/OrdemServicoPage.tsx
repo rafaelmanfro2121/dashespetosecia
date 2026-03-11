@@ -370,10 +370,14 @@ export default function OrdemServicoPage() {
             font-size: 11px !important;
             white-space: pre-wrap !important;
             word-wrap: break-word !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
             overflow: visible !important;
             border: 1px solid #d1d5db !important;
             border-radius: 4px !important;
             line-height: 1.4 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
           }
           #os-print table td, #os-print table th { padding: 2px 4px !important; font-size: 11px !important; }
           #os-print .print-signatures { margin-top: 20px !important; gap: 2rem !important; margin-bottom: 0 !important; }
