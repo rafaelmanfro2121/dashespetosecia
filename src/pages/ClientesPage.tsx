@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote, Trash2, Wrench, ChevronDown, ChevronUp, Calendar, MapPin, Phone, Mail, User, Package, CalendarDays, TrendingDown } from 'lucide-react';
+import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote, Trash2, Wrench, ChevronDown, ChevronUp, Calendar, MapPin, Phone, Mail, User, Package, CalendarDays, TrendingDown, TrendingUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -288,6 +288,15 @@ export default function ClientesPage() {
   const totalFiltered = filtered.reduce((s, c) => s + (c.total || 0), 0);
   const totalReceived = filtered.reduce((s, c) => s + (c.paid_amount || 0), 0);
 
+  // Net revenue considering card fees per order
+  const totalNetRevenue = useMemo(() => {
+    return filtered.reduce((s, c) => {
+      const total = c.total || 0;
+      const isCard = c.payment_method_client === 'Cartão de Crédito';
+      return s + (isCard ? total * (1 - CARD_FEE) : total);
+    }, 0);
+  }, [filtered]);
+
   // Calculate production cost based on product catalog costs matched to order items
   const totalCost = useMemo(() => {
     let cost = 0;
@@ -506,6 +515,12 @@ export default function ClientesPage() {
           <TrendingDown size={16} className="text-destructive" />
           <span className="font-semibold">{fmt(totalCost)}</span>
           <span className="text-muted-foreground">custo</span>
+        </div>
+        <div className="h-4 w-px bg-border" />
+        <div className="flex items-center gap-2">
+          <TrendingUp size={16} className={totalNetRevenue - totalCost >= 0 ? 'text-emerald-500' : 'text-destructive'} />
+          <span className="font-semibold">{fmt(totalNetRevenue - totalCost)}</span>
+          <span className="text-muted-foreground">lucro líq.</span>
         </div>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2">
