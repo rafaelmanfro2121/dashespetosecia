@@ -341,6 +341,7 @@ export default function OrdemServicoPage() {
   return (
     <>
       <style>{`
+        #os-print [data-print-mirror] { display: none; }
         #os-print [data-observacoes-print-text] { display: none; }
         @media print {
           body * { visibility: hidden; }
@@ -360,6 +361,19 @@ export default function OrdemServicoPage() {
             font-size: 11px !important;
             white-space: pre-wrap !important;
             word-wrap: break-word !important;
+          }
+          #os-print [data-expandable] { display: none !important; }
+          #os-print [data-print-mirror] {
+            display: block !important;
+            min-height: 18px !important;
+            padding: 1px 4px !important;
+            font-size: 11px !important;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            overflow: visible !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 4px !important;
+            line-height: 1.4 !important;
           }
           #os-print table td, #os-print table th { padding: 2px 4px !important; font-size: 11px !important; }
           #os-print .print-signatures { margin-top: 20px !important; gap: 2rem !important; margin-bottom: 0 !important; }
