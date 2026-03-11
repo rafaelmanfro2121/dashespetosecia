@@ -206,6 +206,45 @@ export default function OrdemServicoPage() {
       toast.success('OS salva com sucesso!');
     }
 
+    // Auto-register new products from OS items
+    try {
+      const { data: existingProducts } = await supabase.from('products').select('name');
+      const existingNames = (existingProducts || []).map((p: any) => p.name.toUpperCase());
+      
+      const newProducts: { name: string; sale_price: number }[] = [];
+      items.forEach(item => {
+        if (!item.name || !item.name.trim()) return;
+        const itemNameUpper = item.name.trim().toUpperCase();
+        // Check if already exists (exact or partial match)
+        const exists = existingNames.some((eName: string) => 
+          eName === itemNameUpper || 
+          itemNameUpper.includes(eName) || 
+          eName.includes(itemNameUpper)
+        );
+        if (!exists) {
+          // Avoid duplicates within the same batch
+          const alreadyInBatch = newProducts.some(np => np.name.toUpperCase() === itemNameUpper);
+          if (!alreadyInBatch) {
+            newProducts.push({ name: item.name.trim(), sale_price: item.price || 0 });
+          }
+        }
+      });
+
+      if (newProducts.length > 0) {
+        const inserts = newProducts.map(p => ({
+          name: p.name,
+          sale_price: p.sale_price,
+          material_cost: 0,
+          labor_cost: 0,
+          other_costs: 0,
+        }));
+        await supabase.from('products').insert(inserts);
+        toast.info(`📦 ${newProducts.length} novo(s) produto(s) cadastrado(s) automaticamente`);
+      }
+    } catch (err) {
+      console.error('[OS] Erro ao auto-cadastrar produtos:', err);
+    }
+
     const { data: freshOrders } = await supabase.from('service_orders').select('id, os_number, cliente_nome, total, created_at').order('created_at', { ascending: false });
     if (freshOrders) setSavedOrders(freshOrders as SavedOS[]);
     clearForm(freshOrders as SavedOS[] | undefined);
