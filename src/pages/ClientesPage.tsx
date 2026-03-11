@@ -498,40 +498,35 @@ export default function ClientesPage() {
       </div>
 
       {/* Summary bar */}
-      <div className="flex items-center gap-6 mb-5 px-4 py-2.5 rounded-xl bg-card border text-sm">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-6 mb-5 px-3 sm:px-4 py-2.5 rounded-xl bg-card border text-xs sm:text-sm">
         <div className="flex items-center gap-2">
           <Users size={16} className="text-primary" />
           <span className="font-semibold">{filtered.length}</span>
-          <span className="text-muted-foreground">clientes</span>
+          <span className="text-muted-foreground hidden sm:inline">clientes</span>
         </div>
-        <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-border hidden sm:block" />
         <div className="flex items-center gap-2">
           <DollarSign size={16} className="text-secondary" />
           <span className="font-semibold">{fmt(totalFiltered)}</span>
-          <span className="text-muted-foreground">em vendas</span>
+          <span className="text-muted-foreground hidden sm:inline">em vendas</span>
         </div>
-        <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-border hidden sm:block" />
         <div className="flex items-center gap-2">
           <CheckCircle size={16} className="text-blue-700" />
           <span className="font-semibold">{fmt(totalReceived)}</span>
-          <span className="text-muted-foreground">recebido</span>
+          <span className="text-muted-foreground hidden sm:inline">recebido</span>
         </div>
-        <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-border hidden sm:block" />
         <div className="flex items-center gap-2">
           <TrendingDown size={16} className="text-destructive" />
           <span className="font-semibold">{fmt(totalCost)}</span>
-          <span className="text-muted-foreground">custo</span>
+          <span className="text-muted-foreground hidden sm:inline">custo</span>
         </div>
-        <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-border hidden sm:block" />
         <div className="flex items-center gap-2">
           <TrendingUp size={16} className={totalNetRevenue - totalCost >= 0 ? 'text-emerald-500' : 'text-destructive'} />
           <span className="font-semibold">{fmt(totalNetRevenue - totalCost)}</span>
-          <span className="text-muted-foreground">lucro líq.</span>
-        </div>
-        <div className="h-4 w-px bg-border" />
-        <div className="flex items-center gap-2">
-          <CalendarDays size={16} className="text-muted-foreground" />
-          <span className="text-muted-foreground">{groupedByWeek.length} semana(s)</span>
+          <span className="text-muted-foreground hidden sm:inline">lucro líq.</span>
         </div>
       </div>
 
