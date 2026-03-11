@@ -332,12 +332,18 @@ export default function ClientesPage() {
 
     if (c.payment_status === 'pago') {
       const colors = getPaymentColor(c.payment_status, paid, total);
+      const method = c.payment_method_client || '';
+      const isCardPago = method.toLowerCase().includes('cartão') || method.toLowerCase().includes('credito') || method.toLowerCase().includes('crédito');
+      const netValue = isCardPago ? total * (1 - CARD_FEE) : total;
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge className={`${colors.badge} text-xs gap-1 px-3 py-1`}>
             <CheckCircle size={12} /> Pago Total
           </Badge>
-          <span className="text-[10px] text-muted-foreground">{fmt(paid)}</span>
+          <span className="text-[10px] text-muted-foreground font-mono">{fmt(netValue)}</span>
+          {isCardPago && (
+            <span className="text-[9px] text-muted-foreground/60">(bruto {fmt(total)} - {(CARD_FEE * 100).toFixed(2)}% taxa)</span>
+          )}
         </div>
       );
     }
@@ -439,12 +445,12 @@ export default function ClientesPage() {
       <input type="file" ref={fileInputRef} className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileUpload} />
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
           <Users size={22} className="text-primary" />
           <h1 className="text-xl font-bold text-foreground">Clientes</h1>
         </div>
-        <div className="relative w-64">
+        <div className="relative w-full sm:w-64">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cliente ou OS..." className="pl-9 h-9 text-sm" />
         </div>
@@ -454,29 +460,29 @@ export default function ClientesPage() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="h-9 w-[100px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[80px] sm:w-[100px] text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>{availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
           </Select>
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[110px] sm:w-[140px] text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os meses</SelectItem>
+              <SelectItem value="all">Todos meses</SelectItem>
               {MONTHS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterPayment} onValueChange={setFilterPayment}>
-            <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[110px] sm:w-[140px] text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Pagamento: Todos</SelectItem>
+              <SelectItem value="all">Pgto: Todos</SelectItem>
               <SelectItem value="pago">Pago Total</SelectItem>
               <SelectItem value="parcial">Parcial</SelectItem>
               <SelectItem value="pendente">Pendente</SelectItem>
             </SelectContent>
           </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[110px] sm:w-[140px] text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Pedido: Todos</SelectItem>
+              <SelectItem value="all">Status: Todos</SelectItem>
               <SelectItem value="em_producao">Em Produção</SelectItem>
               <SelectItem value="enviado">Enviado</SelectItem>
             </SelectContent>
@@ -492,40 +498,35 @@ export default function ClientesPage() {
       </div>
 
       {/* Summary bar */}
-      <div className="flex items-center gap-6 mb-5 px-4 py-2.5 rounded-xl bg-card border text-sm">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-6 mb-5 px-3 sm:px-4 py-2.5 rounded-xl bg-card border text-xs sm:text-sm">
         <div className="flex items-center gap-2">
           <Users size={16} className="text-primary" />
           <span className="font-semibold">{filtered.length}</span>
-          <span className="text-muted-foreground">clientes</span>
+          <span className="text-muted-foreground hidden sm:inline">clientes</span>
         </div>
-        <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-border hidden sm:block" />
         <div className="flex items-center gap-2">
           <DollarSign size={16} className="text-secondary" />
           <span className="font-semibold">{fmt(totalFiltered)}</span>
-          <span className="text-muted-foreground">em vendas</span>
+          <span className="text-muted-foreground hidden sm:inline">em vendas</span>
         </div>
-        <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-border hidden sm:block" />
         <div className="flex items-center gap-2">
           <CheckCircle size={16} className="text-blue-700" />
           <span className="font-semibold">{fmt(totalReceived)}</span>
-          <span className="text-muted-foreground">recebido</span>
+          <span className="text-muted-foreground hidden sm:inline">recebido</span>
         </div>
-        <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-border hidden sm:block" />
         <div className="flex items-center gap-2">
           <TrendingDown size={16} className="text-destructive" />
           <span className="font-semibold">{fmt(totalCost)}</span>
-          <span className="text-muted-foreground">custo</span>
+          <span className="text-muted-foreground hidden sm:inline">custo</span>
         </div>
-        <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-border hidden sm:block" />
         <div className="flex items-center gap-2">
           <TrendingUp size={16} className={totalNetRevenue - totalCost >= 0 ? 'text-emerald-500' : 'text-destructive'} />
           <span className="font-semibold">{fmt(totalNetRevenue - totalCost)}</span>
-          <span className="text-muted-foreground">lucro líq.</span>
-        </div>
-        <div className="h-4 w-px bg-border" />
-        <div className="flex items-center gap-2">
-          <CalendarDays size={16} className="text-muted-foreground" />
-          <span className="text-muted-foreground">{groupedByWeek.length} semana(s)</span>
+          <span className="text-muted-foreground hidden sm:inline">lucro líq.</span>
         </div>
       </div>
 
@@ -571,10 +572,10 @@ export default function ClientesPage() {
                         <div key={c.id} className={`rounded-xl border ${colors.row} transition-all duration-200`}>
                           {/* Main row - always visible */}
                           <div
-                            className="flex items-center gap-3 px-4 py-3 cursor-pointer"
+                            className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 cursor-pointer"
                             onClick={() => setExpandedId(isExpanded ? null : c.id)}
                           >
-                            <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colors.dot}`} />
+                            <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colors.dot} hidden sm:block`} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-sm text-foreground truncate">{c.cliente_nome || '—'}</span>
@@ -584,11 +585,11 @@ export default function ClientesPage() {
                                 {getProducts(c.items)}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 flex-shrink-0">
+                            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
                               <span className="font-bold text-sm">{fmt(c.total || 0)}</span>
                               <Badge className={`${colors.badge} text-[10px] px-2 py-0.5`}>{colors.label}</Badge>
                               <Select value={c.order_status || 'em_producao'} onValueChange={(v) => { handleStatusChange(c.id, v); }}>
-                                <SelectTrigger className="h-7 w-[120px] text-[10px]" onClick={e => e.stopPropagation()}>
+                                <SelectTrigger className="h-7 w-[100px] sm:w-[120px] text-[10px]" onClick={e => e.stopPropagation()}>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -603,7 +604,7 @@ export default function ClientesPage() {
                           {/* Expanded details */}
                           {isExpanded && (
                             <div className="px-4 pb-4 border-t border-border/50 pt-3">
-                              <div className="grid grid-cols-2 gap-x-8 gap-y-2 mb-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mb-4">
                                 <div className="flex items-center gap-2 text-sm">
                                   <User size={14} className="text-muted-foreground flex-shrink-0" />
                                   <span className="text-muted-foreground">Nome:</span>

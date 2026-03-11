@@ -188,10 +188,10 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-8">
         <div>
-          <h1 className="page-title text-3xl">Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">{getMonthName(month)} de {year} — Espetos & Cia</p>
+          <h1 className="page-title text-2xl sm:text-3xl">Dashboard</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">{getMonthName(month)} de {year} — Espetos & Cia</p>
         </div>
         <div className="flex items-center gap-2 badge-info">
           <Sparkles size={14} />
@@ -232,7 +232,7 @@ export default function DashboardPage() {
       )}
 
       {/* ============ INFOGRÁFICO ============ */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
         <div className="metric-card text-center">
           <Flame size={20} className="text-primary mx-auto mb-2" />
           <p className="text-2xl font-bold text-foreground">{totalChurrasqueirasMonth}</p>
@@ -257,7 +257,7 @@ export default function DashboardPage() {
           <p className="text-[11px] text-muted-foreground mt-1">Margem de lucro</p>
           <p className="text-[10px] text-muted-foreground">líquida</p>
         </div>
-        <div className="metric-card text-center col-span-2 lg:col-span-1">
+        <div className="metric-card text-center col-span-2 sm:col-span-3 lg:col-span-1">
           <Forecast size={20} className="text-primary mx-auto mb-2" />
           <p className="text-lg font-bold text-foreground">{formatCurrency(annualForecastRevenue)}</p>
           <p className="text-xs font-semibold text-success">{formatCurrency(annualForecastProfit)} lucro</p>
@@ -266,7 +266,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Vendas por Modelo */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
         {Object.entries(modelCounts).map(([model, count]) => (
           <div key={model} className="metric-card text-center border-t-4" style={{ borderTopColor: MODEL_COLORS[model] || 'hsl(0,0%,70%)' }}>
             <p className="text-2xl font-bold text-foreground">{count}</p>
@@ -300,14 +300,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Existing metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-8">
         <MetricCard label="Entradas" value={closing.totalRevenue} icon={TrendingUp} variant="success" />
         <MetricCard label="Saídas" value={closing.totalExpenses} icon={TrendingDown} variant="danger" />
         <MetricCard label="Lucro Bruto" value={closing.totalRevenue - closing.totalExpenses} icon={DollarSign} variant="info" />
         <MetricCard label="Lucro Líquido" value={closing.netProfit} icon={Target} variant={closing.netProfit >= 0 ? 'success' : 'danger'} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5 mb-8">
         <MetricCard label="Salários" value={closing.totalSalaries} icon={Users} />
         <MetricCard label="Vales" value={closing.totalVales} icon={Banknote} />
         <MetricCard label="Margem" value={closing.margin} icon={Percent} isCurrency={false} isPercent />

@@ -214,7 +214,7 @@ export default function FinanceiroPage() {
 
       <div className="h-6" />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6">
         <MetricCard label="Entradas" value={totalIn} icon={TrendingUp} variant="success" />
         <MetricCard label="Saídas" value={totalOut} icon={TrendingDown} variant="danger" />
         <MetricCard label="Custo Matéria-Prima" value={materialCost} icon={Package} variant="warning" />
@@ -249,7 +249,7 @@ export default function FinanceiroPage() {
       {/* Manual Form */}
       <div className="metric-card mb-6">
         <h3 className="text-sm font-bold mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Nova Movimentação Manual</h3>
-        <form onSubmit={handleSubmit} className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <Input type="date" value={form.transaction_date} onChange={e => setForm({ ...form, transaction_date: e.target.value })} className="rounded-xl" />
           <Input placeholder="Descrição" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="rounded-xl" />
           <Select value={form.category_id} onValueChange={v => setForm({ ...form, category_id: v })}>
