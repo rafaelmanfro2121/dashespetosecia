@@ -507,8 +507,8 @@ export default function ClientesPage() {
         <div className="h-4 w-px bg-border hidden sm:block" />
         <div className="flex items-center gap-2">
           <DollarSign size={16} className="text-secondary" />
-          <span className="font-semibold">{fmt(totalFiltered)}</span>
-          <span className="text-muted-foreground hidden sm:inline">em vendas</span>
+          <span className="font-semibold">{fmt(totalNetRevenue)}</span>
+          <span className="text-muted-foreground hidden sm:inline">em vendas (líq.)</span>
         </div>
         <div className="h-4 w-px bg-border hidden sm:block" />
         <div className="flex items-center gap-2">
