@@ -13,7 +13,7 @@ import FuncionariosPage from "@/pages/FuncionariosPage";
 import FechamentoPage from "@/pages/FechamentoPage";
 import RelatorioIAPage from "@/pages/RelatorioIAPage";
 import ProdutosPage from "@/pages/ProdutosPage";
-import MateriaisPage from "@/pages/MateriaisPage";
+
 import OrdemServicoPage from "@/pages/OrdemServicoPage";
 import OrdemServicoTecnicaPage from "@/pages/OrdemServicoTecnicaPage";
 import ClientesPage from "@/pages/ClientesPage";
@@ -44,7 +44,7 @@ function ProtectedRoutes() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/financeiro" element={<FinanceiroPage />} />
           <Route path="/produtos" element={<ProdutosPage />} />
-          <Route path="/materiais" element={<MateriaisPage />} />
+          <Route path="/materiais" element={<Navigate to="/produtos" replace />} />
           <Route path="/funcionarios" element={<FuncionariosPage />} />
           <Route path="/fechamento" element={<FechamentoPage />} />
           <Route path="/relatorio-ia" element={<RelatorioIAPage />} />

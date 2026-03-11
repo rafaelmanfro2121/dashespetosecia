@@ -15,7 +15,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/financeiro', icon: DollarSign, label: 'Financeiro' },
   { to: '/produtos', icon: Package, label: 'Produtos' },
-  { to: '/materiais', icon: Hammer, label: 'Materiais' },
+  
   { to: '/funcionarios', icon: Users, label: 'Funcionários' },
   { to: '/ordem-servico', icon: ClipboardList, label: 'Pedidos' },
   { to: '/ordem-servico-tecnica', icon: Wrench, label: 'Ordem de Serviço' },
