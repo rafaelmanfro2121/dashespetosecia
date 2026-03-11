@@ -389,7 +389,7 @@ export default function OrdemServicoPage() {
   const clearFilters = () => { setHistorySearch(''); setHistoryDateFrom(''); setHistoryDateTo(''); setHistoryStatusFilter('todos'); };
 
   // History view
-  if (view === 'history') {
+  if (view === 'list') {
     return (
       <div className="space-y-4">
         {/* Header */}
