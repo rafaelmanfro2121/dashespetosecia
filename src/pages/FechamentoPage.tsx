@@ -109,7 +109,7 @@ export default function FechamentoPage() {
           <MetricCard label="Vales" value={closing.totalVales} icon={Banknote} />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5 mb-8">
           <MetricCard label="Lucro Líquido" value={closing.netProfit} icon={Target} variant={closing.netProfit >= 0 ? 'success' : 'danger'} />
           <MetricCard label="Margem Final" value={closing.margin} icon={Percent} isCurrency={false} isPercent variant="info" />
         </div>

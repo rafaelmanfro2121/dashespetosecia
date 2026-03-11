@@ -307,7 +307,7 @@ export default function DashboardPage() {
         <MetricCard label="Lucro Líquido" value={closing.netProfit} icon={Target} variant={closing.netProfit >= 0 ? 'success' : 'danger'} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5 mb-8">
         <MetricCard label="Salários" value={closing.totalSalaries} icon={Users} />
         <MetricCard label="Vales" value={closing.totalVales} icon={Banknote} />
         <MetricCard label="Margem" value={closing.margin} icon={Percent} isCurrency={false} isPercent />

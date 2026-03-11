@@ -410,7 +410,7 @@ export default function OrdemServicoTecnicaPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="metric-card flex items-center gap-3 p-3">
             <div className="p-2 rounded-lg bg-primary/10"><Users size={16} className="text-primary" /></div>
             <div>
