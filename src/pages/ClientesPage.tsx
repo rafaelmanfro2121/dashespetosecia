@@ -501,6 +501,12 @@ export default function ClientesPage() {
         </div>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2">
+          <TrendingDown size={16} className="text-destructive" />
+          <span className="font-semibold">{fmt(totalCost)}</span>
+          <span className="text-muted-foreground">custo</span>
+        </div>
+        <div className="h-4 w-px bg-border" />
+        <div className="flex items-center gap-2">
           <CalendarDays size={16} className="text-muted-foreground" />
           <span className="text-muted-foreground">{groupedByWeek.length} semana(s)</span>
         </div>
