@@ -232,7 +232,7 @@ export default function DashboardPage() {
       )}
 
       {/* ============ INFOGRÁFICO ============ */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
         <div className="metric-card text-center">
           <Flame size={20} className="text-primary mx-auto mb-2" />
           <p className="text-2xl font-bold text-foreground">{totalChurrasqueirasMonth}</p>
