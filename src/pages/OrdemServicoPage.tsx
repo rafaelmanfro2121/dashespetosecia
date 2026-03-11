@@ -58,7 +58,7 @@ export default function OrdemServicoPage() {
   const printRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const [view, setView] = useState<'form' | 'list'>('list');
+  const [view, setView] = useState<'form' | 'history'>('form');
   const [savedOrders, setSavedOrders] = useState<SavedOS[]>([]);
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [currentOsId, setCurrentOsId] = useState<string | null>(null);
