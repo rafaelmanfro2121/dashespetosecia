@@ -460,13 +460,13 @@ export default function ClientesPage() {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="h-9 w-[100px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[80px] sm:w-[100px] text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>{availableYears.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
           </Select>
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[110px] sm:w-[140px] text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os meses</SelectItem>
+              <SelectItem value="all">Todos meses</SelectItem>
               {MONTHS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
             </SelectContent>
           </Select>
