@@ -447,6 +447,12 @@ export default function ClientesPage() {
         </div>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2">
+          <CheckCircle size={16} className="text-blue-700" />
+          <span className="font-semibold">{fmt(totalReceived)}</span>
+          <span className="text-muted-foreground">recebido</span>
+        </div>
+        <div className="h-4 w-px bg-border" />
+        <div className="flex items-center gap-2">
           <CalendarDays size={16} className="text-muted-foreground" />
           <span className="text-muted-foreground">{groupedByWeek.length} semana(s)</span>
         </div>
