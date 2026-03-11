@@ -61,7 +61,7 @@ export default function OrdemServicoPage() {
   const printRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const [view, setView] = useState<'form' | 'history'>('form');
+  const [view, setView] = useState<'form' | 'list'>('list');
   const [savedOrders, setSavedOrders] = useState<SavedOS[]>([]);
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [currentOsId, setCurrentOsId] = useState<string | null>(null);
@@ -212,6 +212,7 @@ export default function OrdemServicoPage() {
     const { data: freshOrders } = await supabase.from('service_orders').select('id, os_number, cliente_nome, total, created_at, atendimento_data, payment_status, order_status').order('created_at', { ascending: false });
     if (freshOrders) setSavedOrders(freshOrders as SavedOS[]);
     clearForm(freshOrders as SavedOS[] | undefined);
+    setView('list');
   };
 
   const loadOS = async (id: string) => {
@@ -389,15 +390,15 @@ export default function OrdemServicoPage() {
   const clearFilters = () => { setHistorySearch(''); setHistoryDateFrom(''); setHistoryDateTo(''); setHistoryStatusFilter('todos'); };
 
   // History view
-  if (view === 'history') {
+  if (view === 'list') {
     return (
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => setView('form')} className="gap-1"><ArrowLeft size={14} /> Voltar</Button>
-            <h1 className="text-lg font-bold text-foreground">Histórico de OS</h1>
-          </div>
+          <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <FileDown size={20} className="text-primary" />
+            Ordens de Serviço
+          </h1>
           <Button onClick={() => { clearForm(); setView('form'); }} size="sm" className="gap-1"><Plus size={14} /> Nova OS</Button>
         </div>
 
@@ -564,7 +565,7 @@ export default function OrdemServicoPage() {
             {currentOsId ? `Editando OS #${osNumber || '—'}` : 'Nova Ordem de Serviço'}
           </h1>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setView('history')} className="gap-1"><History size={14} /> Histórico</Button>
+            <Button variant="outline" size="sm" onClick={() => setView('list')} className="gap-1"><ArrowLeft size={14} /> Voltar</Button>
             <Button variant="outline" size="sm" onClick={() => clearForm()} className="gap-1"><Plus size={14} /> Nova</Button>
             <Button variant="outline" size="sm" onClick={saveOS} className="gap-1"><Save size={14} /> Salvar</Button>
             <Button variant="outline" size="sm" onClick={generatePDF} disabled={loadingPdf} className="gap-1">
