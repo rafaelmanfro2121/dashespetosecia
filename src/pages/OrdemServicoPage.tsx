@@ -86,7 +86,7 @@ export default function OrdemServicoPage() {
   const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const fetchHistory = useCallback(async () => {
-    const { data } = await supabase.from('service_orders').select('id, os_number, cliente_nome, total, created_at, atendimento_data, payment_status, order_status').order('created_at', { ascending: false });
+    const { data } = await supabase.from('service_orders').select('id, os_number, cliente_nome, total, created_at').order('created_at', { ascending: false });
     if (data) setSavedOrders(data as SavedOS[]);
   }, []);
 
