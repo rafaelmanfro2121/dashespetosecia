@@ -280,27 +280,28 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Churrasqueiras vendidas por mês */}
-      <div className="metric-card mb-6">
-        <h3 className="text-sm font-bold mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Churrasqueiras Vendidas & Faturamento — 6 meses</h3>
-        <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={churrasqueirasByMonth}>
-            <defs>
-              <linearGradient id="colorFat" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(225,65%,48%)" stopOpacity={0.15}/>
-                <stop offset="95%" stopColor="hsl(225,65%,48%)" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(225,15%,92%)" />
-            <XAxis dataKey="name" fontSize={12} fontWeight={500} />
-            <YAxis yAxisId="left" fontSize={11} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-            <YAxis yAxisId="right" orientation="right" fontSize={11} />
-            <Tooltip formatter={(v: number, name: string) => name === 'churrasqueiras' ? v : formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)', fontSize: '12px' }} />
-            <Legend wrapperStyle={{ fontSize: '12px' }} />
-            <Area yAxisId="left" type="monotone" dataKey="faturamento" name="Faturamento" stroke="hsl(225,65%,48%)" fill="url(#colorFat)" strokeWidth={2} />
-            <Bar yAxisId="right" dataKey="churrasqueiras" name="Unidades" fill="hsl(155,55%,42%)" radius={[6, 6, 0, 0]} barSize={28} />
-          </AreaChart>
-        </ResponsiveContainer>
+      <div className="metric-card mb-6 overflow-hidden">
+        <h3 className="text-xs sm:text-sm font-bold mb-3 sm:mb-5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Churrasqueiras Vendidas & Faturamento — 6 meses</h3>
+        <div className="w-full overflow-x-auto -mx-2 px-2">
+          <ResponsiveContainer width="100%" height={240}>
+            <AreaChart data={churrasqueirasByMonth}>
+              <defs>
+                <linearGradient id="colorFat" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(225,65%,48%)" stopOpacity={0.15}/>
+                  <stop offset="95%" stopColor="hsl(225,65%,48%)" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(225,15%,92%)" />
+              <XAxis dataKey="name" fontSize={10} fontWeight={500} />
+              <YAxis yAxisId="left" fontSize={10} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} width={50} />
+              <YAxis yAxisId="right" orientation="right" fontSize={10} width={30} />
+              <Tooltip formatter={(v: number, name: string) => name === 'churrasqueiras' ? v : formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)', fontSize: '11px' }} />
+              <Legend wrapperStyle={{ fontSize: '10px' }} />
+              <Area yAxisId="left" type="monotone" dataKey="faturamento" name="Faturamento" stroke="hsl(225,65%,48%)" fill="url(#colorFat)" strokeWidth={2} />
+              <Bar yAxisId="right" dataKey="churrasqueiras" name="Unidades" fill="hsl(155,55%,42%)" radius={[6, 6, 0, 0]} barSize={20} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Existing metrics */}
