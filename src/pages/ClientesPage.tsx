@@ -471,18 +471,18 @@ export default function ClientesPage() {
             </SelectContent>
           </Select>
           <Select value={filterPayment} onValueChange={setFilterPayment}>
-            <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[110px] sm:w-[140px] text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Pagamento: Todos</SelectItem>
+              <SelectItem value="all">Pgto: Todos</SelectItem>
               <SelectItem value="pago">Pago Total</SelectItem>
               <SelectItem value="parcial">Parcial</SelectItem>
               <SelectItem value="pendente">Pendente</SelectItem>
             </SelectContent>
           </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-9 w-[140px] text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[110px] sm:w-[140px] text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Pedido: Todos</SelectItem>
+              <SelectItem value="all">Status: Todos</SelectItem>
               <SelectItem value="em_producao">Em Produção</SelectItem>
               <SelectItem value="enviado">Enviado</SelectItem>
             </SelectContent>
