@@ -56,7 +56,11 @@ export default function DashboardPage() {
     if (data) setPaidOrders(data as PaidOS[]);
   }, []);
 
-  useEffect(() => { fetchProducts(); fetchPaidOrders(); }, [fetchProducts, fetchPaidOrders]);
+  useEffect(() => {
+    refreshData();
+    fetchProducts();
+    fetchPaidOrders();
+  }, [refreshData, fetchProducts, fetchPaidOrders]);
 
   // ---- Count churrasqueiras from paid service orders ----
   const getModelFromItems = (items: Array<{ name?: string; quantity?: number }> | null): string[] => {

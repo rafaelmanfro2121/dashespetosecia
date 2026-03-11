@@ -8,11 +8,15 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export default function FechamentoPage() {
-  const { getMonthlyClosing } = useFinance();
+  const { getMonthlyClosing, refreshData } = useFinance();
   const [month, setMonth] = useState(getCurrentMonth());
   const [year, setYear] = useState(getCurrentYear());
   const closing = getMonthlyClosing(month, year);
   const reportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
 
   const prevMonth = month === 0 ? 11 : month - 1;
   const prevYear = month === 0 ? year - 1 : year;
