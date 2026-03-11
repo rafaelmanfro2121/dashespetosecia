@@ -339,39 +339,172 @@ export default function OrdemServicoPage() {
     });
   };
 
+  // History filters state
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyDateFrom, setHistoryDateFrom] = useState('');
+  const [historyDateTo, setHistoryDateTo] = useState('');
+  const [historyStatusFilter, setHistoryStatusFilter] = useState<string>('todos');
+
+  const filteredOrders = useMemo(() => {
+    return savedOrders.filter(os => {
+      const search = historySearch.toLowerCase().trim();
+      if (search) {
+        const matchName = os.cliente_nome?.toLowerCase().includes(search);
+        const matchOs = os.os_number?.toLowerCase().includes(search);
+        if (!matchName && !matchOs) return false;
+      }
+      if (historyDateFrom) {
+        const d = os.atendimento_data || os.created_at.split('T')[0];
+        if (d < historyDateFrom) return false;
+      }
+      if (historyDateTo) {
+        const d = os.atendimento_data || os.created_at.split('T')[0];
+        if (d > historyDateTo) return false;
+      }
+      if (historyStatusFilter !== 'todos') {
+        if (historyStatusFilter === 'pago' && os.payment_status !== 'pago') return false;
+        if (historyStatusFilter === 'parcial' && os.payment_status !== 'parcial') return false;
+        if (historyStatusFilter === 'pendente' && os.payment_status !== 'pendente') return false;
+        if (historyStatusFilter === 'em_producao' && os.order_status !== 'em_producao') return false;
+        if (historyStatusFilter === 'enviado' && os.order_status !== 'enviado') return false;
+      }
+      return true;
+    });
+  }, [savedOrders, historySearch, historyDateFrom, historyDateTo, historyStatusFilter]);
+
+  const historyTotalValue = useMemo(() => filteredOrders.reduce((s, o) => s + Number(o.total), 0), [filteredOrders]);
+
+  const getStatusBadge = (os: SavedOS) => {
+    if (os.payment_status === 'pago') return { label: 'Pago', className: 'bg-blue-800/20 text-blue-300 border-blue-800/30' };
+    if (os.payment_status === 'parcial') return { label: 'Parcial', className: 'bg-emerald-800/20 text-emerald-300 border-emerald-800/30' };
+    return { label: 'Pendente', className: 'bg-orange-800/20 text-orange-300 border-orange-800/30' };
+  };
+
+  const getOrderStatusBadge = (os: SavedOS) => {
+    if (os.order_status === 'enviado') return { label: 'Enviado', className: 'bg-primary/20 text-primary border-primary/30' };
+    return { label: 'Em Produção', className: 'bg-muted text-muted-foreground border-border' };
+  };
+
+  const hasActiveFilters = historySearch || historyDateFrom || historyDateTo || historyStatusFilter !== 'todos';
+  const clearFilters = () => { setHistorySearch(''); setHistoryDateFrom(''); setHistoryDateTo(''); setHistoryStatusFilter('todos'); };
+
   // History view
   if (view === 'history') {
     return (
-      <div>
-        <div className="flex items-center justify-between mb-6">
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => setView('form')} className="gap-1"><ArrowLeft size={14} /> Voltar</Button>
-            <h1 className="text-lg font-bold text-foreground">Histórico de Ordens de Serviço</h1>
+            <h1 className="text-lg font-bold text-foreground">Histórico de OS</h1>
           </div>
-          <Button onClick={() => { clearForm(); setView('form'); }} className="gap-1"><Plus size={14} /> Nova OS</Button>
+          <Button onClick={() => { clearForm(); setView('form'); }} size="sm" className="gap-1"><Plus size={14} /> Nova OS</Button>
         </div>
-        {savedOrders.length === 0 ? (
-          <div className="metric-card text-center py-12 text-muted-foreground">Nenhuma OS salva ainda</div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="metric-card flex items-center gap-3 p-3">
+            <div className="p-2 rounded-lg bg-primary/10"><Users size={16} className="text-primary" /></div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">Pedidos</p>
+              <p className="font-bold text-foreground">{filteredOrders.length}</p>
+            </div>
+          </div>
+          <div className="metric-card flex items-center gap-3 p-3">
+            <div className="p-2 rounded-lg bg-primary/10"><DollarSign size={16} className="text-primary" /></div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">Valor Total</p>
+              <p className="font-bold text-foreground text-sm">{fmt(historyTotalValue)}</p>
+            </div>
+          </div>
+          <div className="metric-card flex items-center gap-3 p-3 col-span-2 md:col-span-1">
+            <div className="p-2 rounded-lg bg-primary/10"><Filter size={16} className="text-primary" /></div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">Total Cadastrado</p>
+              <p className="font-bold text-foreground">{savedOrders.length} OS</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="metric-card p-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><Filter size={12} /> Filtros</span>
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="text-xs text-destructive hover:underline flex items-center gap-1"><X size={12} /> Limpar</button>
+            )}
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome do cliente ou nº da OS..."
+              value={historySearch}
+              onChange={e => setHistorySearch(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {/* Date range */}
+            <div className="flex items-center gap-1.5">
+              <Calendar size={12} className="text-muted-foreground" />
+              <Input type="date" value={historyDateFrom} onChange={e => setHistoryDateFrom(e.target.value)} className="h-8 text-xs w-[130px]" />
+              <span className="text-xs text-muted-foreground">até</span>
+              <Input type="date" value={historyDateTo} onChange={e => setHistoryDateTo(e.target.value)} className="h-8 text-xs w-[130px]" />
+            </div>
+
+            {/* Status filter */}
+            <select
+              value={historyStatusFilter}
+              onChange={e => setHistoryStatusFilter(e.target.value)}
+              className="h-8 text-xs rounded-md border border-border bg-background px-2 text-foreground"
+            >
+              <option value="todos">Todos Status</option>
+              <option value="pago">Pago</option>
+              <option value="parcial">Parcial</option>
+              <option value="pendente">Pendente</option>
+              <option value="em_producao">Em Produção</option>
+              <option value="enviado">Enviado</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Orders list */}
+        {filteredOrders.length === 0 ? (
+          <div className="metric-card text-center py-12 text-muted-foreground">
+            {hasActiveFilters ? 'Nenhuma OS encontrada com esses filtros' : 'Nenhuma OS salva ainda'}
+          </div>
         ) : (
           <div className="space-y-2">
-            {savedOrders.map(os => (
-              <div key={os.id} className="metric-card flex items-center justify-between">
-                <div className="cursor-pointer flex-1" onClick={() => loadOS(os.id)}>
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">OS #{os.os_number || '—'}</span>
-                    <span className="font-semibold text-sm">{os.cliente_nome || 'Sem cliente'}</span>
+            {filteredOrders.map(os => {
+              const statusBadge = getStatusBadge(os);
+              const orderBadge = getOrderStatusBadge(os);
+              const dateStr = os.atendimento_data
+                ? new Date(os.atendimento_data + 'T12:00:00').toLocaleDateString('pt-BR')
+                : new Date(os.created_at).toLocaleDateString('pt-BR');
+              return (
+                <div key={os.id} className="metric-card flex items-center justify-between hover:bg-muted/30 transition-colors">
+                  <div className="cursor-pointer flex-1 min-w-0" onClick={() => loadOS(os.id)}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full shrink-0">OS #{os.os_number || '—'}</span>
+                      <span className="font-semibold text-sm truncate">{os.cliente_nome || 'Sem cliente'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="text-xs text-muted-foreground">{dateStr}</span>
+                      <span className="font-mono font-medium text-sm text-foreground">{fmt(Number(os.total))}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${statusBadge.className}`}>{statusBadge.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${orderBadge.className}`}>{orderBadge.label}</span>
+                    </div>
                   </div>
-                  <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                    <span>{new Date(os.created_at).toLocaleDateString('pt-BR')}</span>
-                    <span className="font-mono font-medium text-foreground">{fmt(Number(os.total))}</span>
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    <button onClick={() => loadOS(os.id)} className="text-muted-foreground hover:text-primary p-2" title="Editar OS"><Pencil size={14} /></button>
+                    <button onClick={() => deleteOS(os.id)} className="text-muted-foreground hover:text-destructive p-2" title="Excluir OS"><Trash2 size={14} /></button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => loadOS(os.id)} className="text-muted-foreground hover:text-primary p-2" title="Editar OS"><Pencil size={14} /></button>
-                  <button onClick={() => deleteOS(os.id)} className="text-muted-foreground hover:text-destructive p-2" title="Excluir OS"><Trash2 size={14} /></button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
