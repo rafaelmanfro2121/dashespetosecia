@@ -44,7 +44,7 @@ function ProtectedRoutes() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/financeiro" element={<FinanceiroPage />} />
           <Route path="/produtos" element={<ProdutosPage />} />
-          <Route path="/materiais" element={<MateriaisPage />} />
+          <Route path="/materiais" element={<Navigate to="/produtos" replace />} />
           <Route path="/funcionarios" element={<FuncionariosPage />} />
           <Route path="/fechamento" element={<FechamentoPage />} />
           <Route path="/relatorio-ia" element={<RelatorioIAPage />} />
