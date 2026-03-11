@@ -73,6 +73,8 @@ function getDayLabel(dateStr: string): string {
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<ClienteRow[]>([]);
+  const [productCosts, setProductCosts] = useState<ProductCostData[]>([]);
+  const [productMaterials, setProductMaterials] = useState<ProductMaterialData[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
@@ -92,11 +94,16 @@ export default function ClientesPage() {
   const [filterStatus, setFilterStatus] = useState('all');
 
   const fetchClientes = async () => {
-    const { data } = await supabase
-      .from('service_orders')
-      .select('id, cliente_nome, cliente_telefone, cliente_email, cliente_cpf_cnpj, cliente_contato, atendimento_data, items, os_number, order_status, nota_fiscal_url, total, payment_status, paid_amount, payment_method_client')
-      .order('atendimento_data', { ascending: false });
+    const [{ data }, { data: prodData }, { data: pmData }] = await Promise.all([
+      supabase.from('service_orders')
+        .select('id, cliente_nome, cliente_telefone, cliente_email, cliente_cpf_cnpj, cliente_contato, atendimento_data, items, os_number, order_status, nota_fiscal_url, total, payment_status, paid_amount, payment_method_client')
+        .order('atendimento_data', { ascending: false }),
+      supabase.from('products').select('id, name, material_cost, labor_cost, other_costs'),
+      supabase.from('product_materials').select('product_id, quantity_per_unit'),
+    ]);
     if (data) setClientes(data as ClienteRow[]);
+    if (prodData) setProductCosts(prodData as ProductCostData[]);
+    if (pmData) setProductMaterials(pmData as ProductMaterialData[]);
     setLoading(false);
   };
 
