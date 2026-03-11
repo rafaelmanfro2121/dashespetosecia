@@ -428,7 +428,7 @@ export default function OrdemServicoPage() {
             {currentOsId ? `Editando OS #${osNumber || '—'}` : 'Nova Ordem de Serviço'}
           </h1>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setView('list')} className="gap-1"><ArrowLeft size={14} /> Voltar</Button>
+            <Button variant="outline" size="sm" onClick={() => setView('history')} className="gap-1"><History size={14} /> Histórico</Button>
             <Button variant="outline" size="sm" onClick={() => clearForm()} className="gap-1"><Plus size={14} /> Nova</Button>
             <Button variant="outline" size="sm" onClick={saveOS} className="gap-1"><Save size={14} /> Salvar</Button>
             <Button variant="outline" size="sm" onClick={generatePDF} disabled={loadingPdf} className="gap-1">
