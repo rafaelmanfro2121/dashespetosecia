@@ -561,6 +561,7 @@ export default function OrdemServicoPage() {
                       <td className="py-1.5 text-gray-500">{idx + 1}</td>
                       <td className="py-1.5 relative">
                         <Input
+                          data-expandable
                           value={item.name}
                           onChange={e => { updateItem(item.id, 'name', e.target.value); setActiveSearchId(item.id); }}
                           onFocus={() => setActiveSearchId(item.id)}
@@ -568,6 +569,7 @@ export default function OrdemServicoPage() {
                           className="h-7 text-sm border-gray-300 bg-transparent text-black"
                           placeholder="Buscar produto ou digitar..."
                         />
+                        <div data-print-mirror>{item.name || '\u00A0'}</div>
                         {suggestions.length > 0 && (
                           <div className="absolute z-50 left-0 right-0 top-full bg-white border border-gray-200 rounded-md shadow-lg max-h-40 overflow-y-auto no-print">
                             {suggestions.map(p => (
