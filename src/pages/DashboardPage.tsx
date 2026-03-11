@@ -35,7 +35,7 @@ interface PaidOS {
 }
 
 export default function DashboardPage() {
-  const { getMonthlyClosing, getMonthTransactions, transactions, attendance, loading } = useFinance();
+  const { getMonthlyClosing, getMonthTransactions, transactions, attendance, loading, refreshData } = useFinance();
   const [products, setProducts] = useState<Product[]>([]);
   const [paidOrders, setPaidOrders] = useState<PaidOS[]>([]);
   const month = getCurrentMonth();
