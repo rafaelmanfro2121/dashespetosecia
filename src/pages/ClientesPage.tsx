@@ -288,6 +288,15 @@ export default function ClientesPage() {
   const totalFiltered = filtered.reduce((s, c) => s + (c.total || 0), 0);
   const totalReceived = filtered.reduce((s, c) => s + (c.paid_amount || 0), 0);
 
+  // Net revenue considering card fees per order
+  const totalNetRevenue = useMemo(() => {
+    return filtered.reduce((s, c) => {
+      const total = c.total || 0;
+      const isCard = c.payment_method_client === 'Cartão de Crédito';
+      return s + (isCard ? total * (1 - CARD_FEE) : total);
+    }, 0);
+  }, [filtered]);
+
   // Calculate production cost based on product catalog costs matched to order items
   const totalCost = useMemo(() => {
     let cost = 0;
