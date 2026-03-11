@@ -286,6 +286,34 @@ export default function ClientesPage() {
   const totalFiltered = filtered.reduce((s, c) => s + (c.total || 0), 0);
   const totalReceived = filtered.reduce((s, c) => s + (c.paid_amount || 0), 0);
 
+  // Calculate production cost based on product catalog costs matched to order items
+  const totalCost = useMemo(() => {
+    let cost = 0;
+    filtered.forEach(c => {
+      if (!Array.isArray(c.items)) return;
+      c.items.forEach((item: any) => {
+        const itemName = String(item?.name || '').toUpperCase();
+        const qty = Number(item?.quantity) || 1;
+        // Find matching product
+        const matchedProduct = productCosts.find(p => {
+          const pName = p.name.toUpperCase();
+          return itemName.includes(pName) || pName.includes(itemName) ||
+            (itemName.includes('FAZE') && pName.includes('FAZE')) ||
+            (itemName.includes('LEGACY') && pName.includes('LEGACY')) ||
+            (itemName.includes('IMPERIAL') && pName.includes('IMPERIAL'));
+        });
+        if (matchedProduct) {
+          const matCost = productMaterials
+            .filter(m => m.product_id === matchedProduct.id)
+            .reduce((s, m) => s + Number(m.quantity_per_unit), 0);
+          const productTotalCost = matCost + Number(matchedProduct.labor_cost) + Number(matchedProduct.other_costs);
+          cost += productTotalCost * qty;
+        }
+      });
+    });
+    return cost;
+  }, [filtered, productCosts, productMaterials]);
+
   const renderPaymentPopover = (c: ClienteRow) => {
     const total = c.total || 0;
     const paid = c.paid_amount || 0;
