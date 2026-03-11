@@ -188,10 +188,10 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-8">
         <div>
-          <h1 className="page-title text-3xl">Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">{getMonthName(month)} de {year} — Espetos & Cia</p>
+          <h1 className="page-title text-2xl sm:text-3xl">Dashboard</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1">{getMonthName(month)} de {year} — Espetos & Cia</p>
         </div>
         <div className="flex items-center gap-2 badge-info">
           <Sparkles size={14} />
