@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote, Trash2, Wrench, ChevronDown, ChevronUp, Calendar, MapPin, Phone, Mail, User, Package, CalendarDays } from 'lucide-react';
+import { Users, Search, FileText, Upload, Eye, Loader2, Download, CheckCircle, DollarSign, CreditCard, Banknote, Trash2, Wrench, ChevronDown, ChevronUp, Calendar, MapPin, Phone, Mail, User, Package, CalendarDays, TrendingDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,19 @@ interface ClienteRow {
   payment_method_client: string;
 }
 
+interface ProductCostData {
+  id: string;
+  name: string;
+  material_cost: number;
+  labor_cost: number;
+  other_costs: number;
+}
+
+interface ProductMaterialData {
+  product_id: string;
+  quantity_per_unit: number;
+}
+
 function getPaymentColor(status: string, paid: number, total: number) {
   if (status === 'pago' || (total > 0 && paid >= total)) {
     return { row: 'border-l-4 border-l-blue-800 bg-blue-900/10', badge: 'bg-blue-800 text-white', label: 'Pago Total', dot: 'bg-blue-800' };
@@ -60,6 +73,8 @@ function getDayLabel(dateStr: string): string {
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<ClienteRow[]>([]);
+  const [productCosts, setProductCosts] = useState<ProductCostData[]>([]);
+  const [productMaterials, setProductMaterials] = useState<ProductMaterialData[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
@@ -79,11 +94,16 @@ export default function ClientesPage() {
   const [filterStatus, setFilterStatus] = useState('all');
 
   const fetchClientes = async () => {
-    const { data } = await supabase
-      .from('service_orders')
-      .select('id, cliente_nome, cliente_telefone, cliente_email, cliente_cpf_cnpj, cliente_contato, atendimento_data, items, os_number, order_status, nota_fiscal_url, total, payment_status, paid_amount, payment_method_client')
-      .order('atendimento_data', { ascending: false });
+    const [{ data }, { data: prodData }, { data: pmData }] = await Promise.all([
+      supabase.from('service_orders')
+        .select('id, cliente_nome, cliente_telefone, cliente_email, cliente_cpf_cnpj, cliente_contato, atendimento_data, items, os_number, order_status, nota_fiscal_url, total, payment_status, paid_amount, payment_method_client')
+        .order('atendimento_data', { ascending: false }),
+      supabase.from('products').select('id, name, material_cost, labor_cost, other_costs'),
+      supabase.from('product_materials').select('product_id, quantity_per_unit'),
+    ]);
     if (data) setClientes(data as ClienteRow[]);
+    if (prodData) setProductCosts(prodData as ProductCostData[]);
+    if (pmData) setProductMaterials(pmData as ProductMaterialData[]);
     setLoading(false);
   };
 
@@ -265,6 +285,34 @@ export default function ClientesPage() {
 
   const totalFiltered = filtered.reduce((s, c) => s + (c.total || 0), 0);
   const totalReceived = filtered.reduce((s, c) => s + (c.paid_amount || 0), 0);
+
+  // Calculate production cost based on product catalog costs matched to order items
+  const totalCost = useMemo(() => {
+    let cost = 0;
+    filtered.forEach(c => {
+      if (!Array.isArray(c.items)) return;
+      c.items.forEach((item: any) => {
+        const itemName = String(item?.name || '').toUpperCase();
+        const qty = Number(item?.quantity) || 1;
+        // Find matching product
+        const matchedProduct = productCosts.find(p => {
+          const pName = p.name.toUpperCase();
+          return itemName.includes(pName) || pName.includes(itemName) ||
+            (itemName.includes('FAZE') && pName.includes('FAZE')) ||
+            (itemName.includes('LEGACY') && pName.includes('LEGACY')) ||
+            (itemName.includes('IMPERIAL') && pName.includes('IMPERIAL'));
+        });
+        if (matchedProduct) {
+          const matCost = productMaterials
+            .filter(m => m.product_id === matchedProduct.id)
+            .reduce((s, m) => s + Number(m.quantity_per_unit), 0);
+          const productTotalCost = matCost + Number(matchedProduct.labor_cost) + Number(matchedProduct.other_costs);
+          cost += productTotalCost * qty;
+        }
+      });
+    });
+    return cost;
+  }, [filtered, productCosts, productMaterials]);
 
   const renderPaymentPopover = (c: ClienteRow) => {
     const total = c.total || 0;
@@ -450,6 +498,12 @@ export default function ClientesPage() {
           <CheckCircle size={16} className="text-blue-700" />
           <span className="font-semibold">{fmt(totalReceived)}</span>
           <span className="text-muted-foreground">recebido</span>
+        </div>
+        <div className="h-4 w-px bg-border" />
+        <div className="flex items-center gap-2">
+          <TrendingDown size={16} className="text-destructive" />
+          <span className="font-semibold">{fmt(totalCost)}</span>
+          <span className="text-muted-foreground">custo</span>
         </div>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2">
