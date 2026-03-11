@@ -257,7 +257,7 @@ export default function DashboardPage() {
           <p className="text-[11px] text-muted-foreground mt-1">Margem de lucro</p>
           <p className="text-[10px] text-muted-foreground">líquida</p>
         </div>
-        <div className="metric-card text-center col-span-2 lg:col-span-1">
+        <div className="metric-card text-center col-span-2 sm:col-span-3 lg:col-span-1">
           <Forecast size={20} className="text-primary mx-auto mb-2" />
           <p className="text-lg font-bold text-foreground">{formatCurrency(annualForecastRevenue)}</p>
           <p className="text-xs font-semibold text-success">{formatCurrency(annualForecastProfit)} lucro</p>
