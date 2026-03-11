@@ -200,6 +200,24 @@ export default function OrdemServicoPage() {
       const { error } = await supabase.from('service_orders').update(payload).eq('id', currentOsId);
       if (error) { toast.error('Erro ao atualizar'); return; }
       toast.success('OS atualizada');
+
+      // Sync transaction amount if one exists for this OS
+      try {
+        const { data: existingTx } = await supabase
+          .from('transactions')
+          .select('id, payment_method')
+          .ilike('description', `%OS #${osNumber}%`)
+          .eq('type', 'entrada')
+          .limit(1)
+          .maybeSingle();
+        if (existingTx) {
+          const isCard = existingTx.payment_method === 'Cartão de Crédito';
+          const txAmount = isCard ? total * (1 - 0.1177) : total;
+          await supabase.from('transactions').update({ amount: txAmount }).eq('id', existingTx.id);
+        }
+      } catch (err) {
+        console.error('[OS] Erro ao sincronizar transação:', err);
+      }
     } else {
       const { error } = await supabase.from('service_orders').insert(payload);
       if (error) { toast.error('Erro ao salvar'); return; }
