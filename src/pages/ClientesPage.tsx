@@ -32,6 +32,19 @@ interface ClienteRow {
   payment_method_client: string;
 }
 
+interface ProductCostData {
+  id: string;
+  name: string;
+  material_cost: number;
+  labor_cost: number;
+  other_costs: number;
+}
+
+interface ProductMaterialData {
+  product_id: string;
+  quantity_per_unit: number;
+}
+
 function getPaymentColor(status: string, paid: number, total: number) {
   if (status === 'pago' || (total > 0 && paid >= total)) {
     return { row: 'border-l-4 border-l-blue-800 bg-blue-900/10', badge: 'bg-blue-800 text-white', label: 'Pago Total', dot: 'bg-blue-800' };
