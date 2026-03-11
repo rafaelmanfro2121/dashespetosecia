@@ -206,10 +206,9 @@ export default function OrdemServicoPage() {
       toast.success('OS salva com sucesso!');
     }
 
-    const { data: freshOrders } = await supabase.from('service_orders').select('id, os_number, cliente_nome, total, created_at, atendimento_data, payment_status, order_status').order('created_at', { ascending: false });
+    const { data: freshOrders } = await supabase.from('service_orders').select('id, os_number, cliente_nome, total, created_at').order('created_at', { ascending: false });
     if (freshOrders) setSavedOrders(freshOrders as SavedOS[]);
     clearForm(freshOrders as SavedOS[] | undefined);
-    setView('list');
   };
 
   const loadOS = async (id: string) => {
