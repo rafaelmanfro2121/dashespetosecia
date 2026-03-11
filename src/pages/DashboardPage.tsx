@@ -266,7 +266,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Vendas por Modelo */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
         {Object.entries(modelCounts).map(([model, count]) => (
           <div key={model} className="metric-card text-center border-t-4" style={{ borderTopColor: MODEL_COLORS[model] || 'hsl(0,0%,70%)' }}>
             <p className="text-2xl font-bold text-foreground">{count}</p>
