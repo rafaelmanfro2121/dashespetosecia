@@ -332,12 +332,18 @@ export default function ClientesPage() {
 
     if (c.payment_status === 'pago') {
       const colors = getPaymentColor(c.payment_status, paid, total);
+      const method = c.payment_method_client || '';
+      const isCardPago = method.toLowerCase().includes('cartão') || method.toLowerCase().includes('credito') || method.toLowerCase().includes('crédito');
+      const netValue = isCardPago ? total * (1 - CARD_FEE) : total;
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge className={`${colors.badge} text-xs gap-1 px-3 py-1`}>
             <CheckCircle size={12} /> Pago Total
           </Badge>
-          <span className="text-[10px] text-muted-foreground">{fmt(paid)}</span>
+          <span className="text-[10px] text-muted-foreground font-mono">{fmt(netValue)}</span>
+          {isCardPago && (
+            <span className="text-[9px] text-muted-foreground/60">(bruto {fmt(total)} - {(CARD_FEE * 100).toFixed(2)}% taxa)</span>
+          )}
         </div>
       );
     }
