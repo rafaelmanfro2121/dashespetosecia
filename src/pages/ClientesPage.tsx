@@ -445,12 +445,12 @@ export default function ClientesPage() {
       <input type="file" ref={fileInputRef} className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileUpload} />
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
           <Users size={22} className="text-primary" />
           <h1 className="text-xl font-bold text-foreground">Clientes</h1>
         </div>
-        <div className="relative w-64">
+        <div className="relative w-full sm:w-64">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cliente ou OS..." className="pl-9 h-9 text-sm" />
         </div>
