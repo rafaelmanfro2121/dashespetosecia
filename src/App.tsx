@@ -8,6 +8,8 @@ import { FinanceProvider } from "@/contexts/FinanceContext";
 import AppLayout from "@/components/AppLayout";
 import AuthPage from "@/pages/AuthPage";
 import DashboardPage from "@/pages/DashboardPage";
+import MobileQuickInput from "@/components/MobileQuickInput";
+import { useIsMobile } from "@/hooks/use-mobile";
 import FinanceiroPage from "@/pages/FinanceiroPage";
 import FuncionariosPage from "@/pages/FuncionariosPage";
 import FechamentoPage from "@/pages/FechamentoPage";
