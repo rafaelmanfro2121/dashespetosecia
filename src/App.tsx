@@ -8,6 +8,8 @@ import { FinanceProvider } from "@/contexts/FinanceContext";
 import AppLayout from "@/components/AppLayout";
 import AuthPage from "@/pages/AuthPage";
 import DashboardPage from "@/pages/DashboardPage";
+import MobileQuickInput from "@/components/MobileQuickInput";
+import { useIsMobile } from "@/hooks/use-mobile";
 import FinanceiroPage from "@/pages/FinanceiroPage";
 import FuncionariosPage from "@/pages/FuncionariosPage";
 import FechamentoPage from "@/pages/FechamentoPage";
@@ -23,6 +25,7 @@ const queryClient = new QueryClient();
 
 function ProtectedRoutes() {
   const { user, loading } = useAuth();
+  const isMobile = useIsMobile();
 
   if (loading) {
     return (
@@ -36,6 +39,14 @@ function ProtectedRoutes() {
   }
 
   if (!user) return <Navigate to="/login" replace />;
+
+  if (isMobile) {
+    return (
+      <FinanceProvider>
+        <MobileQuickInput />
+      </FinanceProvider>
+    );
+  }
 
   return (
     <FinanceProvider>
@@ -51,7 +62,6 @@ function ProtectedRoutes() {
           <Route path="/ordem-servico" element={<OrdemServicoPage />} />
           <Route path="/ordem-servico-tecnica" element={<OrdemServicoTecnicaPage />} />
           <Route path="/clientes" element={<ClientesPage />} />
-          {/* Redirect old routes */}
           <Route path="/presenca" element={<Navigate to="/funcionarios" replace />} />
           <Route path="/vales" element={<Navigate to="/funcionarios" replace />} />
           <Route path="*" element={<NotFound />} />
