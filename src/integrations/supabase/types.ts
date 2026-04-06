@@ -357,6 +357,41 @@ export type Database = {
         }
         Relationships: []
       }
+      salary_payments: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          paid_at: string
+          payment_month: number
+          payment_year: number
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          paid_at?: string
+          payment_month: number
+          payment_year: number
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          paid_at?: string
+          payment_month?: number
+          payment_year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_payments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_orders: {
         Row: {
           atendimento_data: string
