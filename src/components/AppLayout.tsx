@@ -50,7 +50,7 @@ function SidebarContent({ collapsed, location, signOut, onNavigate }: { collapse
           <button onClick={signOut} className="flex items-center gap-2 text-xs text-sidebar-foreground/50 hover:text-sidebar-primary transition-colors w-full px-1">
             <LogOut size={14} /> Sair do Sistema
           </button>
-          <p className="text-[10px] text-sidebar-foreground/30 px-1">ESP Insight AI v3.0</p>
+          <p className="text-[10px] text-sidebar-foreground/30 px-1">Espetos & Cia v3.0</p>
         </div>
       )}
     </>
