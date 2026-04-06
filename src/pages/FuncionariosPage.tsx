@@ -40,6 +40,43 @@ export default function FuncionariosPage() {
   const activeEmployees = employees.filter(e => e.status === 'ativo');
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+  // Salary payments tracking
+  const [salaryPayments, setSalaryPayments] = useState<Record<string, string>>({});
+
+  const fetchSalaryPayments = useCallback(async () => {
+    const { data } = await supabase
+      .from('salary_payments')
+      .select('*')
+      .eq('payment_month', selectedMonth)
+      .eq('payment_year', selectedYear);
+    if (data) {
+      const map: Record<string, string> = {};
+      data.forEach((p: any) => { map[p.employee_id] = p.paid_at; });
+      setSalaryPayments(map);
+    }
+  }, [selectedMonth, selectedYear]);
+
+  useEffect(() => { fetchSalaryPayments(); }, [fetchSalaryPayments]);
+
+  const togglePayment = async (employeeId: string) => {
+    if (salaryPayments[employeeId]) {
+      await supabase.from('salary_payments').delete()
+        .eq('employee_id', employeeId)
+        .eq('payment_month', selectedMonth)
+        .eq('payment_year', selectedYear);
+      toast.success('Pagamento desmarcado');
+    } else {
+      await supabase.from('salary_payments').insert({
+        employee_id: employeeId,
+        payment_month: selectedMonth,
+        payment_year: selectedYear,
+        paid_at: new Date().toISOString().slice(0, 10),
+      });
+      toast.success('Pagamento marcado como realizado');
+    }
+    fetchSalaryPayments();
+  };
+
   // Check if a day is a weekend (Saturday=6, Sunday=0)
   const isWeekend = (day: number) => {
     const d = new Date(selectedYear, selectedMonth, day).getDay();
