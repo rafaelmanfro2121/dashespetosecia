@@ -89,6 +89,7 @@ interface FinanceContextType {
   updateEmployee: (e: Employee) => Promise<void>;
   removeEmployee: (id: string) => Promise<void>;
   addAttendance: (a: Omit<AttendanceRecord, 'id'>) => Promise<void>;
+  updateAttendanceLateHours: (employeeId: string, date: string, lateHours: number) => Promise<void>;
   addVale: (v: Omit<Vale, 'id'>) => Promise<void>;
   removeVale: (id: string) => Promise<void>;
   addCategory: (name: string) => Promise<void>;
