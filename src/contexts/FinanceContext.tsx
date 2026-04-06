@@ -36,6 +36,7 @@ export interface AttendanceRecord {
   employee_id: string;
   presence_date: string;
   status: 'presente' | 'falta' | 'meio-periodo';
+  late_hours: number;
 }
 
 export interface Vale {
