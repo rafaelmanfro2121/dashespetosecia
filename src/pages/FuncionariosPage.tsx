@@ -60,7 +60,7 @@ export default function FuncionariosPage() {
     const current = getStatus(empId, day);
     const cycle: AttendanceStatus[] = ['presente', 'falta', 'meio-periodo'];
     const nextIdx = current ? (cycle.indexOf(current) + 1) % cycle.length : 0;
-    addAttendance({ employee_id: empId, presence_date: dateStr, status: cycle[nextIdx] });
+    addAttendance({ employee_id: empId, presence_date: dateStr, status: cycle[nextIdx], late_hours: 0 });
   };
 
   // Vales helpers
