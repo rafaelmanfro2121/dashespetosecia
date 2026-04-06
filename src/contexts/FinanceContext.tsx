@@ -174,7 +174,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   }, [fetchAll]);
 
   const addAttendance = useCallback(async (a: Omit<AttendanceRecord, 'id'>) => {
-    // Upsert: if record exists for same employee+date, update
     const { data: existing } = await supabase
       .from('attendance')
       .select('id')
@@ -183,9 +182,25 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle();
 
     if (existing) {
-      await supabase.from('attendance').update({ status: a.status }).eq('id', existing.id);
+      await supabase.from('attendance').update({ status: a.status, late_hours: a.late_hours ?? 0 }).eq('id', existing.id);
     } else {
-      await supabase.from('attendance').insert(a);
+      await supabase.from('attendance').insert({ ...a, late_hours: a.late_hours ?? 0 });
+    }
+    await fetchAll();
+  }, [fetchAll]);
+
+  const updateAttendanceLateHours = useCallback(async (employeeId: string, date: string, lateHours: number) => {
+    const { data: existing } = await supabase
+      .from('attendance')
+      .select('id')
+      .eq('employee_id', employeeId)
+      .eq('presence_date', date)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase.from('attendance').update({ late_hours: lateHours }).eq('id', existing.id);
+    } else {
+      await supabase.from('attendance').insert({ employee_id: employeeId, presence_date: date, status: 'presente', late_hours: lateHours });
     }
     await fetchAll();
   }, [fetchAll]);
