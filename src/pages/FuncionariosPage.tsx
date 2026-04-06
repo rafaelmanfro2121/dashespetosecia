@@ -495,29 +495,51 @@ export default function FuncionariosPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {activeEmployees.map(emp => (
-                    <tr key={emp.id} className="border-b border-muted/40">
-                      <td className="py-2 font-medium sticky left-0 bg-card">{emp.name}</td>
-                      {days.map(d => {
-                        const weekend = isWeekend(d);
-                        const status = getStatus(emp.id, d);
-                        return (
-                          <td key={d} className={`py-2 text-center ${weekend ? 'bg-muted/10' : ''}`}>
-                            {weekend ? (
-                              <span className="w-7 h-7 rounded-lg text-[10px] font-bold inline-flex items-center justify-center text-muted-foreground/20">—</span>
-                            ) : (
-                              <button
-                                onClick={() => cycleStatus(emp.id, d)}
-                                className={`w-7 h-7 rounded-lg text-[10px] font-bold border transition-all duration-150 hover:scale-110 ${status ? statusColors[status] : 'bg-muted/20 text-muted-foreground/30 border-transparent hover:bg-muted/50'}`}
-                              >
-                                {status ? statusLabels[status] : '·'}
-                              </button>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
+                  {activeEmployees.map(emp => {
+                    const lateTotal = days.filter(d => !isWeekend(d)).reduce((s, d) => s + getLateHours(emp.id, d), 0);
+                    return (
+                      <tr key={emp.id} className="border-b border-muted/40">
+                        <td className="py-2 font-medium sticky left-0 bg-card">
+                          <div>{emp.name}</div>
+                          {lateTotal > 0 && <div className="text-[9px] text-warning">{lateTotal}h atraso</div>}
+                        </td>
+                        {days.map(d => {
+                          const weekend = isWeekend(d);
+                          const status = getStatus(emp.id, d);
+                          const late = getLateHours(emp.id, d);
+                          return (
+                            <td key={d} className={`py-2 text-center ${weekend ? 'bg-muted/10' : ''}`}>
+                              {weekend ? (
+                                <span className="w-7 h-7 rounded-lg text-[10px] font-bold inline-flex items-center justify-center text-muted-foreground/20">—</span>
+                              ) : (
+                                <div className="flex flex-col items-center gap-0.5">
+                                  <button
+                                    onClick={() => cycleStatus(emp.id, d)}
+                                    className={`w-7 h-7 rounded-lg text-[10px] font-bold border transition-all duration-150 hover:scale-110 ${status ? statusColors[status] : 'bg-muted/20 text-muted-foreground/30 border-transparent hover:bg-muted/50'}`}
+                                  >
+                                    {status ? statusLabels[status] : '·'}
+                                  </button>
+                                  {status === 'presente' && (
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="8"
+                                      step="0.5"
+                                      value={late || ''}
+                                      placeholder="0"
+                                      onChange={e => handleLateHoursChange(emp.id, d, parseFloat(e.target.value) || 0)}
+                                      className="w-7 h-4 text-[8px] text-center bg-muted/30 rounded border-none outline-none focus:bg-muted/50"
+                                      title="Horas de atraso"
+                                    />
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
