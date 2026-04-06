@@ -289,7 +289,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     <FinanceContext.Provider value={{
       transactions, employees, attendance, vales, categories, loading,
       addTransaction, removeTransaction, addEmployee, updateEmployee, removeEmployee,
-      addAttendance, addVale, removeVale, addCategory, removeCategory,
+      addAttendance, updateAttendanceLateHours, addVale, removeVale, addCategory, removeCategory,
       getMonthlyClosing, getMonthTransactions, refreshData: fetchAll,
     }}>
       {children}
