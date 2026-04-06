@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           employee_id: string
           id: string
+          late_hours: number
           presence_date: string
           status: string
         }
@@ -26,6 +27,7 @@ export type Database = {
           created_at?: string
           employee_id: string
           id?: string
+          late_hours?: number
           presence_date: string
           status: string
         }
@@ -33,6 +35,7 @@ export type Database = {
           created_at?: string
           employee_id?: string
           id?: string
+          late_hours?: number
           presence_date?: string
           status?: string
         }
