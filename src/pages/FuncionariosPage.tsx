@@ -21,7 +21,7 @@ const statusLabels: Record<AttendanceStatus, string> = {
 };
 
 export default function FuncionariosPage() {
-  const { employees, addEmployee, updateEmployee, removeEmployee, attendance, addAttendance, vales, addVale, removeVale } = useFinance();
+  const { employees, addEmployee, updateEmployee, removeEmployee, attendance, addAttendance, updateAttendanceLateHours, vales, addVale, removeVale, getMonthlyClosing } = useFinance();
   const [form, setForm] = useState({
     name: '', age: '', job_function: '', salary: '3000', hire_date: new Date().toISOString().slice(0, 10),
     cpf: '', pix_key: '', payment_type: 'mensal' as 'mensal' | 'diaria',
