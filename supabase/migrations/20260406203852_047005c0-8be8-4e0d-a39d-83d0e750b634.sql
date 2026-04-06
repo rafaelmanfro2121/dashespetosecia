@@ -1,0 +1,1 @@
+ALTER TABLE public.attendance ADD COLUMN late_hours numeric NOT NULL DEFAULT 0;
