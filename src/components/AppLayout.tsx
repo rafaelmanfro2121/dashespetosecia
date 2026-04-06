@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, DollarSign, Users,
-  CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut, Package, Sparkles, Hammer, ClipboardList, Contact, Wrench, Menu
+  CalendarCheck, ChevronLeft, ChevronRight, LogOut, Package, ClipboardList, Contact, Wrench, Menu
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
