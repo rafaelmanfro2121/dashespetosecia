@@ -55,6 +55,17 @@ export default function FuncionariosPage() {
     return (record?.status as AttendanceStatus) || null;
   };
 
+  const getLateHours = (empId: string, day: number): number => {
+    const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const record = attendance.find(a => a.employee_id === empId && a.presence_date === dateStr);
+    return Number((record as any)?.late_hours || 0);
+  };
+
+  const handleLateHoursChange = (empId: string, day: number, hours: number) => {
+    const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    updateAttendanceLateHours(empId, dateStr, hours);
+  };
+
   const cycleStatus = (empId: string, day: number) => {
     const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const current = getStatus(empId, day);
