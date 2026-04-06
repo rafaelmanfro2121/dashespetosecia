@@ -60,6 +60,8 @@ export interface EmployeeClosing {
   absences: number;
   halfDays: number;
   absenceDiscount: number;
+  lateHours: number;
+  lateDiscount: number;
   valesTotal: number;
   finalSalary: number;
 }
