@@ -358,10 +358,11 @@ export default function FuncionariosPage() {
       </div>
 
       <Tabs defaultValue="equipe" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6 rounded-xl">
+        <TabsList className="grid w-full grid-cols-4 mb-6 rounded-xl">
           <TabsTrigger value="equipe" className="rounded-xl gap-1.5"><Users size={14} /> Equipe</TabsTrigger>
           <TabsTrigger value="presenca" className="rounded-xl gap-1.5"><ClipboardCheck size={14} /> Presença</TabsTrigger>
           <TabsTrigger value="vales" className="rounded-xl gap-1.5"><Banknote size={14} /> Vales</TabsTrigger>
+          <TabsTrigger value="pagamentos" className="rounded-xl gap-1.5"><FileText size={14} /> Pagamentos</TabsTrigger>
         </TabsList>
 
         {/* === EQUIPE TAB === */}
