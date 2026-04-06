@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import QuickEntryFAB from '@/components/QuickEntryFAB';
 import {
   LayoutDashboard, DollarSign, Users,
   CalendarCheck, ChevronLeft, ChevronRight, LogOut, Package, ClipboardList, Contact, Wrench, Menu
