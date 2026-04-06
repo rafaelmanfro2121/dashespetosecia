@@ -250,6 +250,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       const presences = monthAtt.filter(a => a.status === 'presente').length;
       const absences = monthAtt.filter(a => a.status === 'falta').length;
       const halfDays = monthAtt.filter(a => a.status === 'meio-periodo').length;
+      const totalLateHours = monthAtt.reduce((s, a) => s + Number((a as any).late_hours || 0), 0);
       const empVales = vales.filter(v => {
         const d = new Date(v.vale_date + 'T12:00:00');
         return v.employee_id === emp.id && d.getMonth() === month && d.getFullYear() === year;
@@ -259,22 +260,25 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       const paymentType = (emp as any).payment_type || 'mensal';
       let absenceDiscount = 0;
       let baseSalary = Number(emp.salary);
+      let lateDiscount = 0;
       let finalSalary = 0;
 
       if (paymentType === 'diaria') {
-        // Daily: salary field = daily rate, pay = (presences + halfDays*0.5) * dailyRate
         const earned = (presences + halfDays * 0.5) * baseSalary;
+        const hourlyRate = baseSalary / 8;
+        lateDiscount = totalLateHours * hourlyRate;
         absenceDiscount = 0;
-        finalSalary = Math.max(0, earned - valesTotal);
+        finalSalary = Math.max(0, earned - lateDiscount - valesTotal);
       } else {
-        // Monthly: fixed salary minus absences based on business days
         const businessDays = getBusinessDaysInMonth(month, year);
         const dailyRate = baseSalary / businessDays;
+        const hourlyRate = dailyRate / 8;
         absenceDiscount = (absences * dailyRate) + (halfDays * dailyRate * 0.5);
-        finalSalary = Math.max(0, baseSalary - absenceDiscount - valesTotal);
+        lateDiscount = totalLateHours * hourlyRate;
+        finalSalary = Math.max(0, baseSalary - absenceDiscount - lateDiscount - valesTotal);
       }
 
-      return { employeeId: emp.id, employeeName: emp.name, baseSalary, absences, halfDays, absenceDiscount, valesTotal, finalSalary };
+      return { employeeId: emp.id, employeeName: emp.name, baseSalary, absences, halfDays, absenceDiscount, lateHours: totalLateHours, lateDiscount, valesTotal, finalSalary };
     });
 
     const totalSalaries = employeeDetails.reduce((s, e) => s + e.finalSalary, 0);
