@@ -605,6 +605,97 @@ export default function FuncionariosPage() {
             </table>
           </div>
         </TabsContent>
+
+        {/* === PAGAMENTOS TAB === */}
+        <TabsContent value="pagamentos">
+          <div className="flex items-center gap-3 mb-4">
+            <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
+              <SelectTrigger className="w-36 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>{months.map(m => <SelectItem key={m} value={String(m)}>{getMonthName(m)}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
+              <SelectTrigger className="w-24 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+
+          {(() => {
+            const closing = getMonthlyClosing(selectedMonth, selectedYear);
+            return (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="metric-card">
+                    <p className="text-xs text-muted-foreground mb-1">Total Salários</p>
+                    <p className="text-xl font-bold text-primary">{formatCurrency(closing.totalSalaries)}</p>
+                  </div>
+                  <div className="metric-card">
+                    <p className="text-xs text-muted-foreground mb-1">Total Vales</p>
+                    <p className="text-xl font-bold text-warning">{formatCurrency(closing.totalVales)}</p>
+                  </div>
+                  <div className="metric-card">
+                    <p className="text-xs text-muted-foreground mb-1">Folha Líquida</p>
+                    <p className="text-xl font-bold text-foreground">{formatCurrency(closing.totalSalaries)}</p>
+                    <p className="text-[10px] text-muted-foreground">já descontados vales e atrasos</p>
+                  </div>
+                </div>
+
+                <div className="metric-card">
+                  <h3 className="text-sm font-bold mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    Detalhamento — {getMonthName(selectedMonth)} / {selectedYear}
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left">
+                          <th className="pb-3 font-medium text-muted-foreground text-xs">Funcionário</th>
+                          <th className="pb-3 font-medium text-muted-foreground text-xs text-right">Salário Base</th>
+                          <th className="pb-3 font-medium text-muted-foreground text-xs text-center">Faltas</th>
+                          <th className="pb-3 font-medium text-muted-foreground text-xs text-center">½ Período</th>
+                          <th className="pb-3 font-medium text-muted-foreground text-xs text-center">Atrasos (h)</th>
+                          <th className="pb-3 font-medium text-muted-foreground text-xs text-right">Desc. Faltas</th>
+                          <th className="pb-3 font-medium text-muted-foreground text-xs text-right">Desc. Atrasos</th>
+                          <th className="pb-3 font-medium text-muted-foreground text-xs text-right">Vales</th>
+                          <th className="pb-3 font-medium text-muted-foreground text-xs text-right">Líquido</th>
+                          <th className="pb-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {closing.employeeDetails.length === 0 && (
+                          <tr><td colSpan={10} className="text-center py-10 text-muted-foreground">Nenhum funcionário ativo</td></tr>
+                        )}
+                        {closing.employeeDetails.map(emp => (
+                          <tr key={emp.employeeId} className="border-b border-muted/40 hover:bg-muted/20 transition-colors">
+                            <td className="py-3 font-medium">{emp.employeeName}</td>
+                            <td className="py-3 text-right font-mono">{formatCurrency(emp.baseSalary)}</td>
+                            <td className="py-3 text-center">{emp.absences}</td>
+                            <td className="py-3 text-center">{emp.halfDays}</td>
+                            <td className="py-3 text-center">{emp.lateHours > 0 ? `${emp.lateHours}h` : '—'}</td>
+                            <td className="py-3 text-right font-mono text-destructive">{emp.absenceDiscount > 0 ? `- ${formatCurrency(emp.absenceDiscount)}` : '—'}</td>
+                            <td className="py-3 text-right font-mono text-warning">{emp.lateDiscount > 0 ? `- ${formatCurrency(emp.lateDiscount)}` : '—'}</td>
+                            <td className="py-3 text-right font-mono text-warning">{emp.valesTotal > 0 ? `- ${formatCurrency(emp.valesTotal)}` : '—'}</td>
+                            <td className="py-3 text-right font-mono font-bold text-success">{formatCurrency(emp.finalSalary)}</td>
+                            <td className="py-3 text-right">
+                              <button
+                                onClick={() => {
+                                  const empData = employees.find(e => e.id === emp.employeeId);
+                                  if (empData) generateReceipt(empData);
+                                }}
+                                className="text-primary hover:text-primary/80"
+                                title="Gerar comprovante"
+                              >
+                                <FileText size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </TabsContent>
       </Tabs>
     </div>
   );
