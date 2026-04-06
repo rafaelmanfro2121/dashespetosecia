@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatCurrency, getCurrentMonth, getCurrentYear, getMonthName, getDaysInMonth, getBusinessDaysInMonth } from '@/lib/formatters';
-import { Plus, Trash2, UserCheck, UserX, Users, Upload, Download, ClipboardCheck, Banknote, FileText } from 'lucide-react';
+import { Plus, Trash2, UserCheck, UserX, Users, Upload, Download, ClipboardCheck, Banknote, FileText, Check, Circle } from 'lucide-react';
 import { toast } from 'sonner';
 
 type AttendanceStatus = 'presente' | 'falta' | 'meio-periodo';
