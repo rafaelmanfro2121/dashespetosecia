@@ -21,7 +21,6 @@ const navItems = [
   { to: '/ordem-servico-tecnica', icon: Wrench, label: 'Ordem de Serviço' },
   { to: '/clientes', icon: Contact, label: 'Clientes' },
   { to: '/fechamento', icon: CalendarCheck, label: 'Fechamento' },
-  { to: '/relatorio-ia', icon: Brain, label: 'Consultor IA' },
 ];
 
 function SidebarContent({ collapsed, location, signOut, onNavigate }: { collapsed: boolean; location: any; signOut: () => void; onNavigate?: () => void }) {
