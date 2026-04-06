@@ -118,6 +118,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
+      <QuickEntryFAB />
     </div>
   );
 }
