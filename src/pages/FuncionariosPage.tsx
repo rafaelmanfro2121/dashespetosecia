@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatCurrency, getCurrentMonth, getCurrentYear, getMonthName, getDaysInMonth, getBusinessDaysInMonth } from '@/lib/formatters';
-import { Plus, Trash2, UserCheck, UserX, Users, Upload, Download, ClipboardCheck, Banknote, FileText } from 'lucide-react';
+import { Plus, Trash2, UserCheck, UserX, Users, Upload, Download, ClipboardCheck, Banknote, FileText, Check, Circle } from 'lucide-react';
 import { toast } from 'sonner';
 
 type AttendanceStatus = 'presente' | 'falta' | 'meio-periodo';
@@ -39,6 +39,43 @@ export default function FuncionariosPage() {
   const businessDaysInMonth = getBusinessDaysInMonth(selectedMonth, selectedYear);
   const activeEmployees = employees.filter(e => e.status === 'ativo');
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  // Salary payments tracking
+  const [salaryPayments, setSalaryPayments] = useState<Record<string, string>>({});
+
+  const fetchSalaryPayments = useCallback(async () => {
+    const { data } = await supabase
+      .from('salary_payments')
+      .select('*')
+      .eq('payment_month', selectedMonth)
+      .eq('payment_year', selectedYear);
+    if (data) {
+      const map: Record<string, string> = {};
+      data.forEach((p: any) => { map[p.employee_id] = p.paid_at; });
+      setSalaryPayments(map);
+    }
+  }, [selectedMonth, selectedYear]);
+
+  useEffect(() => { fetchSalaryPayments(); }, [fetchSalaryPayments]);
+
+  const togglePayment = async (employeeId: string) => {
+    if (salaryPayments[employeeId]) {
+      await supabase.from('salary_payments').delete()
+        .eq('employee_id', employeeId)
+        .eq('payment_month', selectedMonth)
+        .eq('payment_year', selectedYear);
+      toast.success('Pagamento desmarcado');
+    } else {
+      await supabase.from('salary_payments').insert({
+        employee_id: employeeId,
+        payment_month: selectedMonth,
+        payment_year: selectedYear,
+        paid_at: new Date().toISOString().slice(0, 10),
+      });
+      toast.success('Pagamento marcado como realizado');
+    }
+    fetchSalaryPayments();
+  };
 
   // Check if a day is a weekend (Saturday=6, Sunday=0)
   const isWeekend = (day: number) => {
@@ -656,38 +693,57 @@ export default function FuncionariosPage() {
                           <th className="pb-3 font-medium text-muted-foreground text-xs text-right">Desc. Atrasos</th>
                           <th className="pb-3 font-medium text-muted-foreground text-xs text-right">Vales</th>
                           <th className="pb-3 font-medium text-muted-foreground text-xs text-right">Líquido</th>
+                          <th className="pb-3 font-medium text-muted-foreground text-xs text-center">Status</th>
                           <th className="pb-3"></th>
                         </tr>
                       </thead>
                       <tbody>
                         {closing.employeeDetails.length === 0 && (
-                          <tr><td colSpan={10} className="text-center py-10 text-muted-foreground">Nenhum funcionário ativo</td></tr>
+                          <tr><td colSpan={11} className="text-center py-10 text-muted-foreground">Nenhum funcionário ativo</td></tr>
                         )}
-                        {closing.employeeDetails.map(emp => (
-                          <tr key={emp.employeeId} className="border-b border-muted/40 hover:bg-muted/20 transition-colors">
-                            <td className="py-3 font-medium">{emp.employeeName}</td>
-                            <td className="py-3 text-right font-mono">{formatCurrency(emp.baseSalary)}</td>
-                            <td className="py-3 text-center">{emp.absences}</td>
-                            <td className="py-3 text-center">{emp.halfDays}</td>
-                            <td className="py-3 text-center">{emp.lateHours > 0 ? `${emp.lateHours}h` : '—'}</td>
-                            <td className="py-3 text-right font-mono text-destructive">{emp.absenceDiscount > 0 ? `- ${formatCurrency(emp.absenceDiscount)}` : '—'}</td>
-                            <td className="py-3 text-right font-mono text-warning">{emp.lateDiscount > 0 ? `- ${formatCurrency(emp.lateDiscount)}` : '—'}</td>
-                            <td className="py-3 text-right font-mono text-warning">{emp.valesTotal > 0 ? `- ${formatCurrency(emp.valesTotal)}` : '—'}</td>
-                            <td className="py-3 text-right font-mono font-bold text-success">{formatCurrency(emp.finalSalary)}</td>
-                            <td className="py-3 text-right">
-                              <button
-                                onClick={() => {
-                                  const empData = employees.find(e => e.id === emp.employeeId);
-                                  if (empData) generateReceipt(empData);
-                                }}
-                                className="text-primary hover:text-primary/80"
-                                title="Gerar comprovante"
-                              >
-                                <FileText size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                        {closing.employeeDetails.map(emp => {
+                          const isPaid = !!salaryPayments[emp.employeeId];
+                          const paidDate = salaryPayments[emp.employeeId];
+                          return (
+                            <tr key={emp.employeeId} className={`border-b border-muted/40 hover:bg-muted/20 transition-colors ${isPaid ? 'opacity-70' : ''}`}>
+                              <td className="py-3 font-medium">{emp.employeeName}</td>
+                              <td className="py-3 text-right font-mono">{formatCurrency(emp.baseSalary)}</td>
+                              <td className="py-3 text-center">{emp.absences}</td>
+                              <td className="py-3 text-center">{emp.halfDays}</td>
+                              <td className="py-3 text-center">{emp.lateHours > 0 ? `${emp.lateHours}h` : '—'}</td>
+                              <td className="py-3 text-right font-mono text-destructive">{emp.absenceDiscount > 0 ? `- ${formatCurrency(emp.absenceDiscount)}` : '—'}</td>
+                              <td className="py-3 text-right font-mono text-warning">{emp.lateDiscount > 0 ? `- ${formatCurrency(emp.lateDiscount)}` : '—'}</td>
+                              <td className="py-3 text-right font-mono text-warning">{emp.valesTotal > 0 ? `- ${formatCurrency(emp.valesTotal)}` : '—'}</td>
+                              <td className="py-3 text-right font-mono font-bold text-success">{formatCurrency(emp.finalSalary)}</td>
+                              <td className="py-3 text-center">
+                                <button
+                                  onClick={() => togglePayment(emp.employeeId)}
+                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all ${
+                                    isPaid
+                                      ? 'bg-success/15 text-success border-success/30 hover:bg-success/25'
+                                      : 'bg-muted/30 text-muted-foreground border-muted/50 hover:bg-muted/50'
+                                  }`}
+                                  title={isPaid ? `Pago em ${new Date(paidDate + 'T12:00:00').toLocaleDateString('pt-BR')}` : 'Marcar como pago'}
+                                >
+                                  {isPaid ? <><Check size={12} /> Pago</> : <><Circle size={12} /> Pendente</>}
+                                </button>
+                                {isPaid && <p className="text-[9px] text-muted-foreground mt-0.5">{new Date(paidDate + 'T12:00:00').toLocaleDateString('pt-BR')}</p>}
+                              </td>
+                              <td className="py-3 text-right">
+                                <button
+                                  onClick={() => {
+                                    const empData = employees.find(e => e.id === emp.employeeId);
+                                    if (empData) generateReceipt(empData);
+                                  }}
+                                  className="text-primary hover:text-primary/80"
+                                  title="Gerar comprovante"
+                                >
+                                  <FileText size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
