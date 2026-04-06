@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFinance } from '@/contexts/FinanceContext';
-import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { LogOut, Send, ArrowUpRight, ArrowDownLeft, Minus, CheckCircle2, Sparkles } from 'lucide-react';
+import { LogOut, Send, ArrowUpRight, ArrowDownLeft, CheckCircle2, Plus } from 'lucide-react';
 import logoBlack from '@/assets/logo-black.png';
 
 interface RecentEntry {
@@ -17,7 +16,11 @@ interface RecentEntry {
 export default function MobileQuickInput() {
   const { signOut } = useAuth();
   const { transactions, categories, addTransaction } = useFinance();
-  const [input, setInput] = useState('');
+  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState('');
+  const [type, setType] = useState<'entrada' | 'saida'>('saida');
+  const [paymentMethod, setPaymentMethod] = useState('Pix');
+  const [categoryId, setCategoryId] = useState('');
   const [loading, setLoading] = useState(false);
   const [recent, setRecent] = useState<RecentEntry[]>([]);
 
@@ -26,41 +29,31 @@ export default function MobileQuickInput() {
   const todayOut = todayTx.filter(t => t.type === 'saida').reduce((s, t) => s + Number(t.amount), 0);
   const balance = todayIn - todayOut;
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  const activeCategories = categories.filter(c => c.is_active);
+  const paymentMethods = ['Dinheiro', 'Pix', 'Cartão', 'Transferência'];
+
+  const handleSubmit = async () => {
+    const parsedAmount = parseFloat(amount.replace(',', '.'));
+    if (!description.trim() || isNaN(parsedAmount) || parsedAmount <= 0) {
+      toast.error('Preencha a descrição e o valor');
+      return;
+    }
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-report', {
-        body: { financialData: { message: input }, type: 'parse' },
-      });
-      if (error) throw error;
-      if (data.error) { toast.error(data.error); return; }
-
-      const result = data.result;
-      if (!result) { toast.error('Não entendi. Tente: "Vendi churrasqueira por 5000"'); return; }
-
-      const cat = categories.find(c => c.name.toLowerCase() === (result.category || '').toLowerCase());
       await addTransaction({
         transaction_date: new Date().toISOString().slice(0, 10),
-        description: result.description || input,
-        category_id: cat?.id || null,
-        type: result.type || 'saida',
-        amount: result.amount || 0,
-        payment_method: result.payment_method || 'Não especificado',
+        description: description.trim(),
+        category_id: categoryId || null,
+        type,
+        amount: parsedAmount,
+        payment_method: paymentMethod,
       });
-
-      if (result.is_material_purchase && result.material_name) {
-        await supabase.functions.invoke('ai-report', {
-          body: { type: 'recalculate-costs', financialData: { materialName: result.material_name, newCost: result.amount, quantity: result.quantity || 1 } },
-        }).catch(() => {});
-        toast.info('🔄 Custos recalculados');
-      }
-
-      setRecent(prev => [{ type: result.type, description: result.description || input, amount: result.amount }, ...prev].slice(0, 5));
-      setInput('');
-      toast.success(`${result.type === 'entrada' ? '💰 Entrada' : '📦 Saída'}: ${formatCurrency(result.amount)}`);
-    } catch (err: any) {
-      toast.error(err.message || 'Erro');
+      setRecent(prev => [{ type, description: description.trim(), amount: parsedAmount }, ...prev].slice(0, 5));
+      setDescription('');
+      setAmount('');
+      toast.success(`${type === 'entrada' ? '💰 Entrada' : '📦 Saída'}: ${formatCurrency(parsedAmount)}`);
+    } catch {
+      toast.error('Erro ao salvar');
     } finally {
       setLoading(false);
     }
@@ -107,41 +100,86 @@ export default function MobileQuickInput() {
         </div>
       </div>
 
-      <div className="px-6">
-        <div className="h-px bg-neutral-100" />
-      </div>
+      <div className="px-6"><div className="h-px bg-neutral-100" /></div>
 
-      {/* Main input area */}
+      {/* Form */}
       <div className="flex-1 px-6 pt-6 flex flex-col">
-        <div className="mb-5">
+        <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
-            <Sparkles size={16} className="text-neutral-400" />
-            <h2 className="text-neutral-900 text-base font-semibold tracking-tight">
-              Novo registro
-            </h2>
+            <Plus size={16} className="text-neutral-400" />
+            <h2 className="text-neutral-900 text-base font-semibold tracking-tight">Novo registro</h2>
           </div>
-          <p className="text-neutral-400 text-xs">
-            Descreva a entrada ou saída em linguagem natural
-          </p>
+        </div>
+
+        {/* Type toggle */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setType('entrada')}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${type === 'entrada' ? 'bg-emerald-500 text-white' : 'bg-neutral-50 text-neutral-500 border border-neutral-200'}`}
+          >
+            Entrada
+          </button>
+          <button
+            onClick={() => setType('saida')}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${type === 'saida' ? 'bg-red-500 text-white' : 'bg-neutral-50 text-neutral-500 border border-neutral-200'}`}
+          >
+            Saída
+          </button>
         </div>
 
         <div className="space-y-3">
-          <textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder={'Ex: "Vendi 2 churrasqueiras por 8.000"'}
-            className="w-full h-28 rounded-2xl bg-neutral-50 border border-neutral-200 text-neutral-900 placeholder:text-neutral-300 px-4 py-3.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 transition-all"
+          <input
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Descrição (ex: Vendi churrasqueira)"
+            className="w-full rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-900 placeholder:text-neutral-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 transition-all"
             disabled={loading}
           />
+          <input
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            placeholder="Valor (ex: 5000)"
+            inputMode="decimal"
+            className="w-full rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-900 placeholder:text-neutral-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 transition-all"
+            disabled={loading}
+          />
+
+          {/* Payment method */}
+          <div className="flex gap-2 flex-wrap">
+            {paymentMethods.map(m => (
+              <button
+                key={m}
+                onClick={() => setPaymentMethod(m)}
+                className={`text-xs rounded-full px-3.5 py-2 transition-all ${paymentMethod === m ? 'bg-neutral-900 text-white' : 'bg-neutral-50 text-neutral-500 border border-neutral-200 hover:bg-neutral-100'}`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          {/* Category */}
+          {activeCategories.length > 0 && (
+            <select
+              value={categoryId}
+              onChange={e => setCategoryId(e.target.value)}
+              className="w-full rounded-xl bg-neutral-50 border border-neutral-200 text-neutral-900 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900/10 transition-all"
+            >
+              <option value="">Sem categoria</option>
+              {activeCategories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          )}
+
           <Button
-            onClick={handleSend}
-            disabled={loading || !input.trim()}
+            onClick={handleSubmit}
+            disabled={loading || !description.trim() || !amount.trim()}
             className="w-full h-12 rounded-2xl text-sm font-semibold bg-neutral-900 hover:bg-neutral-800 text-white shadow-none"
           >
             {loading ? (
               <span className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Processando...
+                Salvando...
               </span>
             ) : (
               <span className="flex items-center gap-2">
@@ -149,19 +187,6 @@ export default function MobileQuickInput() {
               </span>
             )}
           </Button>
-        </div>
-
-        {/* Quick chips */}
-        <div className="flex gap-2 mt-4 flex-wrap">
-          {['Vendi churrasqueira', 'Comprei material', 'Paguei conta'].map(text => (
-            <button
-              key={text}
-              onClick={() => setInput(text)}
-              className="text-xs text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-full px-3.5 py-2 hover:bg-neutral-100 hover:text-neutral-700 transition-all"
-            >
-              {text}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -185,7 +210,6 @@ export default function MobileQuickInput() {
         </div>
       )}
 
-      {/* Safe area bottom spacer */}
       <div className="h-8" />
     </div>
   );

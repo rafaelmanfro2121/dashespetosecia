@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, DollarSign, Users,
-  CalendarCheck, Brain, ChevronLeft, ChevronRight, LogOut, Package, Sparkles, Hammer, ClipboardList, Contact, Wrench, Menu
+  CalendarCheck, ChevronLeft, ChevronRight, LogOut, Package, ClipboardList, Contact, Wrench, Menu
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,20 +21,12 @@ const navItems = [
   { to: '/ordem-servico-tecnica', icon: Wrench, label: 'Ordem de Serviço' },
   { to: '/clientes', icon: Contact, label: 'Clientes' },
   { to: '/fechamento', icon: CalendarCheck, label: 'Fechamento' },
-  { to: '/relatorio-ia', icon: Brain, label: 'Consultor IA' },
 ];
 
 function SidebarContent({ collapsed, location, signOut, onNavigate }: { collapsed: boolean; location: any; signOut: () => void; onNavigate?: () => void }) {
   return (
     <>
-      {!collapsed && (
-        <div className="px-4 pt-4 pb-2">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-sidebar-accent/50 border border-sidebar-border">
-            <Sparkles size={14} className="text-sidebar-primary" />
-            <span className="text-[11px] font-medium text-sidebar-primary">IA Ativa</span>
-          </div>
-        </div>
-      )}
+
 
       <nav className="flex-1 py-3 space-y-0.5 px-3 overflow-y-auto">
         {navItems.map(item => {
@@ -58,7 +50,7 @@ function SidebarContent({ collapsed, location, signOut, onNavigate }: { collapse
           <button onClick={signOut} className="flex items-center gap-2 text-xs text-sidebar-foreground/50 hover:text-sidebar-primary transition-colors w-full px-1">
             <LogOut size={14} /> Sair do Sistema
           </button>
-          <p className="text-[10px] text-sidebar-foreground/30 px-1">ESP Insight AI v3.0</p>
+          <p className="text-[10px] text-sidebar-foreground/30 px-1">Espetos & Cia v3.0</p>
         </div>
       )}
     </>
