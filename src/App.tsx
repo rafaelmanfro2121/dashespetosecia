@@ -58,7 +58,7 @@ function ProtectedRoutes() {
           <Route path="/materiais" element={<Navigate to="/produtos" replace />} />
           <Route path="/funcionarios" element={<FuncionariosPage />} />
           <Route path="/fechamento" element={<FechamentoPage />} />
-          <Route path="/relatorio-ia" element={<RelatorioIAPage />} />
+          <Route path="/relatorio-ia" element={<Navigate to="/" replace />} />
           <Route path="/ordem-servico" element={<OrdemServicoPage />} />
           <Route path="/ordem-servico-tecnica" element={<OrdemServicoTecnicaPage />} />
           <Route path="/clientes" element={<ClientesPage />} />

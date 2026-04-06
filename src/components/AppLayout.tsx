@@ -26,14 +26,7 @@ const navItems = [
 function SidebarContent({ collapsed, location, signOut, onNavigate }: { collapsed: boolean; location: any; signOut: () => void; onNavigate?: () => void }) {
   return (
     <>
-      {!collapsed && (
-        <div className="px-4 pt-4 pb-2">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-sidebar-accent/50 border border-sidebar-border">
-            <Sparkles size={14} className="text-sidebar-primary" />
-            <span className="text-[11px] font-medium text-sidebar-primary">IA Ativa</span>
-          </div>
-        </div>
-      )}
+
 
       <nav className="flex-1 py-3 space-y-0.5 px-3 overflow-y-auto">
         {navItems.map(item => {
