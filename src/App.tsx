@@ -13,7 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import FinanceiroPage from "@/pages/FinanceiroPage";
 import FuncionariosPage from "@/pages/FuncionariosPage";
 import FechamentoPage from "@/pages/FechamentoPage";
-import RelatorioIAPage from "@/pages/RelatorioIAPage";
+
 import ProdutosPage from "@/pages/ProdutosPage";
 
 import OrdemServicoPage from "@/pages/OrdemServicoPage";
