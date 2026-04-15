@@ -376,7 +376,7 @@ export default function OrdemServicoPage() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`OS_${osNumber || 'sem-numero'}_${cliente.nome || 'cliente'}.pdf`);
+      pdf.save(`Pedido_${osNumber || 'sem-numero'}_${cliente.nome || 'cliente'}.pdf`);
       toast.success('PDF gerado com sucesso');
     } catch {
       toast.error('Erro ao gerar PDF');
