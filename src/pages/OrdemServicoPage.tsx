@@ -386,9 +386,12 @@ export default function OrdemServicoPage() {
 
   const handlePrint = () => {
     expandTextareas();
+    const originalTitle = document.title;
+    document.title = `Pedido_${osNumber || 'sem-numero'}_${cliente.nome || 'cliente'}`;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         window.print();
+        document.title = originalTitle;
       });
     });
   };
