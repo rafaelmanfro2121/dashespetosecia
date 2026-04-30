@@ -216,14 +216,20 @@ export default function FuncionariosPage() {
       let absenceDiscount = 0;
       let finalSalary = 0;
       let hoursWorked = (presences * 8) + (halfDays * 4);
+      const totalLateHours = monthAtt.reduce((s, a) => s + Number((a as any).late_hours || 0), 0);
+      let lateDiscount = 0;
 
       if (paymentType === 'diaria') {
         const earned = (presences + halfDays * 0.5) * salaryValue;
-        finalSalary = Math.max(0, earned - valesTotal);
+        const hourlyRate = salaryValue / 8;
+        lateDiscount = totalLateHours * hourlyRate;
+        finalSalary = Math.max(0, earned - lateDiscount - valesTotal);
       } else {
         const dailyRate = salaryValue / businessDaysInMonth;
+        const hourlyRate = dailyRate / 8;
         absenceDiscount = (absences * dailyRate) + (halfDays * dailyRate * 0.5);
-        finalSalary = Math.max(0, salaryValue - absenceDiscount - valesTotal);
+        lateDiscount = totalLateHours * hourlyRate;
+        finalSalary = Math.max(0, salaryValue - absenceDiscount - lateDiscount - valesTotal);
       }
 
       // PDF Content
@@ -319,6 +325,10 @@ export default function FuncionariosPage() {
         rows.push(['Salário Base (Mensal)', formatCurrencySimple(salaryValue)]);
         rows.push([`Desconto Faltas (${absences} dias)`, absenceDiscount > 0 ? `- ${formatCurrencySimple(absenceDiscount)}` : '—']);
         if (halfDays > 0) rows.push([`Desconto Meio Período (${halfDays} dias)`, '(incluso acima)']);
+      }
+
+      if (totalLateHours > 0) {
+        rows.push([`Desconto Horas Atrasadas (${totalLateHours}h)`, `- ${formatCurrencySimple(lateDiscount)}`]);
       }
 
       // Add each vale as a row
