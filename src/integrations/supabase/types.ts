@@ -70,6 +70,237 @@ export type Database = {
         }
         Relationships: []
       }
+      email_automation_logs: {
+        Row: {
+          dia_trigger: number
+          enviado_em: string
+          erro_mensagem: string | null
+          id: string
+          status: string
+          template_id: string | null
+          user_id: string
+        }
+        Insert: {
+          dia_trigger: number
+          enviado_em?: string
+          erro_mensagem?: string | null
+          id?: string
+          status?: string
+          template_id?: string | null
+          user_id: string
+        }
+        Update: {
+          dia_trigger?: number
+          enviado_em?: string
+          erro_mensagem?: string | null
+          id?: string
+          status?: string
+          template_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_automation_logs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_automation_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_automation_templates: {
+        Row: {
+          assunto: string
+          ativo: boolean
+          conteudo_html: string
+          created_at: string
+          dia_trigger: number
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          assunto: string
+          ativo?: boolean
+          conteudo_html: string
+          created_at?: string
+          dia_trigger: number
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          assunto?: string
+          ativo?: boolean
+          conteudo_html?: string
+          created_at?: string
+          dia_trigger?: number
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_automation_users: {
+        Row: {
+          automacao_ativa: boolean
+          created_at: string
+          data_cadastro: string
+          email: string
+          id: string
+          nome: string | null
+          pacientes_cadastrados: number
+          pausado: boolean
+          sessoes_registradas: number
+          updated_at: string
+          user_id: string
+          usuario_ativado: boolean
+        }
+        Insert: {
+          automacao_ativa?: boolean
+          created_at?: string
+          data_cadastro: string
+          email: string
+          id?: string
+          nome?: string | null
+          pacientes_cadastrados?: number
+          pausado?: boolean
+          sessoes_registradas?: number
+          updated_at?: string
+          user_id: string
+          usuario_ativado?: boolean
+        }
+        Update: {
+          automacao_ativa?: boolean
+          created_at?: string
+          data_cadastro?: string
+          email?: string
+          id?: string
+          nome?: string | null
+          pacientes_cadastrados?: number
+          pausado?: boolean
+          sessoes_registradas?: number
+          updated_at?: string
+          user_id?: string
+          usuario_ativado?: boolean
+        }
+        Relationships: []
+      }
+      email_marketing_campaigns: {
+        Row: {
+          created_at: string
+          enviados_hoje: number
+          horario_fim: string
+          horario_inicio: string
+          id: string
+          limite_diario: number
+          nome: string
+          status: string
+          template_id: string | null
+          ultimo_envio_dia: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enviados_hoje?: number
+          horario_fim?: string
+          horario_inicio?: string
+          id?: string
+          limite_diario?: number
+          nome: string
+          status?: string
+          template_id?: string | null
+          ultimo_envio_dia?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enviados_hoje?: number
+          horario_fim?: string
+          horario_inicio?: string
+          id?: string
+          limite_diario?: number
+          nome?: string
+          status?: string
+          template_id?: string | null
+          ultimo_envio_dia?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_marketing_campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_marketing_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_marketing_recipients: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          email: string
+          enviado_em: string | null
+          erro_mensagem: string | null
+          id: string
+          nome: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          email: string
+          enviado_em?: string | null
+          erro_mensagem?: string | null
+          id?: string
+          nome?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          email?: string
+          enviado_em?: string | null
+          erro_mensagem?: string | null
+          id?: string
+          nome?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_marketing_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_marketing_templates: {
+        Row: {
+          assunto: string
+          conteudo_html: string
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          assunto: string
+          conteudo_html: string
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          assunto?: string
+          conteudo_html?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employees: {
         Row: {
           age: number | null
@@ -180,6 +411,99 @@ export type Database = {
           min_stock?: number
           name?: string
           unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lead_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          page_path: string | null
+          reason: string
+          source: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          page_path?: string | null
+          reason: string
+          source?: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          page_path?: string | null
+          reason?: string
+          source?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      marketing_enviados_log: {
+        Row: {
+          destinatario: string
+          enviado_em: string
+          id: string
+          nome: string | null
+          template_usado: string | null
+          tipo: string
+        }
+        Insert: {
+          destinatario: string
+          enviado_em?: string
+          id?: string
+          nome?: string | null
+          template_usado?: string | null
+          tipo: string
+        }
+        Update: {
+          destinatario?: string
+          enviado_em?: string
+          id?: string
+          nome?: string | null
+          template_usado?: string | null
+          tipo?: string
+        }
+        Relationships: []
+      }
+      marketing_schedule_settings: {
+        Row: {
+          channel: string
+          created_at: string
+          daily_limit: number
+          end_time: string
+          hourly_limit: number
+          id: string
+          interval_seconds: number
+          is_active: boolean
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          daily_limit?: number
+          end_time?: string
+          hourly_limit?: number
+          id?: string
+          interval_seconds?: number
+          is_active?: boolean
+          start_time?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          daily_limit?: number
+          end_time?: string
+          hourly_limit?: number
+          id?: string
+          interval_seconds?: number
+          is_active?: boolean
+          start_time?: string
           updated_at?: string
         }
         Relationships: []
@@ -538,6 +862,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vales: {
         Row: {
           amount: number
@@ -623,15 +968,152 @@ export type Database = {
           },
         ]
       }
+      whatsapp_marketing_campaigns: {
+        Row: {
+          created_at: string
+          enviados_hoje: number
+          horario_fim: string
+          horario_inicio: string
+          id: string
+          limite_diario: number
+          nome: string
+          status: string
+          template_id: string | null
+          ultimo_envio_dia: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enviados_hoje?: number
+          horario_fim?: string
+          horario_inicio?: string
+          id?: string
+          limite_diario?: number
+          nome: string
+          status?: string
+          template_id?: string | null
+          ultimo_envio_dia?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enviados_hoje?: number
+          horario_fim?: string
+          horario_inicio?: string
+          id?: string
+          limite_diario?: number
+          nome?: string
+          status?: string
+          template_id?: string | null
+          ultimo_envio_dia?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_marketing_campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_marketing_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_marketing_recipients: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          enviado_em: string | null
+          erro_mensagem: string | null
+          id: string
+          is_validated: boolean
+          nome: string | null
+          status: string
+          telefone: string
+          whatsapp_exists: boolean | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          enviado_em?: string | null
+          erro_mensagem?: string | null
+          id?: string
+          is_validated?: boolean
+          nome?: string | null
+          status?: string
+          telefone: string
+          whatsapp_exists?: boolean | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          enviado_em?: string | null
+          erro_mensagem?: string | null
+          id?: string
+          is_validated?: boolean
+          nome?: string | null
+          status?: string
+          telefone?: string
+          whatsapp_exists?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_marketing_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_marketing_templates: {
+        Row: {
+          conteudo: string
+          created_at: string
+          id: string
+          image_url: string | null
+          link_url: string | null
+          nome: string
+          pre_link_message: string | null
+          updated_at: string
+        }
+        Insert: {
+          conteudo: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          link_url?: string | null
+          nome: string
+          pre_link_message?: string | null
+          updated_at?: string
+        }
+        Update: {
+          conteudo?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          link_url?: string | null
+          nome?: string
+          pre_link_message?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -758,6 +1240,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
