@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
 </td></tr>
 <tr><td style="padding:35px 30px;">${htmlContent}</td></tr>
 <tr><td style="background-color:#f0faf8;padding:25px 30px;border-radius:0 0 16px 16px;text-align:center;">
-<p style="color:#7fa8a0;font-size:12px;margin:0;">© ${new Date().getFullYear()} Espetos &amp; Cia · applumia.com.br</p>
+<p style="color:#7fa8a0;font-size:12px;margin:0;">© ${new Date().getFullYear()} Espetos &amp; Cia · dashespetosecia.lovable.app</p>
 </td></tr></table></td></tr></table></body></html>`;
 
       const subject = (currentTemplate.assunto as string)

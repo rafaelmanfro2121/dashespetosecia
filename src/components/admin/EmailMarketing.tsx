@@ -1046,7 +1046,7 @@ export default function EmailMarketing() {
                 <div className="bg-background border-b px-4 py-3 space-y-1">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="font-semibold text-foreground">De:</span>
-                    <span>Lumia &lt;contato@dashespetosecia.lovable.app&gt;</span>
+                    <span>Espetos &amp; Cia &lt;contato@dashespetosecia.lovable.app&gt;</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="font-semibold text-foreground">Assunto:</span>
@@ -1092,7 +1092,7 @@ export default function EmailMarketing() {
             <div className="bg-background border-b px-5 py-3 space-y-1.5">
               <div className="flex items-center gap-2 text-xs">
                 <span className="font-semibold text-foreground w-14">De:</span>
-                <span className="text-muted-foreground">Lumia &lt;contato@dashespetosecia.lovable.app&gt;</span>
+                <span className="text-muted-foreground">Espetos &amp; Cia &lt;contato@dashespetosecia.lovable.app&gt;</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <span className="font-semibold text-foreground w-14">Para:</span>
