@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const DEFAULT_EVOLUTION_API_URL = 'https://api.applumia.com.br';
+const DEFAULT_EVOLUTION_API_URL = 'https://api.dashespetosecia.lovable.app';
 
 function resolveEvolutionApiUrl(rawUrl?: string | null): string {
   const cleaned = rawUrl?.trim().replace(/\/+$/, '');
@@ -45,7 +45,7 @@ function hasNoSession(rawText: string, payload: unknown): boolean {
 }
 
 async function ensureValidationSession(evolutionApiUrl: string, evolutionApiKey: string) {
-  const response = await fetch(`${evolutionApiUrl}/chat/whatsappNumbers/applumia`, {
+  const response = await fetch(`${evolutionApiUrl}/chat/whatsappNumbers/espetos`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
 
       try {
         // Call Evolution API to check WhatsApp numbers
-        const response = await fetch(`${evolutionApiUrl}/chat/whatsappNumbers/applumia`, {
+        const response = await fetch(`${evolutionApiUrl}/chat/whatsappNumbers/espetos`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

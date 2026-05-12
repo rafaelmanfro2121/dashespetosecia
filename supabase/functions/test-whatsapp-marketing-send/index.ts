@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const DEFAULT_EVOLUTION_API_URL = "https://api.applumia.com.br";
+const DEFAULT_EVOLUTION_API_URL = "https://api.dashespetosecia.lovable.app";
 
 function resolveEvolutionApiUrl(rawUrl?: string | null): string {
   const cleaned = rawUrl?.trim().replace(/\/+$/, "");
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
     const sendPresence = async (presence: "composing" | "paused") => {
       try {
-        await fetch(`${evolutionApiUrl}/chat/sendPresence/applumia`, {
+        await fetch(`${evolutionApiUrl}/chat/sendPresence/espetos`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: evolutionApiKey },
           body: JSON.stringify({ number: normalized, presence }),
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     // Step 1: text
     await sendPresence("composing");
     await new Promise(r => setTimeout(r, randomInt(2000, 4000)));
-    const textRes = await fetch(`${evolutionApiUrl}/message/sendText/applumia`, {
+    const textRes = await fetch(`${evolutionApiUrl}/message/sendText/espetos`, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: evolutionApiKey },
       body: JSON.stringify({ number: normalized, textMessage: { text: message } }),
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, randomInt(3000, 5000)));
       await sendPresence("composing");
       await new Promise(r => setTimeout(r, randomInt(2000, 4000)));
-      const mediaRes = await fetch(`${evolutionApiUrl}/message/sendMedia/applumia`, {
+      const mediaRes = await fetch(`${evolutionApiUrl}/message/sendMedia/espetos`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: evolutionApiKey },
         body: JSON.stringify({
@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
           mediaMessage: {
             mediatype: "image",
             media: template.image_url,
-            fileName: "lumia.jpg",
+            fileName: "espetos.jpg",
           },
         }),
       });
@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, randomInt(3000, 5000)));
       await sendPresence("composing");
       await new Promise(r => setTimeout(r, randomInt(1500, 3000)));
-      const preRes = await fetch(`${evolutionApiUrl}/message/sendText/applumia`, {
+      const preRes = await fetch(`${evolutionApiUrl}/message/sendText/espetos`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: evolutionApiKey },
         body: JSON.stringify({
@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, randomInt(2000, 4000)));
       await sendPresence("composing");
       await new Promise(r => setTimeout(r, randomInt(1500, 3000)));
-      const linkRes = await fetch(`${evolutionApiUrl}/message/sendText/applumia`, {
+      const linkRes = await fetch(`${evolutionApiUrl}/message/sendText/espetos`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: evolutionApiKey },
         body: JSON.stringify({

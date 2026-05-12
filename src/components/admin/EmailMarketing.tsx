@@ -146,14 +146,14 @@ export default function EmailMarketing() {
   // Template CRUD
   const EMAIL_WRAPPER_START = `<div style="max-width:600px;margin:0 auto;font-family:'DM Sans','Segoe UI',Arial,sans-serif;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
   <div style="background:linear-gradient(135deg,#1a9a8a,#22b8a5);padding:36px 30px;text-align:center;">
-    <h1 style="color:#ffffff;margin:0;font-size:28px;font-weight:700;letter-spacing:-0.5px;">LUMIA</h1>
-    <p style="color:#b2f0e8;margin:10px 0 0;font-size:14px;font-weight:400;">Gestão inteligente para sua clínica</p>
+    <h1 style="color:#ffffff;margin:0;font-size:28px;font-weight:700;letter-spacing:-0.5px;">ESPETOS &amp; CIA</h1>
+    <p style="color:#b2f0e8;margin:10px 0 0;font-size:14px;font-weight:400;">Gestão inteligente do seu negócio</p>
   </div>
   <div style="padding:35px 30px;">`;
 
   const EMAIL_WRAPPER_END = `</div>
   <div style="background:#f0faf8;padding:22px;text-align:center;border-top:1px solid #d4efe9;">
-    <p style="color:#7fa8a0;font-size:12px;margin:0;">© ${new Date().getFullYear()} LUMIA · dashespetosecia.lovable.app</p>
+    <p style="color:#7fa8a0;font-size:12px;margin:0;">© ${new Date().getFullYear()} Espetos &amp; Cia · dashespetosecia.lovable.app</p>
   </div>
 </div>`;
 

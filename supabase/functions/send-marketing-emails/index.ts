@@ -154,12 +154,12 @@ Deno.serve(async (req) => {
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
 <tr><td style="background:linear-gradient(135deg,#1a9a8a 0%,#22b8a5 100%);padding:30px;border-radius:16px 16px 0 0;text-align:center;">
-<h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:700;">LUMIA</h1>
-<p style="color:rgba(255,255,255,0.9);margin:5px 0 0;font-size:13px;">Gestão de Clínicas</p>
+<h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:700;">ESPETOS &amp; CIA</h1>
+<p style="color:rgba(255,255,255,0.9);margin:5px 0 0;font-size:13px;">Espetos personalizados</p>
 </td></tr>
 <tr><td style="padding:35px 30px;">${htmlContent}</td></tr>
 <tr><td style="background-color:#f0faf8;padding:25px 30px;border-radius:0 0 16px 16px;text-align:center;">
-<p style="color:#7fa8a0;font-size:12px;margin:0;">© ${new Date().getFullYear()} LUMIA · applumia.com.br</p>
+<p style="color:#7fa8a0;font-size:12px;margin:0;">© ${new Date().getFullYear()} Espetos &amp; Cia · applumia.com.br</p>
 </td></tr></table></td></tr></table></body></html>`;
 
       const subject = (currentTemplate.assunto as string)
@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
 
       try {
         await resend.emails.send({
-          from: "Lumia <contato@applumia.com.br>",
+          from: "Espetos &amp; Cia <contato@dashespetosecia.lovable.app>",
           to: [recipient.email],
           subject,
           html: fullHtml,
