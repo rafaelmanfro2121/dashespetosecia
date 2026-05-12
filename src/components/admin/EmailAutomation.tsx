@@ -281,8 +281,8 @@ export default function EmailAutomation() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-sky-500/10 rounded-lg">
-                <User className="w-5 h-5 text-sky-500" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <User className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{trialUsers.length}</p>
@@ -294,8 +294,8 @@ export default function EmailAutomation() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/10 rounded-lg">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+              <div className="p-2 bg-success/10 rounded-lg">
+                <CheckCircle2 className="w-5 h-5 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{activatedUsers.length}</p>
@@ -394,7 +394,7 @@ export default function EmailAutomation() {
                             </TableCell>
                             <TableCell>
                               {user.usuario_ativado ? (
-                                <Badge className="bg-emerald-500 hover:bg-emerald-600">Ativado</Badge>
+                                <Badge className="bg-success hover:bg-success/90">Ativado</Badge>
                               ) : (
                                 <Badge variant="outline" className="text-muted-foreground">Pendente</Badge>
                               )}
@@ -499,7 +499,7 @@ export default function EmailAutomation() {
                             </TableCell>
                             <TableCell>
                               {log.status === "enviado" ? (
-                                <Badge className="bg-emerald-500 hover:bg-emerald-600">Enviado</Badge>
+                                <Badge className="bg-success hover:bg-success/90">Enviado</Badge>
                               ) : (
                                 <Badge variant="destructive">Erro</Badge>
                               )}
@@ -555,7 +555,7 @@ export default function EmailAutomation() {
             <div className="p-3 bg-muted rounded-lg">
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
-                O conteúdo será automaticamente envolvido no template visual da Lumia (header + footer).
+                O conteúdo será automaticamente envolvido no template visual da Espetos &amp; Cia (header + footer).
               </p>
             </div>
           </div>

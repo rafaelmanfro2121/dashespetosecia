@@ -153,12 +153,12 @@ export default function EmailMarketing() {
 
   const EMAIL_WRAPPER_END = `</div>
   <div style="background:#f0faf8;padding:22px;text-align:center;border-top:1px solid #d4efe9;">
-    <p style="color:#7fa8a0;font-size:12px;margin:0;">© ${new Date().getFullYear()} LUMIA · applumia.com.br</p>
+    <p style="color:#7fa8a0;font-size:12px;margin:0;">© ${new Date().getFullYear()} LUMIA · dashespetosecia.lovable.app</p>
   </div>
 </div>`;
 
-  const EMAIL_CTA_URL = "https://www.applumia.com.br/lp";
-  const EMAIL_CTA_LABEL = "Conhecer o LUMIA";
+  const EMAIL_CTA_URL = "https://www.dashespetosecia.lovable.app";
+  const EMAIL_CTA_LABEL = "Conhecer a Espetos &amp; Cia";
 
   const defaultBodyContent = `<h2>Olá, {nome}!</h2><p>Seu conteúdo aqui...</p>`;
 
@@ -999,7 +999,7 @@ export default function EmailMarketing() {
               {editingTemplate ? "Editar Template" : "Novo Template"}
             </DialogTitle>
             <DialogDescription>
-              Edite somente o modelo visual do e-mail. Use <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">{"{nome}"}</code> para personalizar com o nome do destinatário. O cabeçalho, rodapé e botão do LUMIA são adicionados automaticamente.
+              Edite somente o modelo visual do e-mail. Use <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">{"{nome}"}</code> para personalizar com o nome do destinatário. O cabeçalho, rodapé e botão da Espetos &amp; Cia são adicionados automaticamente.
             </DialogDescription>
           </DialogHeader>
           <div className="grid md:grid-cols-2 gap-6">
@@ -1011,7 +1011,7 @@ export default function EmailMarketing() {
               </div>
               <div>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Assunto do E-mail</Label>
-                <Input value={tplAssunto} onChange={(e) => setTplAssunto(e.target.value)} placeholder="Ex: {nome}, conheça o LUMIA!" className="mt-1.5" />
+                <Input value={tplAssunto} onChange={(e) => setTplAssunto(e.target.value)} placeholder="Ex: {nome}, conheça a Espetos &amp; Cia!" className="mt-1.5" />
               </div>
               <div>
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Modelo do E-mail</Label>
@@ -1046,7 +1046,7 @@ export default function EmailMarketing() {
                 <div className="bg-background border-b px-4 py-3 space-y-1">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="font-semibold text-foreground">De:</span>
-                    <span>Lumia &lt;contato@applumia.com.br&gt;</span>
+                    <span>Lumia &lt;contato@dashespetosecia.lovable.app&gt;</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="font-semibold text-foreground">Assunto:</span>
@@ -1092,7 +1092,7 @@ export default function EmailMarketing() {
             <div className="bg-background border-b px-5 py-3 space-y-1.5">
               <div className="flex items-center gap-2 text-xs">
                 <span className="font-semibold text-foreground w-14">De:</span>
-                <span className="text-muted-foreground">Lumia &lt;contato@applumia.com.br&gt;</span>
+                <span className="text-muted-foreground">Lumia &lt;contato@dashespetosecia.lovable.app&gt;</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <span className="font-semibold text-foreground w-14">Para:</span>

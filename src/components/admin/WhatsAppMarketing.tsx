@@ -245,11 +245,11 @@ export default function WhatsAppMarketing() {
     setEditingTemplate(null);
     setTplNome("");
     setTplImageUrl("");
-    setTplPreLinkMessage("Esse é o *LUMIA* em ação.\nPara conhecer melhor: 👉");
-    setTplLinkUrl("https://www.applumia.com.br/lp");
+    setTplPreLinkMessage("Esse é a *Espetos &amp; Cia* em ação.\nPara conhecer melhor: 👉");
+    setTplLinkUrl("https://www.dashespetosecia.lovable.app");
     setTplConteudo(`Olá, {nome}! 👋
 
-Você conhece o *LUMIA*? O sistema completo para gestão da sua clínica de fisioterapia.
+Você conhece a *Espetos &amp; Cia*? O sistema completo para gestão da sua clínica de fisioterapia.
 
 ✅ Agendamento online
 ✅ Prontuário eletrônico
@@ -927,7 +927,7 @@ Experimente grátis por 7 dias! 🚀`);
                 value={tplPreLinkMessage}
                 onChange={(e) => setTplPreLinkMessage(e.target.value)}
                 rows={3}
-                placeholder="Ex: Esse é o *LUMIA* em ação. Para conhecer melhor: 👉"
+                placeholder="Ex: Esse é a *Espetos &amp; Cia* em ação. Para conhecer melhor: 👉"
                 className="mt-1"
               />
               <p className="text-xs text-muted-foreground mt-1">Enviada logo antes do link, separadamente.</p>
@@ -938,7 +938,7 @@ Experimente grátis por 7 dias! 🚀`);
                 type="url"
                 value={tplLinkUrl}
                 onChange={(e) => setTplLinkUrl(e.target.value)}
-                placeholder="https://www.applumia.com.br/lp"
+                placeholder="https://www.dashespetosecia.lovable.app"
                 className="mt-1"
               />
               <p className="text-xs text-muted-foreground mt-1">Enviado sozinho, sem preview de site, para parecer mais natural.</p>
