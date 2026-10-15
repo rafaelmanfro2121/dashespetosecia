@@ -1,3 +1,5 @@
+> **Hospedagem fora do Lovable:** veja [MIGRACAO.md](MIGRACAO.md).
+
 # Welcome to your Lovable project
 
 ## Project info
