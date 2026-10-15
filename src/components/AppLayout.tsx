@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import QuickEntryFAB from '@/components/QuickEntryFAB';
 import {
   LayoutDashboard, DollarSign, Users,
-  CalendarCheck, ChevronLeft, ChevronRight, LogOut, Package, ClipboardList, Contact, Wrench, Menu, Megaphone
+  CalendarCheck, ChevronLeft, ChevronRight, LogOut, Download, Package, ClipboardList, Contact, Wrench, Menu, Megaphone
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +11,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import logoWhite from '@/assets/logo-white.png';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { downloadFullBackup } from '@/lib/backup';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -24,6 +26,27 @@ const navItems = [
   { to: '/fechamento', icon: CalendarCheck, label: 'Fechamento' },
   { to: '/marketing', icon: Megaphone, label: 'Marketing' },
 ];
+
+function BackupButton() {
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    setBusy(true);
+    try {
+      const { totalRows, failed } = await downloadFullBackup();
+      if (failed.length) toast.warning(`Backup baixado (${totalRows} registros), mas falhou em: ${failed.map(f => f.table).join(', ')}`);
+      else toast.success(`Backup baixado: ${totalRows} registros`);
+    } catch (err) {
+      toast.error((err as Error).message || 'Erro ao gerar backup');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button onClick={run} disabled={busy} className="flex items-center gap-2 text-xs text-sidebar-foreground/50 hover:text-sidebar-primary transition-colors w-full px-1 disabled:opacity-50">
+      <Download size={14} /> {busy ? 'Gerando backup...' : 'Baixar backup completo'}
+    </button>
+  );
+}
 
 function SidebarContent({ collapsed, location, signOut, onNavigate }: { collapsed: boolean; location: any; signOut: () => void; onNavigate?: () => void }) {
   return (
@@ -49,6 +72,7 @@ function SidebarContent({ collapsed, location, signOut, onNavigate }: { collapse
 
       {!collapsed && (
         <div className="px-4 py-4 border-t border-sidebar-border space-y-3">
+          <BackupButton />
           <button onClick={signOut} className="flex items-center gap-2 text-xs text-sidebar-foreground/50 hover:text-sidebar-primary transition-colors w-full px-1">
             <LogOut size={14} /> Sair do Sistema
           </button>

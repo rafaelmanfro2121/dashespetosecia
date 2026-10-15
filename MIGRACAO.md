@@ -36,7 +36,13 @@ Até você concluir o passo 2, o site continua usando o banco atual do Lovable, 
 1. **Crie a conta e o projeto** em <https://supabase.com> (plano Free) e escolha a região *South America (São Paulo)*.
 2. **Crie as tabelas.** No Supabase, abra *SQL Editor* e rode, **em ordem**, cada arquivo da pasta `supabase/migrations/`.
    Outra opção é usar o terminal: `npx supabase link --project-ref SEU_ID && npx supabase db push`.
-3. **Copie os dados.** No Lovable, em *Cloud → Database*, exporte cada tabela em CSV. No Supabase, em *Table Editor → Import data from CSV*, importe cada uma.
+3. **Copie os dados.**
+   - No sistema atual (ainda ligado ao Lovable), entre com seu login e clique em **Baixar backup completo**, no menu lateral, logo acima de "Sair do Sistema".
+   - O botão baixa dois arquivos:
+     - `backup-espetos-AAAA-MM-DD.json`: a cópia de segurança. Guarde esse arquivo.
+     - `backup-espetos-AAAA-MM-DD.sql`: o arquivo de restauração.
+   - No Supabase novo, abra *SQL Editor → New query*, cole o conteúdo do `.sql` e clique em **Run**. Ele apaga o que estiver nas tabelas e coloca tudo do backup. Pode rodar de novo sem duplicar nada.
+   - Confira em *Table Editor* se os pedidos (`service_orders`) e o financeiro (`transactions`) estão lá.
 4. **Copie os arquivos.** Recrie os buckets `invoices`, `contracts` e `email-assets` em *Storage* e envie de novo os arquivos baixados do Lovable.
 5. **Bloqueie novos cadastros.** Em *Authentication → Sign In / Providers*, desligue **Allow new users to sign up**. A tela do sistema já não tem mais o botão "Criar conta", mas esse bloqueio no Supabase é o que impede alguém de criar conta por fora.
 6. **Cadastre os usuários.** As senhas não podem ser exportadas. Em *Authentication → Users → Add user → Create new user*, crie cada pessoa com e-mail e senha.
