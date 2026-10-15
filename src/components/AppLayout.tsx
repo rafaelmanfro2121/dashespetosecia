@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import QuickEntryFAB from '@/components/QuickEntryFAB';
 import {
   LayoutDashboard, DollarSign, Users,
-  CalendarCheck, ChevronLeft, ChevronRight, LogOut, Download, Package, ClipboardList, Contact, Wrench, Menu, Megaphone
+  CalendarCheck, ChevronLeft, ChevronRight, LogOut, Download, Package, ClipboardList, Contact, Wrench, Menu
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,7 +24,6 @@ const navItems = [
   { to: '/ordem-servico-tecnica', icon: Wrench, label: 'Ordem de Serviço' },
   { to: '/clientes', icon: Contact, label: 'Clientes' },
   { to: '/fechamento', icon: CalendarCheck, label: 'Fechamento' },
-  { to: '/marketing', icon: Megaphone, label: 'Marketing' },
 ];
 
 function BackupButton() {

@@ -1,13 +1,1 @@
 project_id = "jizaqogargmjpjbjyvwm"
-
-[functions.send-marketing-emails]
-verify_jwt = false
-
-[functions.send-whatsapp-marketing]
-verify_jwt = false
-
-[functions.validate-whatsapp-numbers]
-verify_jwt = false
-
-[functions.test-whatsapp-marketing-send]
-verify_jwt = false
