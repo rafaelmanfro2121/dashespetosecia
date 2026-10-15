@@ -1,11 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '@/contexts/FinanceContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus, Search, Filter, DollarSign, Sparkles, Calendar, Package } from 'lucide-react';
+import { Trash2, Plus, Search, Filter, DollarSign, Calendar, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import MetricCard from '@/components/MetricCard';
 import { TrendingUp, TrendingDown } from 'lucide-react';
@@ -55,7 +54,6 @@ function getPeriodRange(period: Period, offset: number): { start: Date; end: Dat
 
 export default function FinanceiroPage() {
   const { transactions, categories, addTransaction, removeTransaction, addCategory, removeCategory } = useFinance();
-  const { user } = useAuth();
 
   const [period, setPeriod] = useState<Period>('diario');
   const [offset, setOffset] = useState(0);
@@ -127,8 +125,6 @@ export default function FinanceiroPage() {
   }, [start, end]);
 
   const [form, setForm] = useState({ transaction_date: new Date().toISOString().slice(0, 10), description: '', category_id: '', type: 'saida' as 'entrada' | 'saida', amount: '', payment_method: 'Dinheiro' });
-  const [aiInput, setAiInput] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
   const [newCat, setNewCat] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,58 +135,6 @@ export default function FinanceiroPage() {
       setForm({ ...form, description: '', amount: '' });
       toast.success('Movimentação registrada');
     } catch (err: any) { console.error('[Financeiro] Submit error:', err); toast.error(err.message || 'Erro ao salvar'); }
-  };
-
-  const handleAI = async () => {
-    if (!aiInput.trim() || !user) return;
-    setAiLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-report', {
-        body: { financialData: { message: aiInput }, type: 'parse' },
-      });
-      if (error) throw error;
-      if (data.error) { toast.error(data.error); setAiLoading(false); return; }
-
-      const result = data.result;
-      if (!result) { toast.error('Não consegui interpretar'); setAiLoading(false); return; }
-
-      const cat = categories.find(c => c.name.toLowerCase() === (result.category || '').toLowerCase());
-
-      await addTransaction({
-        transaction_date: new Date().toISOString().slice(0, 10),
-        description: result.description || aiInput,
-        category_id: cat?.id || null,
-        type: result.type || 'saida',
-        amount: result.amount || 0,
-        payment_method: result.payment_method || 'Não especificado',
-      });
-
-      // If it's a material purchase, trigger cost recalculation
-      if (result.is_material_purchase && result.material_name) {
-        try {
-          await supabase.functions.invoke('ai-report', {
-            body: {
-              type: 'recalculate-costs',
-              financialData: {
-                materialName: result.material_name,
-                newCost: result.amount,
-                quantity: result.quantity || 1,
-              },
-            },
-          });
-          toast.info('🔄 Custos dos produtos recalculados com base na nova compra de material');
-        } catch {
-          // Non-critical, don't block
-        }
-      }
-
-      setAiInput('');
-      toast.success(`IA: ${result.type === 'entrada' ? 'Entrada' : 'Saída'} de ${formatCurrency(result.amount)}`);
-    } catch (err: any) {
-      toast.error(err.message || 'Erro ao processar');
-    } finally {
-      setAiLoading(false);
-    }
   };
 
   const periodLabels: Record<Period, string> = {
@@ -219,31 +163,6 @@ export default function FinanceiroPage() {
         <MetricCard label="Saídas" value={totalOut} icon={TrendingDown} variant="danger" />
         <MetricCard label="Custo Matéria-Prima" value={materialCost} icon={Package} variant="warning" />
         <MetricCard label="Saldo" value={totalIn - totalOut} icon={DollarSign} variant={totalIn - totalOut >= 0 ? 'info' : 'danger'} />
-      </div>
-
-      {/* AI Input */}
-      <div className="metric-card mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Sparkles size={16} className="text-primary" />
-          <h3 className="text-sm font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Registro Inteligente</h3>
-          <span className="badge-info text-[10px] ml-auto">Powered by IA</span>
-        </div>
-        <p className="text-xs text-muted-foreground mb-2">
-          💡 Ao registrar compra de material (ex: "comprei 5 chapas de inox por R$800"), a IA recalcula automaticamente o custo dos produtos.
-        </p>
-        <div className="flex gap-2">
-          <Input
-            placeholder='Ex: "Comprei 5 chapas de inox por 800 reais" ou "Entrou 12.500 da venda de churrasqueira"'
-            value={aiInput}
-            onChange={e => setAiInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAI()}
-            className="flex-1 h-11 rounded-xl"
-            disabled={aiLoading}
-          />
-          <Button onClick={handleAI} disabled={aiLoading} className="h-11 rounded-xl px-5">
-            {aiLoading ? 'Processando...' : <><Sparkles size={14} className="mr-1.5" /> Registrar</>}
-          </Button>
-        </div>
       </div>
 
       {/* Manual Form */}

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useFinance } from '@/contexts/FinanceContext';
 import { getCurrentMonth, getCurrentYear, getMonthName, formatCurrency, formatPercent } from '@/lib/formatters';
 import MetricCard from '@/components/MetricCard';
-import { TrendingUp, TrendingDown, DollarSign, Users, Banknote, Target, Percent, Loader2, AlertTriangle, Sparkles, Flame, CalendarDays, BarChart3, TrendingUp as Forecast } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Users, Banknote, Target, Percent, Loader2, AlertTriangle, Flame, CalendarDays, BarChart3, TrendingUp as Forecast } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend, AreaChart, Area
@@ -197,13 +197,9 @@ export default function DashboardPage() {
           <h1 className="page-title text-2xl sm:text-3xl">Dashboard</h1>
           <p className="text-muted-foreground text-xs sm:text-sm mt-1">{getMonthName(month)} de {year} — Espetos & Cia</p>
         </div>
-        <div className="flex items-center gap-2 badge-info">
-          <Sparkles size={14} />
-          <span>IA Ativa</span>
-        </div>
       </div>
 
-      {/* AI Alerts */}
+      {/* Alertas */}
       {lowMarginProducts.length > 0 && (
         <div className="bg-warning/5 border border-warning/20 rounded-2xl p-3 sm:p-5 mb-8 animate-fade-in">
           <div className="flex items-center gap-2 mb-3">

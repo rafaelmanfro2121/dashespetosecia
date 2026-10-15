@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { LogIn, UserPlus, Sparkles } from 'lucide-react';
+import { LogIn, UserPlus } from 'lucide-react';
 import logoBlack from '@/assets/logo-black.png';
 
 export default function AuthPage() {
@@ -41,11 +41,7 @@ export default function AuthPage() {
       <div className="w-full max-w-md px-6">
         <div className="text-center mb-10">
           <img src={logoBlack} alt="Espetos & Cia" className="h-28 mx-auto mb-5 object-contain" />
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Sparkles size={16} className="text-primary" />
-            <span className="text-sm font-medium text-primary">Powered by AI</span>
-          </div>
-          <p className="text-muted-foreground text-sm">Sistema Inteligente de Gestão Financeira</p>
+          <p className="text-muted-foreground text-sm">Sistema de Gestão e CRM</p>
         </div>
 
         <div className="metric-card">

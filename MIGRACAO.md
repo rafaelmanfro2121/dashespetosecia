@@ -45,7 +45,7 @@ Até você concluir o passo 2, o site continua usando o banco atual do Lovable, 
 
    Depois disso, rode o workflow de novo: *Actions → Publicar no GitHub Pages → Run workflow*.
 
-### Funções automáticas (e-mail, WhatsApp, relatório IA)
+### Funções automáticas (e-mail e WhatsApp)
 
 Ficam em `supabase/functions/`. Para publicá-las no seu Supabase:
 
@@ -55,7 +55,6 @@ npx supabase secrets set RESEND_API_KEY=... EVOLUTION_API_URL=... EVOLUTION_API_
 ```
 
 - **E-mail marketing** (Resend) e **WhatsApp** (Evolution API) continuam funcionando com as suas chaves.
-- **Relatório IA** (`ai-report`) usa a IA do Lovable (`LOVABLE_API_KEY`). Fora do Lovable, essa função precisa ser adaptada para outro provedor de IA. O resto do sistema funciona sem ela.
 
 ### Limites do plano grátis do Supabase
 
