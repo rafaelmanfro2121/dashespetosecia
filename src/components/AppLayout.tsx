@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { pageVariants } from '@/lib/motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import logoWhite from '@/assets/logo-white.png';
@@ -152,15 +151,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
       <main className="flex-1 overflow-auto bg-background">
-        <motion.div
-          key={location.pathname}
-          variants={pageVariants}
-          initial="hidden"
-          animate="visible"
-          className={`${isMobile ? 'px-4 pt-16 pb-6' : 'p-8'} max-w-7xl mx-auto`}
-        >
+        <div className={`${isMobile ? 'px-4 pt-16 pb-6' : 'p-8'} max-w-7xl mx-auto`}>
           {children}
-        </motion.div>
+        </div>
       </main>
       <QuickEntryFAB />
     </div>
