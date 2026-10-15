@@ -116,7 +116,7 @@ export default function MateriaisPage() {
       chartData.push({ date: format(new Date(date + 'T12:00:00'), 'dd/MM', { locale: ptBR }), ...materials });
     });
 
-  const chartColors = ['hsl(225,65%,48%)', 'hsl(155,55%,42%)', 'hsl(0,75%,55%)', 'hsl(38,90%,50%)', 'hsl(280,55%,55%)', 'hsl(180,50%,42%)'];
+  const chartColors = ['hsl(17,88%,40%)', 'hsl(155,55%,42%)', 'hsl(0,75%,55%)', 'hsl(38,90%,50%)', 'hsl(280,55%,55%)', 'hsl(180,50%,42%)'];
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-primary" size={32} /></div>;
@@ -178,10 +178,10 @@ export default function MateriaisPage() {
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(225,15%,92%)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(30,15%,92%)" />
               <XAxis dataKey="date" fontSize={11} />
               <YAxis fontSize={11} tickFormatter={v => `R$${v}`} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(225,18%,90%)', fontSize: '12px' }} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(30,15%,89%)', fontSize: '12px' }} />
               <Legend wrapperStyle={{ fontSize: '12px' }} />
               {materialNames.map((name, i) => (
                 <Line key={name} type="monotone" dataKey={name} name={name.charAt(0).toUpperCase() + name.slice(1)} stroke={chartColors[i % chartColors.length]} strokeWidth={2.5} dot={{ r: 4 }} connectNulls />

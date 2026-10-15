@@ -54,17 +54,6 @@ Até você concluir o passo 2, o site continua usando o banco atual do Lovable, 
 
    Depois disso, rode o workflow de novo: *Actions → Publicar no GitHub Pages → Run workflow*.
 
-### Funções automáticas (e-mail e WhatsApp)
-
-Ficam em `supabase/functions/`. Para publicá-las no seu Supabase:
-
-```sh
-npx supabase functions deploy --project-ref SEU_ID
-npx supabase secrets set RESEND_API_KEY=... EVOLUTION_API_URL=... EVOLUTION_API_KEY=... --project-ref SEU_ID
-```
-
-- **E-mail marketing** (Resend) e **WhatsApp** (Evolution API) continuam funcionando com as suas chaves.
-
 ### Limites do plano grátis do Supabase
 
 - 500 MB de banco e 1 GB de arquivos, mais do que suficiente para este sistema.

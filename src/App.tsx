@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MotionConfig } from "framer-motion";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { FinanceProvider } from "@/contexts/FinanceContext";
@@ -19,7 +20,6 @@ import ProdutosPage from "@/pages/ProdutosPage";
 import OrdemServicoPage from "@/pages/OrdemServicoPage";
 import OrdemServicoTecnicaPage from "@/pages/OrdemServicoTecnicaPage";
 import ClientesPage from "@/pages/ClientesPage";
-import MarketingPage from "@/pages/Marketing";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,7 +63,6 @@ function ProtectedRoutes() {
           <Route path="/ordem-servico" element={<OrdemServicoPage />} />
           <Route path="/ordem-servico-tecnica" element={<OrdemServicoTecnicaPage />} />
           <Route path="/clientes" element={<ClientesPage />} />
-          <Route path="/marketing" element={<MarketingPage />} />
           <Route path="/presenca" element={<Navigate to="/funcionarios" replace />} />
           <Route path="/vales" element={<Navigate to="/funcionarios" replace />} />
           <Route path="*" element={<NotFound />} />
@@ -75,6 +74,7 @@ function ProtectedRoutes() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <MotionConfig reducedMotion="user">
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -87,6 +87,7 @@ const App = () => (
         </HashRouter>
       </AuthProvider>
     </TooltipProvider>
+    </MotionConfig>
   </QueryClientProvider>
 );
 

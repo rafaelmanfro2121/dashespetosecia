@@ -6,54 +6,55 @@
 
 @layer base {
   :root {
-    --background: 225 25% 97%;
-    --foreground: 225 30% 12%;
+    /* Paleta Espetos & Cia: carvão + brasa */
+    --background: 30 20% 97%;
+    --foreground: 24 12% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 225 30% 12%;
+    --card-foreground: 24 12% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 225 30% 12%;
+    --popover-foreground: 24 12% 10%;
 
-    --primary: 225 65% 48%;
+    --primary: 17 88% 40%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 155 55% 42%;
+    --secondary: 155 55% 36%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 225 15% 93%;
-    --muted-foreground: 225 12% 50%;
+    --muted: 30 15% 93%;
+    --muted-foreground: 25 6% 38%;
 
-    --accent: 225 30% 93%;
-    --accent-foreground: 225 65% 48%;
+    --accent: 28 60% 94%;
+    --accent-foreground: 17 88% 36%;
 
-    --destructive: 0 75% 55%;
+    --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 155 55% 38%;
+    --success: 155 60% 32%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 90% 50%;
-    --warning-foreground: 38 90% 15%;
+    --warning: 36 92% 44%;
+    --warning-foreground: 36 90% 12%;
 
-    --info: 210 95% 55%;
+    --info: 212 85% 46%;
     --info-foreground: 0 0% 100%;
 
-    --border: 225 18% 90%;
-    --input: 225 18% 88%;
-    --ring: 225 65% 48%;
+    --border: 30 15% 89%;
+    --input: 30 15% 85%;
+    --ring: 17 88% 40%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 225 30% 10%;
-    --sidebar-foreground: 225 15% 75%;
-    --sidebar-primary: 155 55% 50%;
+    --sidebar-background: 24 10% 9%;
+    --sidebar-foreground: 30 10% 74%;
+    --sidebar-primary: 25 95% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 25% 18%;
-    --sidebar-accent-foreground: 225 15% 92%;
-    --sidebar-border: 225 25% 18%;
-    --sidebar-ring: 155 55% 50%;
-    --sidebar-muted: 225 20% 28%;
+    --sidebar-accent: 24 9% 16%;
+    --sidebar-accent-foreground: 30 15% 94%;
+    --sidebar-border: 24 9% 16%;
+    --sidebar-ring: 25 95% 58%;
+    --sidebar-muted: 24 8% 28%;
   }
 }
 
@@ -64,6 +65,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+    font-feature-settings: "tnum" 1;
     font-family: 'Plus Jakarta Sans', sans-serif;
   }
 
@@ -74,15 +76,15 @@
 
 @layer utilities {
   .metric-card {
-    @apply bg-card rounded-2xl border p-6 transition-all duration-300 shadow-sm hover:shadow-md;
+    @apply bg-card rounded-2xl border p-6 shadow-sm transition-[box-shadow,border-color] duration-200 hover:shadow-md hover:border-primary/20;
   }
 
   .sidebar-item {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200;
+    @apply relative flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring;
   }
 
   .sidebar-item-active {
-    @apply bg-sidebar-accent text-sidebar-primary shadow-sm;
+    @apply text-sidebar-primary;
   }
 
   .sidebar-item-inactive {
@@ -140,4 +142,11 @@
 .pdf-export * {
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
