@@ -1,5 +1,7 @@
 import { LucideIcon } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { formatCurrency } from '@/lib/formatters';
+import { itemVariants } from '@/lib/motion';
 
 interface MetricCardProps {
   label: string;
@@ -49,15 +51,19 @@ export default function MetricCard({ label, value, icon: Icon, isCurrency = true
   const config = variantConfig[variant];
 
   return (
-    <div className={`metric-card ${config.border} bg-gradient-to-br ${config.gradient}`}>
+    <motion.div
+      variants={itemVariants}
+      whileHover={{ y: -3, transition: { duration: 0.18 } }}
+      className={`metric-card ${config.border} bg-gradient-to-br ${config.gradient}`}
+    >
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
         <div className={`w-10 h-10 rounded-xl ${config.iconBg} flex items-center justify-center`}>
-          <Icon size={20} className={config.iconColor} />
+          <Icon size={20} className={config.iconColor} aria-hidden="true" />
         </div>
       </div>
-      <p className="text-2xl font-bold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{display}</p>
+      <p className="text-2xl font-bold tracking-tight tabular-nums" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{display}</p>
       {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
-    </div>
+    </motion.div>
   );
 }

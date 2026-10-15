@@ -6,6 +6,8 @@ import {
   CalendarCheck, ChevronLeft, ChevronRight, LogOut, Download, Package, ClipboardList, Contact, Wrench, Menu
 } from 'lucide-react';
 import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { pageVariants } from '@/lib/motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import logoWhite from '@/assets/logo-white.png';
@@ -61,9 +63,20 @@ function SidebarContent({ collapsed, location, signOut, onNavigate }: { collapse
               to={item.to}
               onClick={onNavigate}
               className={`sidebar-item ${active ? 'sidebar-item-active' : 'sidebar-item-inactive'}`}
+              aria-label={collapsed ? item.label : undefined}
+              title={collapsed ? item.label : undefined}
             >
-              <item.icon size={18} />
-              {!collapsed && <span>{item.label}</span>}
+              {active && (
+                <motion.span
+                  layoutId="sidebar-active"
+                  className="absolute inset-0 rounded-xl bg-sidebar-accent shadow-sm"
+                  transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                >
+                  <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-sidebar-primary" />
+                </motion.span>
+              )}
+              <item.icon size={18} className="relative" />
+              {!collapsed && <span className="relative">{item.label}</span>}
             </NavLink>
           );
         })}
@@ -95,7 +108,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {!isMobile && (
         <aside
           className={`flex flex-col transition-all duration-300 ${collapsed ? 'w-[72px]' : 'w-64'} shrink-0`}
-          style={{ background: 'linear-gradient(180deg, hsl(225, 30%, 12%) 0%, hsl(225, 35%, 8%) 100%)' }}
+          style={{ background: 'linear-gradient(180deg, hsl(24, 10%, 11%) 0%, hsl(24, 12%, 6%) 100%)' }}
         >
           <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border min-h-[72px]">
             {!collapsed && (
@@ -103,6 +116,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
             <button
               onClick={() => setCollapsed(c => !c)}
+              aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
               className="ml-auto text-sidebar-foreground/60 hover:text-sidebar-primary transition-colors rounded-lg p-1.5 hover:bg-sidebar-accent"
             >
               {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -127,7 +141,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SheetContent
             side="left"
             className="w-[280px] p-0 border-r-0"
-            style={{ background: 'linear-gradient(180deg, hsl(225, 30%, 12%) 0%, hsl(225, 35%, 8%) 100%)' }}
+            style={{ background: 'linear-gradient(180deg, hsl(24, 10%, 11%) 0%, hsl(24, 12%, 6%) 100%)' }}
           >
             <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border min-h-[72px]">
               <img src={logoWhite} alt="Espetos & Cia" className="h-10 object-contain" />
@@ -138,9 +152,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
       <main className="flex-1 overflow-auto bg-background">
-        <div className={`${isMobile ? 'px-4 pt-16 pb-6' : 'p-8'} max-w-7xl mx-auto animate-fade-in`}>
+        <motion.div
+          key={location.pathname}
+          variants={pageVariants}
+          initial="hidden"
+          animate="visible"
+          className={`${isMobile ? 'px-4 pt-16 pb-6' : 'p-8'} max-w-7xl mx-auto`}
+        >
           {children}
-        </div>
+        </motion.div>
       </main>
       <QuickEntryFAB />
     </div>
