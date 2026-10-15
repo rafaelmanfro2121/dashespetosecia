@@ -15,12 +15,14 @@ O GitHub só hospeda arquivos estáticos. Ele não guarda logins nem dados digit
 
 O arquivo `.github/workflows/deploy.yml` já publica o site sozinho a cada alteração na branch `main`.
 
-1. **O repositório é privado.** No plano grátis do GitHub, o Pages só funciona em repositório **público**. Você tem 3 opções:
-   - Deixar o repositório público: *Settings → General → Danger Zone → Change visibility*. O código fica visível para qualquer pessoa, mas os dados continuam protegidos pelo login.
-   - Assinar o GitHub Pro (cerca de US$ 4/mês) e manter o repositório privado.
-   - Manter privado e usar **Netlify**, **Vercel** ou **Cloudflare Pages**, que são grátis e aceitam repositório privado. Basta conectar o repositório, usar o comando de build `npm run build` e a pasta `dist`.
-2. Em *Settings → Pages → Build and deployment → Source*, escolha **GitHub Actions**.
-3. Faça o merge deste PR. Em poucos minutos o site estará em
+1. **Deixar o repositório público** (o GitHub Pages grátis exige isso; os dados continuam protegidos pelo login):
+   - Abra <https://github.com/rafaelmanfro2121/dashespetosecia/settings>. No celular, use "Ver versão para computador", porque o app do GitHub não mostra essa tela.
+   - Role **até o fim** da página, até a caixa vermelha **Danger Zone**.
+   - Clique em **Change visibility → Change to public** e confirme digitando o nome do repositório.
+2. **Ligar o GitHub Pages:**
+   - Abra <https://github.com/rafaelmanfro2121/dashespetosecia/settings/pages>.
+   - Em **Build and deployment → Source**, escolha **GitHub Actions**.
+3. **Fazer o merge do PR:** abra o PR, clique em **Ready for review** e depois em **Merge pull request**. Em poucos minutos o site estará em
    `https://rafaelmanfro2121.github.io/dashespetosecia/`
 
 Até você concluir o passo 2, o site continua usando o banco atual do Lovable, então tudo funciona igual.
@@ -36,9 +38,10 @@ Até você concluir o passo 2, o site continua usando o banco atual do Lovable, 
    Outra opção é usar o terminal: `npx supabase link --project-ref SEU_ID && npx supabase db push`.
 3. **Copie os dados.** No Lovable, em *Cloud → Database*, exporte cada tabela em CSV. No Supabase, em *Table Editor → Import data from CSV*, importe cada uma.
 4. **Copie os arquivos.** Recrie os buckets `invoices`, `contracts` e `email-assets` em *Storage* e envie de novo os arquivos baixados do Lovable.
-5. **Usuários e login.** As senhas não podem ser exportadas. Cada pessoa cria a conta de novo na tela de login ou usa "esqueci a senha". Como são poucos usuários, isso costuma ser rápido.
-6. **Configure o login.** Em *Authentication → URL Configuration*, coloque o endereço do site em **Site URL** e em **Redirect URLs**, por exemplo `https://rafaelmanfro2121.github.io/dashespetosecia/`.
-7. **Ligue o site ao novo banco.** No GitHub, abra *Settings → Secrets and variables → Actions → New repository secret* e crie os 3 secrets abaixo. Os valores estão no Supabase, em *Project Settings → API*.
+5. **Bloqueie novos cadastros.** Em *Authentication → Sign In / Providers*, desligue **Allow new users to sign up**. A tela do sistema já não tem mais o botão "Criar conta", mas esse bloqueio no Supabase é o que impede alguém de criar conta por fora.
+6. **Cadastre os usuários.** As senhas não podem ser exportadas. Em *Authentication → Users → Add user → Create new user*, crie cada pessoa com e-mail e senha.
+7. **Configure o login.** Em *Authentication → URL Configuration*, coloque o endereço do site em **Site URL** e em **Redirect URLs**, por exemplo `https://rafaelmanfro2121.github.io/dashespetosecia/`.
+8. **Ligue o site ao novo banco.** No GitHub, abra *Settings → Secrets and variables → Actions → New repository secret* e crie os 3 secrets abaixo. Os valores estão no Supabase, em *Project Settings → API*.
    - `VITE_SUPABASE_URL`: a Project URL
    - `VITE_SUPABASE_PUBLISHABLE_KEY`: a chave `anon` / `publishable`
    - `VITE_SUPABASE_PROJECT_ID`: o ID do projeto
