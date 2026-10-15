@@ -5,6 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Caminhos relativos: funciona no GitHub Pages (/dashespetosecia/) e em qualquer outra hospedagem.
+  base: "./",
   server: {
     host: "::",
     port: 8080,

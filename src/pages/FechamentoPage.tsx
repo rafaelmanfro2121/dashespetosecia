@@ -252,7 +252,7 @@ export default function FechamentoPage() {
         {/* PDF Header */}
         <div className="pdf-header hidden">
           <div className="text-center mb-6 pb-4 border-b-2 border-primary">
-            <img src="/logo-pdf.png" alt="Espetos & Cia" className="h-16 mx-auto mb-2" />
+            <img src={`${import.meta.env.BASE_URL}logo-pdf.png`} alt="Espetos & Cia" className="h-16 mx-auto mb-2" />
             <p className="text-sm text-muted-foreground mt-1">Relatório de Fechamento — {period === 'diario' ? 'Diário' : period === 'semanal' ? 'Semanal' : period === 'mensal' ? 'Mensal' : 'Anual'}</p>
             <p className="text-lg font-semibold mt-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               {periodLabel}
