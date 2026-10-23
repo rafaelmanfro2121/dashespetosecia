@@ -23,6 +23,7 @@ export interface ImportResult {
   pdfs: number;         // PDFs encontrados
   pages: number;        // páginas lidas
   unreadable: string[]; // PDFs que não parecem DANFE ou não puderam ser lidos
+  unreadableReasons: { noText: string[]; otherLayout: string[]; error: string[] };
   duplicates: number;   // mesma chave de acesso repetida no arquivo
 }
 
@@ -30,10 +31,11 @@ const isPdf = (name: string) => /\.pdf$/i.test(name);
 const isArchive = (name: string) => /\.(rar|zip|7z)$/i.test(name);
 
 /** Lê todas as páginas: um PDF pode ter várias notas (uma por página) ou uma nota com várias páginas. */
-async function readDanfes(blob: Blob): Promise<{ notes: DanfeData[]; pages: number }> {
+async function readDanfes(blob: Blob): Promise<{ notes: DanfeData[]; pages: number; hasText: boolean }> {
   const doc = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
   try {
     const notes: DanfeData[] = [];
+    let hasText = false;
     for (let p = 1; p <= doc.numPages; p++) {
       const page = await doc.getPage(p);
       const content = await page.getTextContent();
@@ -41,11 +43,12 @@ async function readDanfes(blob: Blob): Promise<{ notes: DanfeData[]; pages: numb
       for (const it of content.items) {
         if ('str' in it && it.str.trim()) items.push({ str: it.str, x: it.transform[4], y: it.transform[5], w: it.width });
       }
+      if (items.length > 5) hasText = true;
       const data = parseDanfe(items);
       if (data) notes.push(data);
       page.cleanup();
     }
-    return { notes, pages: doc.numPages };
+    return { notes, pages: doc.numPages, hasText };
   } finally {
     await doc.destroy();
   }
@@ -90,6 +93,7 @@ export async function importNotes(files: File[], onProgress: (p: ImportProgress)
   const pdfs = await collectPdfs(files, msg => onProgress({ done: 0, total: 0, current: msg }));
   const byKey = new Map<string, ParsedNote>();
   const unreadable: string[] = [];
+  const unreadableReasons = { noText: [] as string[], otherLayout: [] as string[], error: [] as string[] };
   let duplicates = 0;
 
   let pages = 0;
@@ -99,7 +103,11 @@ export async function importNotes(files: File[], onProgress: (p: ImportProgress)
     try {
       const r = await readDanfes(await load());
       pages += r.pages;
-      if (!r.notes.length) { unreadable.push(name); continue; }
+      if (!r.notes.length) {
+        unreadable.push(name);
+        (r.hasText ? unreadableReasons.otherLayout : unreadableReasons.noText).push(name);
+        continue;
+      }
       for (const data of r.notes) {
         // Continuação de uma nota (página 2, 3...) repete a chave: não conta como repetida.
         if (byKey.has(data.chave)) {
@@ -110,8 +118,9 @@ export async function importNotes(files: File[], onProgress: (p: ImportProgress)
       }
     } catch {
       unreadable.push(name);
+      unreadableReasons.error.push(name);
     }
   }
   onProgress({ done: pdfs.length, total: pdfs.length, current: '' });
-  return { notes: [...byKey.values()], pdfs: pdfs.length, pages, unreadable, duplicates };
+  return { notes: [...byKey.values()], pdfs: pdfs.length, pages, unreadable, unreadableReasons, duplicates };
 }

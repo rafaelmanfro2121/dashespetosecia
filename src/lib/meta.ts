@@ -124,6 +124,17 @@ export async function removeHistoricalNotes(keys: string[]): Promise<void> {
   }
 }
 
+/** Chaves de acesso das notas que já estão no sistema. */
+export async function existingHistoricalKeys(): Promise<Set<string>> {
+  const keys = new Set<string>();
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from('historical_sales').select('nf_key').range(from, from + 999);
+    if (error) return keys;
+    (data ?? []).forEach(r => keys.add(r.nf_key));
+    if (!data || data.length < 1000) return keys;
+  }
+}
+
 export async function countHistoricalSales(): Promise<number | null> {
   const { count, error } = await supabase.from('historical_sales').select('id', { count: 'exact', head: true });
   return error ? null : count ?? 0;
