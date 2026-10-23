@@ -750,6 +750,7 @@ export type Database = {
           paid_amount: number
           payment_method_client: string
           payment_status: string
+          payments: Json
           subtotal: number
           total: number
           user_id: string
@@ -788,6 +789,7 @@ export type Database = {
           paid_amount?: number
           payment_method_client?: string
           payment_status?: string
+          payments?: Json
           subtotal?: number
           total?: number
           user_id: string
@@ -826,6 +828,7 @@ export type Database = {
           paid_amount?: number
           payment_method_client?: string
           payment_status?: string
+          payments?: Json
           subtotal?: number
           total?: number
           user_id?: string

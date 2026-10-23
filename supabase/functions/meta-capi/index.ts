@@ -75,6 +75,32 @@ Deno.serve(async (req) => {
   const actionSource = Deno.env.get('META_ACTION_SOURCE') || 'chat';
 
   const { action = 'process' } = await req.json().catch(() => ({}));
+
+  // Teste: envia a última venda fechada só para o "Eventos de teste", sem mudar o status dela.
+  if (action === 'test') {
+    if (!testCode) return json({ error: 'Para testar, crie o secret META_TEST_EVENT_CODE no Supabase.' }, 400);
+    const { data: latest } = await admin
+      .from('service_orders')
+      .select('id, cliente_nome, cliente_telefone, cliente_email, cliente_contato, total, payment_status, order_status, atendimento_data')
+      .in('payment_status', ['pago', 'parcial'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!latest) return json({ error: 'Nenhuma venda fechada para testar.' }, 404);
+    const event = await buildPurchaseEvent(latest as SaleRow, new Date(), actionSource);
+    if (!event) return json({ error: 'A última venda não tem telefone nem e-mail válido.' }, 422);
+    const result = await postToMeta([event], token, testCode);
+    if (!result.ok) {
+      console.error(`[meta-capi] teste falhou para a venda ${latest.id}`);
+      return json({ test: true, actionSource, sent: 0, found: 1, errors: 1, pending: 0, metaError: result.message });
+    }
+    return json({
+      test: true, actionSource, found: 1, sent: 1, errors: 0, pending: 0,
+      metaEventsReceived: result.reply.events_received ?? 0,
+      fbtraceId: result.reply.fbtrace_id ?? null,
+      metaMessages: result.reply.messages ?? [],
+    });
+  }
   const statuses = action === 'reprocess' ? ['pendente', 'erro'] : ['pendente'];
 
   const { data: rows, error } = await admin

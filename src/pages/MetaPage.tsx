@@ -5,7 +5,7 @@ import { runMetaCapi, exportMetaCustomersCsv, type CapiSummary } from '@/lib/met
 import type { ExportStats } from '../../supabase/functions/_shared/meta';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Target, Send, RefreshCw, Download, Loader2, AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
+import { Target, Send, RefreshCw, Download, Loader2, AlertTriangle, CheckCircle2, Clock, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface StatusCounts { pendente: number; enviado: number; erro: number }
@@ -15,7 +15,7 @@ export default function MetaPage() {
   const [counts, setCounts] = useState<StatusCounts | null>(null);
   const [errors, setErrors] = useState<ErrorRow[]>([]);
   const [setupMissing, setSetupMissing] = useState(false);
-  const [running, setRunning] = useState<'process' | 'reprocess' | null>(null);
+  const [running, setRunning] = useState<'process' | 'reprocess' | 'test' | null>(null);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -42,12 +42,15 @@ export default function MetaPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const run = async (action: 'process' | 'reprocess') => {
+  const run = async (action: 'process' | 'reprocess' | 'test') => {
     setRunning(action);
     try {
       const r = await runMetaCapi(action);
       setLastRun(r);
-      if (r.found === 0) toast.info('Nenhuma venda na fila');
+      if (action === 'test') {
+        if (r.metaError) toast.error(`A Meta recusou o teste: ${r.metaError}`);
+        else toast.success(`Teste enviado: a Meta recebeu ${r.metaEventsReceived ?? 0} evento(s). Confira em Eventos de teste.`);
+      } else if (r.found === 0) toast.info('Nenhuma venda na fila');
       else toast.success(`${r.sent} enviada(s)${r.errors ? `, ${r.errors} com erro` : ''}${r.pending ? `, ${r.pending} para tentar de novo` : ''}${r.test ? ' (modo teste)' : ''}`);
     } catch (err) {
       toast.error((err as Error).message || 'Erro ao enviar para a Meta');
@@ -117,6 +120,9 @@ export default function MetaPage() {
               <Button variant="outline" onClick={() => run('reprocess')} disabled={!!running} className="rounded-xl">
                 {running === 'reprocess' ? <Loader2 className="animate-spin" /> : <RefreshCw />} Reenviar também as com erro
               </Button>
+              <Button variant="outline" onClick={() => run('test')} disabled={!!running} className="rounded-xl">
+                {running === 'test' ? <Loader2 className="animate-spin" /> : <FlaskConical />} Enviar evento de teste
+              </Button>
             </div>
             {lastRun && (
               <div className="mt-4 rounded-xl border bg-muted/30 p-3 text-xs space-y-1" aria-live="polite">
@@ -124,6 +130,8 @@ export default function MetaPage() {
                 <p>Vendas na fila: {lastRun.found} · enviadas: {lastRun.sent} · com erro: {lastRun.errors} · para tentar de novo: {lastRun.pending}</p>
                 {lastRun.sent > 0 && <p>A Meta confirmou o recebimento de <strong>{lastRun.metaEventsReceived ?? 0}</strong> evento(s).</p>}
                 <p>Modo: <strong>{lastRun.test ? 'TESTE (aparece só em Eventos de teste)' : 'PRODUÇÃO'}</strong> · origem: {lastRun.actionSource ?? '–'}</p>
+                {lastRun.metaError && <p className="text-destructive">Resposta da Meta: {lastRun.metaError}</p>}
+                {!!lastRun.metaMessages?.length && <p className="text-muted-foreground">Avisos da Meta: {JSON.stringify(lastRun.metaMessages)}</p>}
                 {lastRun.fbtraceId && <p className="text-muted-foreground">Código de rastreio da Meta: {lastRun.fbtraceId}</p>}
               </div>
             )}

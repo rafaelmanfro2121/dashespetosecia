@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { runMetaCapiInBackground } from '@/lib/meta';
+import { CARD_FEE, paymentEntries, netRevenue, methodLabel, totalsByMethod, paidTotal, type PaymentEntry } from '@/lib/payments';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
-const CARD_FEE = 0.1177;
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 const WEEKDAYS = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 
@@ -31,6 +32,7 @@ interface ClienteRow {
   payment_status: string;
   paid_amount: number;
   payment_method_client: string;
+  payments?: PaymentEntry[] | null;
 }
 
 interface ProductCostData {
@@ -95,10 +97,17 @@ export default function ClientesPage() {
   const [filterStatus, setFilterStatus] = useState('all');
 
   const fetchClientes = async () => {
+    const ORDER_COLUMNS = 'id, cliente_nome, cliente_telefone, cliente_email, cliente_cpf_cnpj, cliente_contato, atendimento_data, items, os_number, order_status, nota_fiscal_url, total, payment_status, paid_amount, payment_method_client';
+    const fetchOrders = async () => {
+      const withPayments = await supabase.from('service_orders')
+        .select(`${ORDER_COLUMNS}, payments`)
+        .order('atendimento_data', { ascending: false });
+      if (!withPayments.error) return withPayments;
+      // Banco ainda sem a coluna "payments" (SQL 5 não rodado): segue sem o histórico de parcelas.
+      return supabase.from('service_orders').select(ORDER_COLUMNS).order('atendimento_data', { ascending: false });
+    };
     const [{ data }, { data: prodData }, { data: pmData }] = await Promise.all([
-      supabase.from('service_orders')
-        .select('id, cliente_nome, cliente_telefone, cliente_email, cliente_cpf_cnpj, cliente_contato, atendimento_data, items, os_number, order_status, nota_fiscal_url, total, payment_status, paid_amount, payment_method_client')
-        .order('atendimento_data', { ascending: false }),
+      fetchOrders(),
       supabase.from('products').select('id, name, material_cost, labor_cost, other_costs'),
       supabase.from('product_materials').select('product_id, quantity_per_unit'),
     ]);
@@ -179,18 +188,27 @@ export default function ClientesPage() {
     setPayingId(cliente.id);
 
     const netAmount = isCard ? amount * (1 - CARD_FEE) : amount;
-    const newPaidAmount = (cliente.paid_amount || 0) + amount;
+    const entries: PaymentEntry[] = [
+      ...paymentEntries(cliente),
+      { amount, method: isCard ? 'cartao' : 'dinheiro', date: new Date().toISOString() },
+    ];
+    const newPaidAmount = paidTotal(entries);
     const isPaidFull = newPaidAmount >= (cliente.total || 0);
-    const method = isCard ? 'Cartão de Crédito' : 'Dinheiro/PIX';
+    const method = methodLabel(entries);
+    const baseUpdate = {
+      payment_status: isPaidFull ? 'pago' : 'parcial',
+      paid_amount: newPaidAmount,
+      payment_method_client: method,
+    };
 
-    const { error: statusError } = await supabase
+    let { error: statusError } = await supabase
       .from('service_orders')
-      .update({
-        payment_status: isPaidFull ? 'pago' : 'parcial',
-        paid_amount: newPaidAmount,
-        payment_method_client: method,
-      })
+      .update({ ...baseUpdate, payments: entries as unknown as Json })
       .eq('id', cliente.id);
+    if (statusError && /payments/i.test(statusError.message)) {
+      // Banco ainda sem a coluna "payments": registra sem o histórico de parcelas.
+      ({ error: statusError } = await supabase.from('service_orders').update(baseUpdate).eq('id', cliente.id));
+    }
 
     if (statusError) {
       toast.error('Erro ao registrar pagamento');
@@ -229,7 +247,8 @@ export default function ClientesPage() {
         .limit(1)
         .maybeSingle();
 
-      const txAmount = isCard ? (cliente.total || 0) * (1 - CARD_FEE) : (cliente.total || 0);
+      // Líquido da venda: taxa só sobre as parcelas no cartão; o que falta receber entra pelo bruto.
+      const txAmount = netRevenue(cliente, entries);
 
       if (existingSaleTx?.id) {
         await supabase
@@ -261,7 +280,7 @@ export default function ClientesPage() {
 
     setClientes(prev => prev.map(c =>
       c.id === cliente.id
-        ? { ...c, payment_status: isPaidFull ? 'pago' : 'parcial', paid_amount: newPaidAmount, payment_method_client: method }
+        ? { ...c, payment_status: isPaidFull ? 'pago' : 'parcial', paid_amount: newPaidAmount, payment_method_client: method, payments: entries }
         : c
     ));
     const cardMsg = isCard ? ` | Líquido: ${fmt(netAmount)}` : '';
@@ -294,11 +313,7 @@ export default function ClientesPage() {
 
   // Net revenue considering card fees per order
   const totalNetRevenue = useMemo(() => {
-    return filtered.reduce((s, c) => {
-      const total = c.total || 0;
-      const isCard = c.payment_method_client === 'Cartão de Crédito';
-      return s + (isCard ? total * (1 - CARD_FEE) : total);
-    }, 0);
+    return filtered.reduce((s, c) => s + netRevenue(c), 0);
   }, [filtered]);
 
   // Calculate production cost based on product catalog costs matched to order items
@@ -336,27 +351,28 @@ export default function ClientesPage() {
 
     if (c.payment_status === 'pago') {
       const colors = getPaymentColor(c.payment_status, paid, total);
-      const method = c.payment_method_client || '';
-      const isCardPago = method.toLowerCase().includes('cartão') || method.toLowerCase().includes('credito') || method.toLowerCase().includes('crédito');
-      const netValue = isCardPago ? total * (1 - CARD_FEE) : total;
+      const entries = paymentEntries(c);
+      const byMethod = totalsByMethod(entries);
+      const isCardPago = byMethod.cartao > 0;
+      const netValue = netRevenue(c, entries);
       return (
         <div className="flex items-center gap-2 flex-wrap">
           <Badge className={`${colors.badge} text-xs gap-1 px-3 py-1`}>
             <CheckCircle size={12} /> Pago Total
           </Badge>
           <span className="text-[10px] text-muted-foreground font-mono">{fmt(netValue)}</span>
-          {isCardPago && (
+          {isCardPago && byMethod.dinheiro > 0 && (
+            <span className="text-[9px] text-muted-foreground/60">(misto: {fmt(byMethod.dinheiro)} dinheiro/PIX + {fmt(byMethod.cartao)} cartão, taxa {(CARD_FEE * 100).toFixed(2)}% só no cartão)</span>
+          )}
+          {isCardPago && byMethod.dinheiro === 0 && (
             <span className="text-[9px] text-muted-foreground/60">(bruto {fmt(total)} - {(CARD_FEE * 100).toFixed(2)}% taxa)</span>
           )}
         </div>
       );
     }
 
-    const method = c.payment_method_client || '';
-    const isCard = method.toLowerCase().includes('cartão') || method.toLowerCase().includes('credito') || method.toLowerCase().includes('crédito');
-    const isPix = method.toLowerCase().includes('pix') || method.toLowerCase().includes('dinheiro');
-    const lockedToCard = paid > 0 && isCard;
-    const lockedToPix = paid > 0 && isPix;
+    // Cada parcela pode ser em dinheiro/PIX ou cartão (pagamento misto).
+    const paidByMethod = totalsByMethod(paymentEntries(c));
 
     return (
       <Popover>
@@ -372,32 +388,26 @@ export default function ClientesPage() {
             <div className="text-xs text-muted-foreground">
               Total: {fmt(total)} {paid > 0 && <>| Pago: {fmt(paid)} | Resta: {fmt(remaining)}</>}
             </div>
-            {!lockedToCard && (
-              <div className="space-y-1.5">
-                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Entrada 30%</div>
-                <Button size="sm" variant="outline" className="h-8 text-xs gap-1 w-full"
-                  onClick={() => processPayment(c, remaining * 0.3, false)}>
-                  <Banknote size={12} /> 30% Dinheiro/PIX ({fmt(remaining * 0.3)})
-                </Button>
-              </div>
-            )}
+            <div className="space-y-1.5">
+              <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Entrada 30%</div>
+              <Button size="sm" variant="outline" className="h-8 text-xs gap-1 w-full"
+                onClick={() => processPayment(c, remaining * 0.3, false)}>
+                <Banknote size={12} /> 30% Dinheiro/PIX ({fmt(remaining * 0.3)})
+              </Button>
+            </div>
             <div className="space-y-1.5">
               <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Valor total restante</div>
               <div className="flex gap-1.5">
-                {!lockedToCard && (
-                  <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                    onClick={() => processPayment(c, remaining, false)}>
-                    <Banknote size={12} /> Dinheiro/PIX
-                  </Button>
-                )}
-                {!lockedToPix && (
-                  <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                    onClick={() => processPayment(c, remaining, true)}>
-                    <CreditCard size={12} /> Cartão
-                  </Button>
-                )}
+                <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
+                  onClick={() => processPayment(c, remaining, false)}>
+                  <Banknote size={12} /> Dinheiro/PIX
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
+                  onClick={() => processPayment(c, remaining, true)}>
+                  <CreditCard size={12} /> Cartão
+                </Button>
               </div>
-              {!lockedToPix && remaining > 0 && (
+              {remaining > 0 && (
                 <div className="text-[10px] text-muted-foreground">
                   Cartão: líquido {fmt(remaining * (1 - CARD_FEE))} (taxa {(CARD_FEE * 100).toFixed(2)}%)
                 </div>
@@ -412,30 +422,24 @@ export default function ClientesPage() {
               {customAmountId === c.id && Number(customAmount) > 0 && (
                 <>
                   <div className="flex gap-1.5">
-                    {!lockedToCard && (
-                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                        onClick={() => processPayment(c, Number(customAmount), false)}>
-                        <Banknote size={12} /> Dinheiro/PIX
-                      </Button>
-                    )}
-                    {!lockedToPix && (
-                      <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
-                        onClick={() => processPayment(c, Number(customAmount), true)}>
-                        <CreditCard size={12} /> Cartão
-                      </Button>
-                    )}
+                    <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
+                      onClick={() => processPayment(c, Number(customAmount), false)}>
+                      <Banknote size={12} /> Dinheiro/PIX
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-1"
+                      onClick={() => processPayment(c, Number(customAmount), true)}>
+                      <CreditCard size={12} /> Cartão
+                    </Button>
                   </div>
-                  {!lockedToPix && (
-                    <div className="text-[10px] text-muted-foreground">
-                      Cartão: líquido {fmt(Number(customAmount) * (1 - CARD_FEE))}
-                    </div>
-                  )}
+                  <div className="text-[10px] text-muted-foreground">
+                    Cartão: líquido {fmt(Number(customAmount) * (1 - CARD_FEE))}
+                  </div>
                 </>
               )}
             </div>
-            {(lockedToCard || lockedToPix) && (
-              <div className="text-[10px] text-amber-600 font-medium">
-                ⚠ Método travado: {lockedToCard ? 'Cartão' : 'Dinheiro/PIX'} (mesmo da 1ª parcela)
+            {paid > 0 && (
+              <div className="text-[10px] text-muted-foreground">
+                Já pago: {fmt(paidByMethod.dinheiro)} dinheiro/PIX · {fmt(paidByMethod.cartao)} cartão
               </div>
             )}
           </div>
