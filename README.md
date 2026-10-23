@@ -1,4 +1,4 @@
-> **Hospedagem fora do Lovable:** veja [MIGRACAO.md](MIGRACAO.md).
+> **Hospedagem fora do Lovable:** veja [MIGRACAO.md](MIGRACAO.md). **Integração Meta:** veja [META.md](META.md).
 
 # Welcome to your Lovable project
 
