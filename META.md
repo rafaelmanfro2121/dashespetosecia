@@ -5,8 +5,9 @@ Página no sistema: **Meta Ads** (menu lateral).
 ## 1. Conversions API: envio automático de cada venda
 
 **Como funciona**
-- Quando uma venda sai de "pendente" (entrada paga ou pago total), um gatilho no banco marca
-  `meta_capi_status = 'pendente'` e grava o momento do fechamento (`meta_capi_event_time`).
+- Quando um pagamento é registrado (entrada ou total) numa venda que ainda não foi enviada, um gatilho
+  no banco marca `meta_capi_status = 'pendente'` e grava o momento (`meta_capi_event_time`). Cada venda
+  gera um único Purchase; pagamentos seguintes da mesma venda não reenviam.
 - O sistema pede o envio na hora, e também toda vez que alguém abre o sistema (reenvia o que ficou na fila).
 - A Edge Function `meta-capi` envia um evento `Purchase` com `event_id` igual ao ID da venda, com telefone,
   e-mail, nome, CEP e país normalizados e com hash SHA-256. O valor é o total da venda, em BRL.
@@ -15,7 +16,7 @@ Página no sistema: **Meta Ads** (menu lateral).
 - Vendas antigas não são enviadas. O histórico vai pelo CSV (parte 2).
 
 **Instalação (uma vez)**
-1. No SQL Editor do Supabase, rode `supabase/setup/4-meta-capi.sql`.
+1. No SQL Editor do Supabase, rode `supabase/setup/4-meta-capi.sql` e depois `supabase/setup/6-meta-capi-ajuste.sql`.
 2. No Supabase, em *Edge Functions → Secrets*, crie:
 
    | Secret | Obrigatório | Valor |
