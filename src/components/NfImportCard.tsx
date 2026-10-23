@@ -6,7 +6,7 @@ import { FileArchive, Loader2, Upload, CheckCircle2, AlertTriangle } from 'lucid
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/formatters';
 import { isSaleNote } from '@/lib/danfe';
-import { saveHistoricalNotes, countHistoricalSales, firstOrderDate } from '@/lib/meta';
+import { saveHistoricalNotes, removeHistoricalNotes, countHistoricalSales, firstOrderDate } from '@/lib/meta';
 import { normalizePhone } from '../../supabase/functions/_shared/meta';
 import type { ImportResult, ImportProgress } from '@/lib/nfImport';
 
@@ -34,7 +34,9 @@ export default function NfImportCard() {
     const withPhone = beforeCutoff.filter(n => normalizePhone(n.telefone)).length;
     const total = beforeCutoff.reduce((s, n) => s + n.total, 0);
     const dates = beforeCutoff.map(n => n.emissao).filter(Boolean).sort() as string[];
-    return { toImport: beforeCutoff, notSale, afterCutoff, withPhone, total, from: dates[0] ?? null, to: dates[dates.length - 1] ?? null };
+    const kept = new Set(beforeCutoff.map(n => n.chave));
+    const excludedKeys = result.notes.filter(n => !kept.has(n.chave)).map(n => n.chave);
+    return { toImport: beforeCutoff, excludedKeys, notSale, afterCutoff, withPhone, total, from: dates[0] ?? null, to: dates[dates.length - 1] ?? null };
   }, [result, cutoff]);
 
   const read = async (files: FileList | null) => {
@@ -59,6 +61,7 @@ export default function NfImportCard() {
     setSaving(true);
     try {
       const n = await saveHistoricalNotes(summary.toImport);
+      await removeHistoricalNotes(summary.excludedKeys);
       toast.success(`${n} notas importadas`);
       setResult(null);
       setExisting(await countHistoricalSales());

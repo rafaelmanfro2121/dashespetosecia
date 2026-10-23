@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import QuickEntryFAB from '@/components/QuickEntryFAB';
 import {
   LayoutDashboard, DollarSign, Users,
-  CalendarCheck, ChevronLeft, ChevronRight, LogOut, Download, Package, ClipboardList, Contact, Wrench, Menu, Target
+  CalendarCheck, ChevronLeft, ChevronRight, LogOut, Download, Package, ClipboardList, Contact, Wrench, Menu, Target, History
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -25,6 +25,7 @@ const navItems = [
   { to: '/ordem-servico', icon: ClipboardList, label: 'Pedidos' },
   { to: '/ordem-servico-tecnica', icon: Wrench, label: 'Ordem de Serviço' },
   { to: '/clientes', icon: Contact, label: 'Clientes' },
+  { to: '/clientes-antigos', icon: History, label: 'Clientes antigos' },
   { to: '/fechamento', icon: CalendarCheck, label: 'Fechamento' },
   { to: '/meta', icon: Target, label: 'Meta Ads' },
 ];

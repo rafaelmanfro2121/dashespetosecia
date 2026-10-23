@@ -23,7 +23,30 @@ const danfe: TextItem[] = [
   t(446, 447, 'UF'), t(436, 447, 'RS'), // UF do transportador: fora do bloco do destinatário
 ];
 
+// Modelo gerado pelo navegador (notas de 2023 em diante): "Data emissão" e um rótulo vizinho desalinhado.
+const danfeWeb: TextItem[] = [
+  t(700, 380, 'Chave de acesso'), t(690, 380, '2923 0127 5250 8300 0199 5500 1000 0012 3410 0001 2345'),
+  t(640, 33, 'Natureza da operação'), t(631, 33, 'Venda de produção'),
+  t(622, 373, 'CNPJ'), t(613, 373, '27.525.083/0001-99'),
+  t(598, 31, 'Destinatário/Remetente'),
+  t(591, 33, 'Nome / Razão Social'), t(591, 286, 'CNPJ/CPF'), t(591, 493, 'Data emissão'), t(587, 388, 'Inscrição Estadual'),
+  t(581, 33, 'CICLANO DA SILVA'), t(581, 286, '222.333.444-55'), t(581, 493, '25/01/2023'),
+  t(572, 33, 'Endereço'), t(572, 286, 'Bairro'), t(572, 388, 'CEP'), t(572, 493, 'Data saída'),
+  t(562, 33, 'Avenida Um, 10'), t(562, 286, 'centro'), t(562, 388, '44.900-000'),
+  t(553, 33, 'Município'), t(553, 286, 'Fone/Fax'), t(553, 388, 'UF'),
+  t(544, 33, 'Irecê'), t(544, 286, '(74) 99999-1111'), t(544, 388, 'BA'),
+  t(529, 31, 'Faturas'),
+  t(470, 473, 'Valor total da nota'), t(460, 520, '4.050,79'),
+];
+
 describe('parseDanfe', () => {
+  it('modelo web: lê "Data emissão" e não confunde rótulo desalinhado com o CPF', () => {
+    expect(parseDanfe(danfeWeb)).toMatchObject({
+      emissao: '2023-01-25', nome: 'CICLANO DA SILVA', documento: '222.333.444-55',
+      cep: '44900000', cidade: 'Irecê', uf: 'BA', telefone: '(74) 99999-1111', total: 4050.79,
+    });
+  });
+
   it('lê os dados do destinatário, a chave e o total', () => {
     expect(parseDanfe(danfe)).toEqual({
       chave: '43220627525083000199550010280450891900476618',
