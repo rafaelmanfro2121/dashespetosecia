@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { pageVariants, itemVariants } from '@/lib/motion';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatters';
-import { normalizePhone, normalizeEmail, splitName, normalizeCity, normalizeState, extractZip, toCsv, type CustomerRow } from '../../supabase/functions/_shared/meta';
+import { normalizePhone, normalizeEmail } from '../../supabase/functions/_shared/meta';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { History, Search, Loader2, ChevronDown, MessageCircle, AlertTriangle, X, Users, Wallet, Receipt, Phone, Download, SlidersHorizontal, MapPin, Target } from 'lucide-react';
+import { History, Search, Loader2, ChevronDown, MessageCircle, AlertTriangle, X, Users, Wallet, Receipt, Phone, Download, SlidersHorizontal, MapPin, Mail } from 'lucide-react';
 
 /** Uma compra: de nota fiscal importada ou de pedido fechado no sistema. */
 interface Note {
@@ -167,31 +167,29 @@ function Kpi({ icon: Icon, label, value, hint }: { icon: typeof Users; label: st
   );
 }
 
-/** Lista no formato da Meta (público personalizado): telefone e e-mail + nome, cidade, UF, CEP e valor gasto. */
-function downloadMetaCsv(list: Customer[]) {
-  const rows: CustomerRow[] = [];
+/**
+ * Lista para público personalizado da Meta: uma coluna de identificação (telefone OU e-mail) e o valor
+ * gasto, que permite criar o público semelhante pelo valor do cliente. Um cliente por linha, sem repetir.
+ */
+function downloadMetaList(list: Customer[], kind: 'phone' | 'email') {
+  const byId = new Map<string, number>();
   for (const c of list) {
-    const email = normalizeEmail(c.notes.find(n => normalizeEmail(n.cliente_email))?.cliente_email) ?? '';
-    if (!c.telefone && !email) continue; // sem telefone nem e-mail a Meta não consegue achar a pessoa
-    const { fn, ln } = splitName(c.nome);
-    const zipSrc = c.notes.find(n => n.cep || extractZip(n.endereco));
-    rows.push({
-      phone: c.telefone, email, fn, ln,
-      ct: normalizeCity(c.cidade), st: normalizeState(c.uf),
-      zip: zipSrc ? (zipSrc.cep ?? '').replace(/\D/g, '') || extractZip(zipSrc.endereco) : '',
-      country: 'br', value: c.total.toFixed(2),
-    });
+    const id = kind === 'phone'
+      ? c.telefone
+      : normalizeEmail(c.notes.find(n => normalizeEmail(n.cliente_email))?.cliente_email) ?? '';
+    if (id) byId.set(id, (byId.get(id) ?? 0) + c.total);
   }
-  if (!rows.length) { toast.error('Nenhum cliente com telefone ou e-mail nesta lista'); return; }
-  const url = URL.createObjectURL(new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' }));
+  if (!byId.size) { toast.error(kind === 'phone' ? 'Nenhum telefone válido nesta lista' : 'Nenhum e-mail nesta lista'); return; }
+  const lines = [`${kind},value`, ...[...byId].map(([id, v]) => `${id},${v.toFixed(2)}`)];
+  const url = URL.createObjectURL(new Blob([lines.join('\n') + '\n'], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = `publico-meta-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `meta-${kind === 'phone' ? 'telefones' : 'emails'}-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast.success(`${rows.length} clientes no arquivo (${rows.filter(r => r.phone).length} com telefone, ${rows.filter(r => r.email).length} com e-mail)`);
+  toast.success(`${byId.size} ${kind === 'phone' ? 'telefones' : 'e-mails'} no arquivo`);
 }
 
 function downloadCsv(list: Customer[]) {
@@ -361,12 +359,16 @@ export default function ClientesAntigosPage() {
         </div>
         {!missingTable && (
           <div className="flex flex-wrap gap-2">
-            <Button className="rounded-xl" onClick={() => downloadMetaCsv(filtered)} disabled={!filtered.length}
-              title="Telefones e e-mails no formato da Meta, para criar público personalizado">
-              <Target /> Baixar para Meta (telefones e e-mails)
+            <Button className="rounded-xl" onClick={() => downloadMetaList(filtered, 'phone')} disabled={!filtered.length}
+              title="Uma coluna de telefones (55 + DDD + número) e o valor gasto, para público personalizado da Meta">
+              <Phone /> Telefones para Meta
+            </Button>
+            <Button className="rounded-xl" onClick={() => downloadMetaList(filtered, 'email')} disabled={!filtered.length}
+              title="Uma coluna de e-mails e o valor gasto, para público personalizado da Meta">
+              <Mail /> E-mails para Meta
             </Button>
             <Button variant="outline" className="rounded-xl" onClick={() => downloadCsv(filtered)} disabled={!filtered.length}>
-              <Download /> Baixar lista (Excel)
+              <Download /> Lista completa (Excel)
             </Button>
           </div>
         )}
