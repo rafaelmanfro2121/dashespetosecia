@@ -98,7 +98,7 @@ export interface HistoricalNote {
   total: number; file: string;
 }
 
-/** Grava as notas lidas. Notas já importadas (mesma chave de acesso) são ignoradas. */
+/** Grava as notas lidas. Nota já importada (mesma chave de acesso) é atualizada com a leitura nova. */
 export async function saveHistoricalNotes(notes: HistoricalNote[], onProgress?: (done: number) => void): Promise<number> {
   const CHUNK = 500;
   let saved = 0;
@@ -108,12 +108,20 @@ export async function saveHistoricalNotes(notes: HistoricalNote[], onProgress?: 
       cliente_nome: n.nome, cliente_documento: n.documento, cliente_telefone: n.telefone, cliente_email: n.email || null,
       endereco: n.endereco, bairro: n.bairro, cidade: n.cidade, uf: n.uf, cep: n.cep, total: n.total, source_file: n.file,
     }));
-    const { error } = await supabase.from('historical_sales').upsert(rows, { onConflict: 'nf_key', ignoreDuplicates: true });
+    const { error } = await supabase.from('historical_sales').upsert(rows, { onConflict: 'nf_key' });
     if (error) throw error;
     saved += rows.length;
     onProgress?.(saved);
   }
   return saved;
+}
+
+/** Remove notas que já tinham sido importadas mas agora ficam de fora (após a data de corte ou não são venda). */
+export async function removeHistoricalNotes(keys: string[]): Promise<void> {
+  for (let i = 0; i < keys.length; i += 200) {
+    const { error } = await supabase.from('historical_sales').delete().in('nf_key', keys.slice(i, i + 200));
+    if (error) throw error;
+  }
 }
 
 export async function countHistoricalSales(): Promise<number | null> {

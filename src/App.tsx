@@ -21,6 +21,7 @@ import OrdemServicoPage from "@/pages/OrdemServicoPage";
 import OrdemServicoTecnicaPage from "@/pages/OrdemServicoTecnicaPage";
 import ClientesPage from "@/pages/ClientesPage";
 import MetaPage from "@/pages/MetaPage";
+import ClientesAntigosPage from "@/pages/ClientesAntigosPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ function ProtectedRoutes() {
           <Route path="/ordem-servico-tecnica" element={<OrdemServicoTecnicaPage />} />
           <Route path="/clientes" element={<ClientesPage />} />
           <Route path="/meta" element={<MetaPage />} />
+          <Route path="/clientes-antigos" element={<ClientesAntigosPage />} />
           <Route path="/presenca" element={<Navigate to="/funcionarios" replace />} />
           <Route path="/vales" element={<Navigate to="/funcionarios" replace />} />
           <Route path="*" element={<NotFound />} />

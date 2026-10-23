@@ -29,7 +29,7 @@ const norm = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
 
 const LINE_TOL = 2.5;      // itens na mesma linha
-const VALUE_MIN_GAP = 3;   // valor fica abaixo do rótulo...
+const VALUE_MIN_GAP = 6;   // valor fica abaixo do rótulo (rótulos vizinhos desalinhados ficam a ~4)...
 const VALUE_MAX_GAP = 16;  // ...no máximo uma linha abaixo
 
 function findLabel(items: TextItem[], label: RegExp, within?: { top: number; bottom: number }): TextItem | undefined {
@@ -104,7 +104,7 @@ export function parseDanfe(items: TextItem[]): DanfeData | null {
   return {
     chave,
     numero,
-    emissao: toIsoDate(d(/^DATA D[AE] EMISSAO$/)),
+    emissao: toIsoDate(d(/^DATA( D[AE])? (DA )?EMISSAO$/)),
     natureza: valueBelow(items, findLabel(items, /^NATUREZA DA OPERACAO$/)),
     nome: d(/^(NOME\s*\/\s*)?RAZAO SOCIAL(\s*\/\s*NOME)?$|^NOME$/),
     documento: d(/^(CNPJ\s*\/\s*CPF|CPF\s*\/\s*CNPJ)$/),
