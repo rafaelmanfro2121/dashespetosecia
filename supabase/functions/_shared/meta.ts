@@ -13,6 +13,8 @@ export interface SaleRow {
   payment_status: string | null;
   order_status: string | null;
   atendimento_data: string | null;
+  cidade?: string | null; // vendas históricas (NF) trazem cidade e UF separadas
+  uf?: string | null;
 }
 
 // No sistema, a venda está fechada quando sai de "pendente" (entrada paga ou pago total).
@@ -57,6 +59,11 @@ export function splitName(full: string | null | undefined): { fn: string; ln: st
 
 export function normalizeCity(s: string | null | undefined): string {
   return stripAccents(s ?? '').toLowerCase().replace(/[^a-z]/g, '');
+}
+
+export function normalizeState(s: string | null | undefined): string {
+  const uf = (s ?? '').trim().toLowerCase();
+  return /^[a-z]{2}$/.test(uf) ? uf : '';
 }
 
 /** CEP (8 dígitos) a partir do texto livre de endereço. */
@@ -138,7 +145,7 @@ export function aggregateCustomers(
   sales: SaleRow[],
   range: { from?: string; to?: string } = {},
 ): { rows: CustomerRow[]; stats: ExportStats } {
-  const byPhone = new Map<string, { email: string; fn: string; ln: string; zip: string; value: number }>();
+  const byPhone = new Map<string, { email: string; fn: string; ln: string; ct: string; st: string; zip: string; value: number }>();
   const byYear = new Map<string, { sales: number; revenue: number }>();
   let discarded = 0;
   let salesCount = 0;
@@ -169,10 +176,14 @@ export function aggregateCustomers(
       current.fn ||= fn;
       current.ln ||= ln;
       current.zip ||= extractZip(s.cliente_contato);
+      current.ct ||= normalizeCity(s.cidade);
+      current.st ||= normalizeState(s.uf);
     } else {
       byPhone.set(phone, {
         email: normalizeEmail(s.cliente_email) ?? '',
         fn, ln,
+        ct: normalizeCity(s.cidade),
+        st: normalizeState(s.uf),
         zip: extractZip(s.cliente_contato),
         value,
       });
@@ -181,7 +192,7 @@ export function aggregateCustomers(
 
   const rows: CustomerRow[] = [...byPhone.entries()].map(([phone, c]) => ({
     phone, email: c.email, fn: c.fn, ln: c.ln,
-    ct: '', st: '', // o sistema guarda o endereço em texto livre, sem cidade/UF separadas
+    ct: c.ct, st: c.st, // só as vendas históricas (NF) têm cidade/UF separadas
     zip: c.zip, country: 'br', value: c.value.toFixed(2),
   }));
 

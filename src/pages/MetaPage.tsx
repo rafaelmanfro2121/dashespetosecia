@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Target, Send, RefreshCw, Download, Loader2, AlertTriangle, CheckCircle2, Clock, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
+import NfImportCard from '@/components/NfImportCard';
 
 interface StatusCounts { pendente: number; enviado: number; erro: number }
 interface ErrorRow { id: string; os_number: string; meta_capi_error: string | null; meta_capi_attempted_at: string | null }
@@ -202,6 +203,7 @@ export default function MetaPage() {
           </div>
         )}
       </section>
+      <NfImportCard />
     </div>
   );
 }

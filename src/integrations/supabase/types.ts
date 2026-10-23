@@ -373,6 +373,66 @@ export type Database = {
         }
         Relationships: []
       }
+      historical_sales: {
+        Row: {
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          cliente_documento: string | null
+          cliente_email: string | null
+          cliente_nome: string | null
+          cliente_telefone: string | null
+          created_at: string
+          endereco: string | null
+          id: string
+          issued_at: string | null
+          natureza: string | null
+          nf_key: string
+          nf_number: string | null
+          source_file: string | null
+          total: number
+          uf: string | null
+        }
+        Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cliente_documento?: string | null
+          cliente_email?: string | null
+          cliente_nome?: string | null
+          cliente_telefone?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          issued_at?: string | null
+          natureza?: string | null
+          nf_key: string
+          nf_number?: string | null
+          source_file?: string | null
+          total?: number
+          uf?: string | null
+        }
+        Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cliente_documento?: string | null
+          cliente_email?: string | null
+          cliente_nome?: string | null
+          cliente_telefone?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          issued_at?: string | null
+          natureza?: string | null
+          nf_key?: string
+          nf_number?: string | null
+          source_file?: string | null
+          total?: number
+          uf?: string | null
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           cost_per_unit: number
