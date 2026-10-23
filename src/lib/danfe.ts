@@ -70,11 +70,24 @@ function toIsoDate(s: string): string | null {
   return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
 }
 
+/** Chave de acesso: de preferência o número logo abaixo do rótulo; senão, 44 dígitos seguidos em um mesmo texto. */
+function findChave(items: TextItem[], all: string): string {
+  const below = valueBelow(items, findLabel(items, /^CHAVE DE ACESSO/)).replace(/\D/g, '');
+  if (below.length === 44) return below;
+  for (const i of items) {
+    const digits = i.str.replace(/[\s.]/g, '');
+    const m = digits.match(/\d{44}/);
+    if (m) return m[0];
+  }
+  // Último recurso: grupos de 4 dígitos (formato impresso da chave) no texto todo.
+  return (all.match(/(?:\d{4}[ .]){10}\d{4}/)?.[0] ?? '').replace(/\D/g, '');
+}
+
 /** Retorna null quando o texto não parece uma DANFE (sem chave de acesso ou sem destinatário). */
 export function parseDanfe(items: TextItem[]): DanfeData | null {
   const all = items.map(i => i.str).join(' ');
-  const chave = (all.replace(/[^\d\s]/g, ' ').match(/(?:\d{4}\s*){11}/)?.[0] ?? '').replace(/\D/g, '');
-  const dest = findLabel(items, /^DESTINATARIO\s*\/?\s*REMETENTE$/);
+  const chave = findChave(items, all);
+  const dest = findLabel(items, /^DESTINATARIO(\s*\/\s*REMETENTE)?$/);
   if (chave.length !== 44 || !dest) return null;
 
   // Bloco do destinatário: do título até o próximo bloco (FATURA / DUPLICATAS / CÁLCULO DO IMPOSTO).
@@ -91,16 +104,16 @@ export function parseDanfe(items: TextItem[]): DanfeData | null {
   return {
     chave,
     numero,
-    emissao: toIsoDate(d(/^DATA DA EMISSAO$/)),
+    emissao: toIsoDate(d(/^DATA D[AE] EMISSAO$/)),
     natureza: valueBelow(items, findLabel(items, /^NATUREZA DA OPERACAO$/)),
-    nome: d(/^NOME\s*\/\s*RAZAO SOCIAL$/),
-    documento: d(/^CNPJ\s*\/\s*CPF$/),
-    endereco: d(/^ENDERECO$/),
-    bairro: d(/^BAIRRO\s*\/\s*DISTRITO$/),
+    nome: d(/^(NOME\s*\/\s*)?RAZAO SOCIAL(\s*\/\s*NOME)?$|^NOME$/),
+    documento: d(/^(CNPJ\s*\/\s*CPF|CPF\s*\/\s*CNPJ)$/),
+    endereco: d(/^ENDERECO$|^LOGRADOURO$/),
+    bairro: d(/^BAIRRO(\s*\/\s*DISTRITO)?$/),
     cep: d(/^CEP$/).replace(/\D/g, ''),
     cidade: d(/^MUNICIPIO$/),
     uf: d(/^UF$/).toUpperCase().slice(0, 2),
-    telefone: d(/^FONE\s*\/\s*FAX$|^TELEFONE$|^FONE$/),
+    telefone: d(/^(FONE|TELEFONE)(\s*\/\s*FAX)?$/),
     email: emailArea.match(/[\w.+-]+@[\w-]+\.[\w.-]+/)?.[0]?.toLowerCase() ?? '',
     total: parseBrMoney(valueBelow(items, findLabel(items, /^VALOR TOTAL DA NOTA$/))),
   };

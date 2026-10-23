@@ -121,8 +121,10 @@ export default function NfImportCard() {
 
       {summary && result && (
         <div className="mt-5 space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
             {[
+              ['PDFs no arquivo', `${result.pdfs} (${result.pages} páginas)`],
+              ['Notas reconhecidas', String(result.notes.length)],
               ['Notas para importar', String(summary.toImport.length)],
               ['Com telefone válido', String(summary.withPhone)],
               ['Valor total', formatCurrency(summary.total)],

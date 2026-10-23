@@ -123,6 +123,14 @@ export async function countHistoricalSales(): Promise<number | null> {
 
 /** Data do primeiro pedido do sistema: notas a partir dela já estão nos pedidos e não são importadas. */
 export async function firstOrderDate(): Promise<string | null> {
-  const { data } = await supabase.from('service_orders').select('atendimento_data').order('atendimento_data', { ascending: true }).limit(1);
-  return data?.[0]?.atendimento_data ?? null;
+  const [byDate, byCreated] = await Promise.all([
+    supabase.from('service_orders').select('atendimento_data').not('atendimento_data', 'is', null)
+      .order('atendimento_data', { ascending: true }).limit(1),
+    supabase.from('service_orders').select('created_at').order('created_at', { ascending: true }).limit(1),
+  ]);
+  const dates = [byDate.data?.[0]?.atendimento_data, byCreated.data?.[0]?.created_at?.slice(0, 10)]
+    .filter((d): d is string => !!d && /^\d{4}-\d{2}-\d{2}/.test(d))
+    .map(d => d.slice(0, 10))
+    .sort();
+  return dates[0] ?? null;
 }
