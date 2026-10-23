@@ -90,7 +90,7 @@ export default function MetaPage() {
       <section className="metric-card mb-6">
         <h2 className="text-sm font-bold mb-1">Envio automático de vendas (Conversions API)</h2>
         <p className="text-xs text-muted-foreground mb-4">
-          Cada venda que sai de "pendente" (entrada ou pagamento total) entra na fila e é enviada automaticamente.
+          Quando um pagamento é registrado (entrada ou total), a venda entra na fila e é enviada automaticamente, uma única vez.
           Vendas antigas não são enviadas: o histórico vai pela exportação abaixo.
         </p>
 
