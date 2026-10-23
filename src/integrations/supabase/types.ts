@@ -736,6 +736,11 @@ export type Database = {
           forma_pagamento: string | null
           id: string
           items: Json
+          meta_capi_attempted_at: string | null
+          meta_capi_error: string | null
+          meta_capi_event_time: string | null
+          meta_capi_sent_at: string | null
+          meta_capi_status: string | null
           nota_fiscal_url: string | null
           observacoes: string | null
           order_status: string
@@ -769,6 +774,11 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           items?: Json
+          meta_capi_attempted_at?: string | null
+          meta_capi_error?: string | null
+          meta_capi_event_time?: string | null
+          meta_capi_sent_at?: string | null
+          meta_capi_status?: string | null
           nota_fiscal_url?: string | null
           observacoes?: string | null
           order_status?: string
@@ -802,6 +812,11 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           items?: Json
+          meta_capi_attempted_at?: string | null
+          meta_capi_error?: string | null
+          meta_capi_event_time?: string | null
+          meta_capi_sent_at?: string | null
+          meta_capi_status?: string | null
           nota_fiscal_url?: string | null
           observacoes?: string | null
           order_status?: string

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
+import { runMetaCapiInBackground } from '@/lib/meta';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -196,6 +197,9 @@ export default function ClientesPage() {
       setPayingId(null);
       return;
     }
+
+    // Venda fechada: o banco coloca na fila da Meta; aqui só pedimos o envio imediato.
+    if (cliente.payment_status === 'pendente') runMetaCapiInBackground();
 
     try {
       const itemNames = Array.isArray(cliente.items)

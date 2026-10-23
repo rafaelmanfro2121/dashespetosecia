@@ -3,9 +3,9 @@ import { NavLink, useLocation } from 'react-router-dom';
 import QuickEntryFAB from '@/components/QuickEntryFAB';
 import {
   LayoutDashboard, DollarSign, Users,
-  CalendarCheck, ChevronLeft, ChevronRight, LogOut, Download, Package, ClipboardList, Contact, Wrench, Menu
+  CalendarCheck, ChevronLeft, ChevronRight, LogOut, Download, Package, ClipboardList, Contact, Wrench, Menu, Target
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { downloadFullBackup } from '@/lib/backup';
+import { runMetaCapiInBackground } from '@/lib/meta';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -25,6 +26,7 @@ const navItems = [
   { to: '/ordem-servico-tecnica', icon: Wrench, label: 'Ordem de Serviço' },
   { to: '/clientes', icon: Contact, label: 'Clientes' },
   { to: '/fechamento', icon: CalendarCheck, label: 'Fechamento' },
+  { to: '/meta', icon: Target, label: 'Meta Ads' },
 ];
 
 function BackupButton() {
@@ -100,6 +102,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { signOut } = useAuth();
   const isMobile = useIsMobile();
+
+  // Ao abrir o sistema, reenvia para a Meta as vendas que ficaram na fila (ex.: falha de rede).
+  useEffect(() => { runMetaCapiInBackground(); }, []);
 
   return (
     <div className="flex min-h-screen w-full">
