@@ -6,7 +6,7 @@ import { FileArchive, Loader2, Upload, CheckCircle2, AlertTriangle } from 'lucid
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/formatters';
 import { isSaleNote } from '@/lib/danfe';
-import { saveHistoricalNotes, removeHistoricalNotes, countHistoricalSales, firstOrderDate } from '@/lib/meta';
+import { saveHistoricalNotes, removeHistoricalNotes, countHistoricalSales, firstOrderDate, existingHistoricalKeys } from '@/lib/meta';
 import { normalizePhone } from '../../supabase/functions/_shared/meta';
 import type { ImportResult, ImportProgress } from '@/lib/nfImport';
 
@@ -19,6 +19,7 @@ export default function NfImportCard() {
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [saving, setSaving] = useState(false);
+  const [known, setKnown] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     countHistoricalSales().then(setExisting);
@@ -36,8 +37,10 @@ export default function NfImportCard() {
     const dates = beforeCutoff.map(n => n.emissao).filter(Boolean).sort() as string[];
     const kept = new Set(beforeCutoff.map(n => n.chave));
     const excludedKeys = result.notes.filter(n => !kept.has(n.chave)).map(n => n.chave);
-    return { toImport: beforeCutoff, excludedKeys, notSale, afterCutoff, withPhone, total, from: dates[0] ?? null, to: dates[dates.length - 1] ?? null };
-  }, [result, cutoff]);
+    const newCount = beforeCutoff.filter(n => !known.has(n.chave)).length;
+    const toRemove = excludedKeys.filter(k => known.has(k));
+    return { toImport: beforeCutoff, newCount, updateCount: beforeCutoff.length - newCount, excludedKeys: toRemove, notSale, afterCutoff, withPhone, total, from: dates[0] ?? null, to: dates[dates.length - 1] ?? null };
+  }, [result, cutoff, known]);
 
   const read = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -46,6 +49,7 @@ export default function NfImportCard() {
     try {
       const { importNotes } = await import('@/lib/nfImport');
       const r = await importNotes([...files], setProgress);
+      setKnown(await existingHistoricalKeys());
       setResult(r);
       if (!r.notes.length) toast.error('Nenhuma nota fiscal encontrada nos arquivos');
     } catch (err) {
@@ -128,14 +132,17 @@ export default function NfImportCard() {
             {[
               ['PDFs no arquivo', `${result.pdfs} (${result.pages} páginas)`],
               ['Notas reconhecidas', String(result.notes.length)],
-              ['Notas para importar', String(summary.toImport.length)],
+              ['Novas (ainda não importadas)', String(summary.newCount)],
+              ['Já no sistema (serão atualizadas)', String(summary.updateCount)],
               ['Com telefone válido', String(summary.withPhone)],
               ['Valor total', formatCurrency(summary.total)],
               ['Período', `${fmtDate(summary.from)} a ${fmtDate(summary.to)}`],
               ['Já nos pedidos (após a data)', String(summary.afterCutoff)],
               ['Não são venda (devolução, remessa…)', String(summary.notSale)],
               ['Repetidas no arquivo', String(result.duplicates)],
-              ['Não lidas', String(result.unreadable.length)],
+              ['Não lidas: sem texto (escaneada/imagem)', String(result.unreadableReasons.noText.length)],
+              ['Não lidas: formato não reconhecido', String(result.unreadableReasons.otherLayout.length)],
+              ['Não lidas: erro ao abrir', String(result.unreadableReasons.error.length)],
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl border p-3">
                 <p className="text-xs text-muted-foreground">{label}</p>
@@ -175,17 +182,41 @@ export default function NfImportCard() {
           )}
 
           {result.unreadable.length > 0 && (
-            <details className="text-xs">
-              <summary className="cursor-pointer text-muted-foreground">Ver arquivos não lidos ({result.unreadable.length})</summary>
-              <ul className="mt-2 max-h-40 overflow-auto list-disc pl-5 space-y-0.5">
-                {result.unreadable.slice(0, 200).map(f => <li key={f} className="break-all">{f}</li>)}
-              </ul>
-            </details>
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <details>
+                <summary className="cursor-pointer text-muted-foreground">Ver arquivos não lidos ({result.unreadable.length})</summary>
+                {([
+                  ['Sem texto (escaneada/imagem)', result.unreadableReasons.noText],
+                  ['Formato não reconhecido', result.unreadableReasons.otherLayout],
+                  ['Erro ao abrir', result.unreadableReasons.error],
+                ] as const).filter(([, list]) => list.length).map(([label, list]) => (
+                  <div key={label} className="mt-2">
+                    <p className="font-semibold">{label} ({list.length})</p>
+                    <ul className="max-h-40 overflow-auto list-disc pl-5 space-y-0.5">
+                      {list.slice(0, 100).map(f => <li key={f} className="break-all">{f}</li>)}
+                    </ul>
+                  </div>
+                ))}
+              </details>
+              <button type="button" className="text-primary font-medium hover:underline" onClick={() => {
+                const r = result.unreadableReasons;
+                const txt = [
+                  `SEM TEXTO (escaneada/imagem): ${r.noText.length}`, ...r.noText, '',
+                  `FORMATO NÃO RECONHECIDO: ${r.otherLayout.length}`, ...r.otherLayout, '',
+                  `ERRO AO ABRIR: ${r.error.length}`, ...r.error,
+                ].join('\n');
+                const url = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' }));
+                const a = document.createElement('a'); a.href = url; a.download = 'notas-nao-lidas.txt'; a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+              }}>Baixar lista dos não lidos</button>
+            </div>
           )}
 
           <Button onClick={save} disabled={saving || !summary.toImport.length} className="rounded-xl">
             {saving ? <Loader2 className="animate-spin" /> : summary.toImport.length ? <Upload /> : <CheckCircle2 />}
-            Importar {summary.toImport.length} notas
+            {summary.updateCount
+              ? `Importar ${summary.newCount} novas e atualizar ${summary.updateCount}`
+              : `Importar ${summary.toImport.length} notas`}
           </Button>
         </div>
       )}
