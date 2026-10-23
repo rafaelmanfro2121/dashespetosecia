@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatters';
-import { runMetaCapi, exportMetaCustomersCsv } from '@/lib/meta';
+import { runMetaCapi, exportMetaCustomersCsv, type CapiSummary } from '@/lib/meta';
 import type { ExportStats } from '../../supabase/functions/_shared/meta';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ export default function MetaPage() {
   const [to, setTo] = useState('');
   const [exporting, setExporting] = useState(false);
   const [stats, setStats] = useState<ExportStats | null>(null);
+  const [lastRun, setLastRun] = useState<CapiSummary | null>(null);
 
   const load = useCallback(async () => {
     const statuses = ['pendente', 'enviado', 'erro'] as const;
@@ -45,6 +46,7 @@ export default function MetaPage() {
     setRunning(action);
     try {
       const r = await runMetaCapi(action);
+      setLastRun(r);
       if (r.found === 0) toast.info('Nenhuma venda na fila');
       else toast.success(`${r.sent} enviada(s)${r.errors ? `, ${r.errors} com erro` : ''}${r.pending ? `, ${r.pending} para tentar de novo` : ''}${r.test ? ' (modo teste)' : ''}`);
     } catch (err) {
@@ -116,6 +118,15 @@ export default function MetaPage() {
                 {running === 'reprocess' ? <Loader2 className="animate-spin" /> : <RefreshCw />} Reenviar também as com erro
               </Button>
             </div>
+            {lastRun && (
+              <div className="mt-4 rounded-xl border bg-muted/30 p-3 text-xs space-y-1" aria-live="polite">
+                <p className="font-semibold text-sm">Último envio</p>
+                <p>Vendas na fila: {lastRun.found} · enviadas: {lastRun.sent} · com erro: {lastRun.errors} · para tentar de novo: {lastRun.pending}</p>
+                {lastRun.sent > 0 && <p>A Meta confirmou o recebimento de <strong>{lastRun.metaEventsReceived ?? 0}</strong> evento(s).</p>}
+                <p>Modo: <strong>{lastRun.test ? 'TESTE (aparece só em Eventos de teste)' : 'PRODUÇÃO'}</strong> · origem: {lastRun.actionSource ?? '–'}</p>
+                {lastRun.fbtraceId && <p className="text-muted-foreground">Código de rastreio da Meta: {lastRun.fbtraceId}</p>}
+              </div>
+            )}
             {errors.length > 0 && (
               <div className="mt-5">
                 <h3 className="section-label mb-2">Últimos problemas</h3>

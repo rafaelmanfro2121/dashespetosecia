@@ -21,7 +21,8 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
-type SendResult = { ok: true } | { ok: false; retryable: boolean; message: string };
+type MetaReply = { events_received?: number; fbtrace_id?: string; messages?: unknown[] };
+type SendResult = { ok: true; reply: MetaReply } | { ok: false; retryable: boolean; message: string };
 
 async function postToMeta(events: CapiEvent[], token: string, testCode: string | undefined): Promise<SendResult> {
   const body = JSON.stringify({
@@ -35,8 +36,8 @@ async function postToMeta(events: CapiEvent[], token: string, testCode: string |
     if (attempt > 0) await new Promise(r => setTimeout(r, 1000 * 2 ** (attempt - 1)));
     try {
       const res = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
-      if (res.ok) return { ok: true };
       const payload = await res.json().catch(() => null);
+      if (res.ok) return { ok: true, reply: payload ?? {} };
       const metaError = payload?.error;
       const message = `HTTP ${res.status}${metaError?.message ? `: ${String(metaError.message).slice(0, 300)}` : ''}`;
       if (res.status >= 400 && res.status < 500) return { ok: false, retryable: false, message };
@@ -102,13 +103,18 @@ Deno.serve(async (req) => {
   await mark(skippedCancelled, { meta_capi_status: null, meta_capi_error: null });
   await mark(noIdentifiers, { meta_capi_status: 'erro', meta_capi_error: 'Sem telefone ou e-mail válido' });
 
-  const summary = { found: rows?.length ?? 0, sent: 0, errors: noIdentifiers.length, pending: 0, test: !!testCode };
+  const summary = {
+    found: rows?.length ?? 0, sent: 0, errors: noIdentifiers.length, pending: 0,
+    test: !!testCode, actionSource, metaEventsReceived: 0, fbtraceId: null as string | null,
+  };
   if (events.length === 0) return json(summary);
 
   const batch = await postToMeta(events, token, testCode);
   if (batch.ok) {
     await mark(events.map(e => e.event_id), { meta_capi_status: 'enviado', meta_capi_error: null, meta_capi_sent_at: now });
     summary.sent = events.length;
+    summary.metaEventsReceived = batch.reply.events_received ?? 0;
+    summary.fbtraceId = batch.reply.fbtrace_id ?? null;
     return json(summary);
   }
 
@@ -131,6 +137,7 @@ Deno.serve(async (req) => {
     if (one.ok) {
       await mark([event.event_id], { meta_capi_status: 'enviado', meta_capi_error: null, meta_capi_sent_at: now });
       summary.sent++;
+      summary.metaEventsReceived += one.reply.events_received ?? 0;
     } else {
       await mark([event.event_id], {
         meta_capi_status: one.retryable ? 'pendente' : 'erro',

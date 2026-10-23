@@ -7,6 +7,9 @@ export interface CapiSummary {
   errors: number;
   pending: number;
   test: boolean;
+  actionSource?: string;
+  metaEventsReceived?: number;
+  fbtraceId?: string | null;
 }
 
 /** Pede à Edge Function para enviar as vendas pendentes (ou também as com erro). */
