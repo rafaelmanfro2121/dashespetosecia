@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 const TABLES = [
   'attendance', 'categories', 'email_automation_logs', 'email_automation_templates',
   'email_automation_users', 'email_marketing_campaigns', 'email_marketing_recipients',
-  'email_marketing_templates', 'employees', 'fixed_costs', 'inventory', 'lead_feedback',
+  'email_marketing_templates', 'employees', 'fixed_costs', 'historical_sales', 'inventory', 'lead_feedback',
   'marketing_enviados_log', 'marketing_schedule_settings', 'material_purchases',
   'monthly_closings', 'product_materials', 'products', 'profiles', 'salary_payments',
   'service_orders', 'transactions', 'user_roles', 'vales', 'warranty_costs',

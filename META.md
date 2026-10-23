@@ -54,3 +54,18 @@ Na página Meta Ads: escolha o período (ou deixe vazio para todo o histórico) 
 
 `npm test` cobre normalização de telefone e e-mail, hash, agrupamento por cliente com LTV e filtro de cancelada
 (`src/test/meta.test.ts`).
+
+## 3. Clientes antigos a partir das notas fiscais (DANFE em PDF)
+
+Na página Meta Ads, em **Importar clientes antigos**:
+1. Rode uma vez no SQL Editor `supabase/setup/7-vendas-historicas.sql`.
+2. Clique em **Escolher arquivo** e envie o `.rar`, `.zip` ou `.7z` com os PDFs (pode ter subpastas), ou os PDFs soltos.
+3. O navegador abre o arquivo e lê cada nota (pdf.js + libarchive em WebAssembly). Os PDFs não são enviados para lugar nenhum.
+4. Confira o resumo e a prévia, e clique em **Importar**.
+
+- Do bloco do destinatário saem nome, CPF/CNPJ, endereço, bairro, CEP, município, UF e telefone. Também são lidos a data de emissão, a natureza da operação e o valor total da nota.
+- A mesma nota não entra duas vezes: a chave de acesso é única.
+- Devolução, remessa, retorno, bonificação e transferência ficam de fora.
+- Notas a partir da data do primeiro pedido do sistema ficam de fora, porque essas vendas já estão nos pedidos. A data pode ser mudada.
+- As vendas ficam na tabela `historical_sales` e entram só no CSV de públicos, que agora tem `ct` e `st` preenchidos para elas. Não aparecem no Dashboard nem no Financeiro.
+- Arquivos muito grandes (centenas de MB) usam bastante memória do navegador. Se travar, divida em partes menores.
