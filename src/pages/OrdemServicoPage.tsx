@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import { netRevenue } from '@/lib/payments';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import logoBlack from '@/assets/logo-black.png';
@@ -211,8 +212,18 @@ export default function OrdemServicoPage() {
           .limit(1)
           .maybeSingle();
         if (existingTx) {
-          const isCard = existingTx.payment_method === 'Cartão de Crédito';
-          const txAmount = isCard ? total * (1 - 0.1177) : total;
+          // Recalcula o líquido com o novo total: taxa só sobre as parcelas pagas no cartão.
+          const { data: paidInfo } = await supabase
+            .from('service_orders')
+            .select('*')
+            .eq('id', currentOsId)
+            .maybeSingle();
+          const txAmount = netRevenue({
+            total,
+            paid_amount: paidInfo?.paid_amount ?? 0,
+            payment_method_client: paidInfo?.payment_method_client ?? existingTx.payment_method,
+            payments: paidInfo?.payments,
+          });
           await supabase.from('transactions').update({ amount: txAmount }).eq('id', existingTx.id);
         }
       } catch (err) {

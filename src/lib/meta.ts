@@ -10,12 +10,18 @@ export interface CapiSummary {
   actionSource?: string;
   metaEventsReceived?: number;
   fbtraceId?: string | null;
+  metaError?: string;
+  metaMessages?: unknown[];
 }
 
 /** Pede à Edge Function para enviar as vendas pendentes (ou também as com erro). */
-export async function runMetaCapi(action: 'process' | 'reprocess' = 'process'): Promise<CapiSummary> {
+export async function runMetaCapi(action: 'process' | 'reprocess' | 'test' = 'process'): Promise<CapiSummary> {
   const { data, error } = await supabase.functions.invoke('meta-capi', { body: { action } });
-  if (error) throw error;
+  if (error) {
+    // Mostra a mensagem da função (ex.: secret faltando) em vez do erro genérico do HTTP.
+    const body = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    throw new Error(body?.error || error.message);
+  }
   if (data?.error) throw new Error(data.error);
   return data as CapiSummary;
 }
